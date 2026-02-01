@@ -9,6 +9,7 @@ export default function PatientLayout({
     <PortalShell
       title="Portal do Paciente"
       subtitle="Seu plano alimentar, diário e sintomas em um só lugar."
+      devRole="PATIENT"
       nav={[
         { href: "/patient/dashboard", label: "Dashboard" },
         { href: "/patient/log", label: "Diário" },

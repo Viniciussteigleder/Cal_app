@@ -5,6 +5,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
     <PortalShell
       title="Portal do Owner"
       subtitle="Governança cross-tenant com integridade e auditoria."
+      devRole="OWNER"
       nav={[
         { href: "/owner/tenants", label: "Tenants" },
         { href: "/owner/users", label: "Usuários" },

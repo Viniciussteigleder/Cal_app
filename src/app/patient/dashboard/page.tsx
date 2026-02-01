@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, X, ArrowRight, Flame, Droplets, Moon, Check, Utensils } from "lucide-react";
+import { Plus, X, ArrowRight, Flame, Droplets, Moon, Search } from "lucide-react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,21 +9,29 @@ import { Badge } from "@/components/ui/badge";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { trackEvent } from "@/lib/analytics";
 
-// Mock Data for "Simulated Database"
-const FOOD_DATABASE = [
-  { id: 1, name: "Filé de Frango", portion: "100g", cal: 165, icon: "🍗" },
-  { id: 2, name: "Arroz Integral", portion: "100g", cal: 110, icon: "🍚" },
-  { id: 3, name: "Ovos Cozidos", portion: "2 un", cal: 140, icon: "🥚" },
-  { id: 4, name: "Banana Prata", portion: "1 un", cal: 90, icon: "🍌" },
-];
+const DAILY_GOAL = 2000;
+const MEAL_BY_HOUR = (hour: number) => {
+  if (hour < 10) return "breakfast";
+  if (hour < 15) return "lunch";
+  if (hour < 18) return "snack";
+  return "dinner";
+};
 
 export default function PatientDashboard() {
-  const [calories, setCalories] = useState(1245);
-  const [proteins, setProteins] = useState(65);
+  const [calories, setCalories] = useState(0);
+  const [proteins, setProteins] = useState(0);
+  const [carbs, setCarbs] = useState(0);
+  const [fats, setFats] = useState(0);
   const [isLogging, setIsLogging] = useState(false);
-  const [selectedFoods, setSelectedFoods] = useState<number[]>([]);
   const [isSimpleMode, setIsSimpleMode] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [suggestions, setSuggestions] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedFood, setSelectedFood] = useState<{ id: string; name: string } | null>(null);
+  const [grams, setGrams] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const checkSimpleMode = () => {
@@ -34,30 +42,82 @@ export default function PatientDashboard() {
     return () => window.removeEventListener('storage', checkSimpleMode);
   }, []);
 
-  const toggleFood = (id: number) => {
-    if (selectedFoods.includes(id)) {
-      setSelectedFoods(selectedFoods.filter(fid => fid !== id));
-    } else {
-      setSelectedFoods([...selectedFoods, id]);
+  useEffect(() => {
+    fetch(`/api/patient/diary?date=${new Date().toISOString().slice(0, 10)}`)
+      .then((res) => res.json())
+      .then((payload) => {
+        setCalories(Math.round(payload?.totals?.energy_kcal ?? 0));
+        setProteins(Math.round(payload?.totals?.protein_g ?? 0));
+        setCarbs(Math.round(payload?.totals?.carbs_g ?? 0));
+        setFats(Math.round(payload?.totals?.fat_g ?? 0));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!searchTerm) {
+      setSuggestions([]);
+      return;
     }
-  };
+    const controller = new AbortController();
+    fetch(`/api/patient/foods?q=${encodeURIComponent(searchTerm)}&limit=6`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((payload) => setSuggestions(payload.results ?? []))
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, [searchTerm]);
 
   const handleLogMeal = () => {
-    // Calculate totals from selected
-    const totalCalAdded = selectedFoods.reduce((acc, id) => {
-      const food = FOOD_DATABASE.find(f => f.id === id);
-      return acc + (food?.cal || 0);
-    }, 0);
+    setIsLogging(true);
+  };
 
-    // Apply strict "Animation" Logic
-    setCalories(prev => prev + totalCalAdded);
-    setIsLogging(false);
-    setSelectedFoods([]);
-
-    // Improved Feedback
-    toast.success(`Refeição registrada!`, {
-      description: `+${totalCalAdded} kcal adicionadas ao seu diário.`
-    });
+  const handleQuickAdd = async () => {
+    if (!selectedFood || !grams) return;
+    const numericGrams = Number.parseFloat(grams.replace(",", ".").match(/\d+([.,]\d+)?/)?.[0] ?? "");
+    if (Number.isNaN(numericGrams) || numericGrams <= 0) {
+      toast.error("Quantidade inválida.", {
+        description: "Informe um valor em gramas (ex: 150 g).",
+      });
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await fetch("/api/patient/meal-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: new Date().toISOString().slice(0, 10),
+          mealType: MEAL_BY_HOUR(new Date().getHours()),
+          foodId: selectedFood.id,
+          grams: numericGrams,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error ?? "Não foi possível salvar.");
+      }
+      await trackEvent("meal_log_complete", { source: "dashboard" });
+      const refresh = await fetch(`/api/patient/diary?date=${new Date().toISOString().slice(0, 10)}`);
+      const payload = await refresh.json();
+      setCalories(Math.round(payload?.totals?.energy_kcal ?? 0));
+      setProteins(Math.round(payload?.totals?.protein_g ?? 0));
+      toast.success(`Refeição registrada!`, {
+        description: `Item adicionado ao seu diário.`
+      });
+      setIsLogging(false);
+      setSearchTerm("");
+      setSelectedFood(null);
+      setGrams("");
+    } catch (err) {
+      toast.error("Não foi possível salvar.", {
+        description: err instanceof Error ? err.message : "Tente novamente.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -89,11 +149,10 @@ export default function PatientDashboard() {
               <div className="relative group cursor-pointer hover:scale-105 transition-transform duration-300">
                 <CircularProgress
                   value={calories}
-                  max={2000}
+                  max={DAILY_GOAL}
                   size="lg"
                   label={calories.toString()}
-                  sublabel="restantes" /* Microcopy Improvement: 'kcal' -> 'restantes' if subtracting, or keep 'consumidas' context. Code adds up, so 'consumidas' implied. Kept generic or updated? Analysis suggested clarifying. */
-                /* Actually code counts UP. 1245/2000. So 1245 consumidas. label shows 1245. */
+                  sublabel="consumidas"
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 rounded-full backdrop-blur-[2px]">
                   <span className="text-xs font-bold text-primary">Ver Macros</span>
@@ -102,7 +161,7 @@ export default function PatientDashboard() {
             ) : (
               <div className="flex flex-col items-center">
                 <span className="text-4xl font-black text-foreground tabular-nums tracking-tight">{calories}</span>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Kcal Consumidas</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Kcal consumidas</span>
                 <Badge className="mt-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none dark:bg-emerald-900/40 dark:text-emerald-400">
                   Dentro da meta
                 </Badge>
@@ -125,14 +184,31 @@ export default function PatientDashboard() {
                   </div>
                 </div>
 
-                {/* Carbs Bar (Static Demo) */}
+                {/* Carbs Bar */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-foreground">Carboidrato</span>
-                    <span className="text-muted-foreground font-medium">120g <span className="text-muted-foreground/50">/ 200g</span></span>
+                    <span className="text-muted-foreground font-medium">{carbs}g <span className="text-muted-foreground/50">/ 200g</span></span>
                   </div>
                   <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-[hsl(var(--macro-carb))] w-[60%] rounded-full" />
+                    <div
+                      className="h-full bg-[hsl(var(--macro-carb))] rounded-full"
+                      style={{ width: `${Math.min((carbs / 200) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Fat Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-foreground">Gordura</span>
+                    <span className="text-muted-foreground font-medium">{fats}g <span className="text-muted-foreground/50">/ 70g</span></span>
+                  </div>
+                  <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[hsl(var(--macro-fat))] rounded-full"
+                      style={{ width: `${Math.min((fats / 70) * 100, 100)}%` }}
+                    />
                   </div>
                 </div>
               </div>
@@ -196,7 +272,10 @@ export default function PatientDashboard() {
 
               {/* Call to Action */}
               <Button
-                onClick={() => setIsLogging(true)}
+                onClick={() => {
+                  trackEvent("meal_log_start", { source: "dashboard" });
+                  setIsLogging(true);
+                }}
                 className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-[0.98] transition-all"
               >
                 Registrar Refeição
@@ -240,59 +319,60 @@ export default function PatientDashboard() {
               <div className="p-5 border-b border-border flex justify-between items-center bg-muted/30">
                 <div>
                   <h3 className="font-bold text-xl text-foreground">Registrar Refeição</h3>
-                  <p className="text-xs text-muted-foreground">Adicione os itens ao seu diário</p>
+                  <p className="text-xs text-muted-foreground">Adicione um item rápido ao seu diário</p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setIsLogging(false)} className="h-9 w-9 rounded-full bg-background border border-border hover:bg-muted text-muted-foreground">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* Food Selection List */}
-              <div className="p-4 max-h-[60vh] overflow-y-auto space-y-3">
-                <p className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider px-1">Sugestões Recentes</p>
-                {FOOD_DATABASE.map((food) => (
-                  <button
-                    key={food.id}
-                    onClick={() => toggleFood(food.id)}
-                    className={cn(
-                      "w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 group text-left",
-                      selectedFoods.includes(food.id)
-                        ? "bg-emerald-50/80 border-emerald-500 shadow-[0_0_0_1px_rgba(16,185,129,1)] dark:bg-emerald-950/30 dark:border-emerald-500/50 dark:shadow-[0_0_0_1px_rgba(16,185,129,0.5)]"
-                        : "bg-card border-border hover:bg-muted/50 hover:border-muted-foreground/30"
-                    )}
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl filter drop-shadow-sm group-hover:scale-110 transition-transform">{food.icon}</span>
-                      <div>
-                        <p className={cn("font-bold text-sm", selectedFoods.includes(food.id) ? "text-emerald-900 dark:text-emerald-100" : "text-foreground")}>
-                          {food.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{food.portion}</p>
-                      </div>
+              {/* Quick Add */}
+              <div className="p-5 space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar alimento (ex: arroz integral)"
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(event) => {
+                      setSearchTerm(event.target.value);
+                      setSelectedFood(null);
+                    }}
+                  />
+                  {suggestions.length > 0 && !selectedFood && (
+                    <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-md border border-border bg-card shadow-lg">
+                      {suggestions.map((suggestion) => (
+                        <button
+                          type="button"
+                          key={suggestion.id}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50"
+                          onClick={() => {
+                            setSelectedFood(suggestion);
+                            setSearchTerm(suggestion.name);
+                            setSuggestions([]);
+                          }}
+                        >
+                          {suggestion.name}
+                        </button>
+                      ))}
                     </div>
-                    <div className="text-right">
-                      {selectedFoods.includes(food.id) && (
-                        <div className="mb-1 flex justify-end">
-                          <div className="bg-emerald-500 text-white rounded-full p-0.5 w-4 h-4 flex items-center justify-center">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        </div>
-                      )}
-                      <span className="block font-bold text-muted-foreground text-sm tabular-nums">{food.cal}</span>
-                      <span className="text-[10px] text-muted-foreground/70">kcal</span>
-                    </div>
-                  </button>
-                ))}
+                  )}
+                </div>
+                <Input
+                  placeholder="Quantidade (g)"
+                  value={grams}
+                  onChange={(event) => setGrams(event.target.value)}
+                />
               </div>
 
               {/* Modal Footer / Action */}
               <div className="p-5 border-t border-border bg-muted/20">
                 <Button
-                  onClick={handleLogMeal}
-                  disabled={selectedFoods.length === 0}
+                  onClick={handleQuickAdd}
+                  disabled={!selectedFood || !grams || saving}
                   className="w-full h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all"
                 >
-                  Adicionar {selectedFoods.length > 0 && `(${selectedFoods.reduce((acc, id) => acc + (FOOD_DATABASE.find(f => f.id === id)?.cal || 0), 0)} kcal)`}
+                  {saving ? "Salvando..." : "Adicionar ao diário"}
                 </Button>
               </div>
             </div>

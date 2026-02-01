@@ -244,6 +244,9 @@ export default function PatientSymptomsPage() {
                   </Button>
                 )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                O SOS Nutri é um canal de contato com sua nutricionista e não substitui atendimento médico.
+              </p>
             </CardContent>
           </Card>
 

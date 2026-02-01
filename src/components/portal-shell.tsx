@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
+import DevSessionBridge from "@/components/dev-session-bridge";
 
 interface NavItem {
   href: string;
@@ -11,6 +12,7 @@ interface PortalShellProps {
   title: string;
   subtitle: string;
   nav: NavItem[];
+  devRole: "OWNER" | "TENANT_ADMIN" | "TEAM" | "PATIENT";
   children: React.ReactNode;
 }
 
@@ -19,9 +21,11 @@ export function PortalShell({
   subtitle,
   nav,
   children,
+  devRole,
 }: PortalShellProps) {
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-emerald-50/60 via-slate-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <DevSessionBridge role={devRole} />
       <header className="border-b border-border/70 bg-background/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-6 md:flex-row md:items-end md:justify-between">
           <div>

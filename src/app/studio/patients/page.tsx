@@ -10,7 +10,7 @@ export default function StudioPatientsPage() {
       <div className="grid gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Pacientes</h1>
-          <Button className="bg-slate-900 text-white hover:bg-slate-800">
+          <Button>
             <Plus className="mr-2 h-4 w-4" /> Novo Paciente
           </Button>
         </div>
@@ -39,9 +39,9 @@ export default function StudioPatientsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-card">
                   {[
-                    { name: "Maria Silva", status: "Active", last: "15 Jan 2026", plan: "Hipertrofia v3" },
-                    { name: "João Pereira", status: "Active", last: "09 Jan 2026", plan: "Manutenção v2" },
-                    { name: "Ana Costa", status: "Pending", last: "22 Jan 2026", plan: "Em avaliação" },
+                    { name: "Maria Silva", status: "Ativo", last: "15 Jan 2026", plan: "Hipertrofia v3" },
+                    { name: "João Pereira", status: "Ativo", last: "09 Jan 2026", plan: "Manutenção v2" },
+                    { name: "Ana Costa", status: "Pendente", last: "22 Jan 2026", plan: "Em avaliação" },
                   ].map((patient, i) => (
                     <tr key={i} className="hover:bg-muted/40/50 transition-colors group">
                       <td className="px-4 py-3 font-medium text-foreground">
@@ -53,11 +53,11 @@ export default function StudioPatientsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${patient.status === "Active"
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${patient.status === "Ativo"
                           ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100"
                           : "bg-gradient-to-br from-emerald-50 to-white text-emerald-700 dark:text-emerald-400 border border-emerald-100"
                           }`}>
-                          {patient.status === "Active" ? "Ativo" : "Pendente"}
+                          {patient.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{patient.last}</td>

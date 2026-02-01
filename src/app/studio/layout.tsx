@@ -9,6 +9,7 @@ export default function StudioLayout({
     <PortalShell
       title="Portal do Nutricionista"
       subtitle="Gerencie pacientes, consultas e planos com auditoria completa."
+      devRole="TENANT_ADMIN"
       nav={[
         { href: "/studio/patients", label: "Pacientes" },
         { href: "/studio/protocols", label: "Protocolos" },
