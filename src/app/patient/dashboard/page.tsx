@@ -1,31 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, X, ArrowRight, Flame, Droplets, Moon, Search } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, X, ArrowRight, Flame, Droplets, Moon, Check, Search, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { trackEvent } from "@/lib/analytics";
 
-const DAILY_GOAL = 2000;
-const MEAL_BY_HOUR = (hour: number) => {
-  if (hour < 10) return "breakfast";
-  if (hour < 15) return "lunch";
-  if (hour < 18) return "snack";
-  return "dinner";
-};
+interface DashboardData {
+  profile: { name: string; currentWeight: number; targetWeight: number | null; goal: string } | null;
+  today: { calories: number; protein: number; carbs: number; fat: number; mealsLogged: number };
+  goals: { calories: number; protein: number; carbs: number; fat: number };
+  consistency: { daysThisWeek: number; streak: number };
+}
+
+interface FoodItem {
+  id: string;
+  name: string;
+  nutrients: { calories: number; protein: number; carbs: number; fat: number };
+  histamineRisk: "low" | "medium" | "high";
+}
 
 export default function PatientDashboard() {
-  const [calories, setCalories] = useState(0);
-  const [proteins, setProteins] = useState(0);
-  const [carbs, setCarbs] = useState(0);
-  const [fats, setFats] = useState(0);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLogging, setIsLogging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
+  const [selectedFoods, setSelectedFoods] = useState<Array<{ food: FoodItem; grams: number }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSimpleMode, setIsSimpleMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<Array<{ id: string; name: string }>>([]);
@@ -42,22 +52,40 @@ export default function PatientDashboard() {
     return () => window.removeEventListener('storage', checkSimpleMode);
   }, []);
 
-  useEffect(() => {
-    fetch(`/api/patient/diary?date=${new Date().toISOString().slice(0, 10)}`)
-      .then((res) => res.json())
-      .then((payload) => {
-        setCalories(Math.round(payload?.totals?.energy_kcal ?? 0));
-        setProteins(Math.round(payload?.totals?.protein_g ?? 0));
-        setCarbs(Math.round(payload?.totals?.carbs_g ?? 0));
-        setFats(Math.round(payload?.totals?.fat_g ?? 0));
-      })
-      .catch(() => undefined);
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/patient/dashboard");
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (!searchTerm) {
-      setSuggestions([]);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const searchFoods = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
       return;
+    }
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/foods/search?q=${encodeURIComponent(query)}&limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.foods || []);
+      }
+    } catch (error) {
+      console.error("Error searching foods:", error);
+    } finally {
+      setIsSearching(false);
     }
     const controller = new AbortController();
     fetch(`/api/patient/foods?q=${encodeURIComponent(searchTerm)}&limit=6`, {
@@ -67,69 +95,108 @@ export default function PatientDashboard() {
       .then((payload) => setSuggestions(payload.results ?? []))
       .catch(() => undefined);
 
-    return () => controller.abort();
-  }, [searchTerm]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchFoods(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const handleQuickAdd = async () => {
-    if (!selectedFood || !grams) return;
-    const numericGrams = Number.parseFloat(grams.replace(",", ".").match(/\d+([.,]\d+)?/)?.[0] ?? "");
-    if (Number.isNaN(numericGrams) || numericGrams <= 0) {
-      toast.error("Quantidade inválida.", {
-        description: "Informe um valor em gramas (ex: 150 g).",
-      });
-      return;
+  const toggleFood = (food: FoodItem) => {
+    const existing = selectedFoods.find(sf => sf.food.id === food.id);
+    if (existing) {
+      setSelectedFoods(selectedFoods.filter(sf => sf.food.id !== food.id));
+    } else {
+      setSelectedFoods([...selectedFoods, { food, grams: 100 }]);
     }
-    setSaving(true);
+  };
+
+  const handleLogMeal = async () => {
+    if (selectedFoods.length === 0) return;
+
+    setIsSaving(true);
     try {
-      const response = await fetch("/api/patient/meal-items", {
+      const response = await fetch("/api/patient/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: new Date().toISOString().slice(0, 10),
-          mealType: MEAL_BY_HOUR(new Date().getHours()),
-          foodId: selectedFood.id,
-          grams: numericGrams,
+          type: "lunch",
+          items: selectedFoods.map(sf => ({
+            foodId: sf.food.id,
+            grams: sf.grams,
+          })),
         }),
       });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? "Não foi possível salvar.");
+
+      if (response.ok) {
+        const totalCal = selectedFoods.reduce((acc, sf) =>
+          acc + (sf.food.nutrients.calories * sf.grams / 100), 0
+        );
+
+        toast.success(`Refeição registrada!`, {
+          description: `+${Math.round(totalCal)} kcal adicionadas ao seu diário.`
+        });
+
+        setIsLogging(false);
+        setSelectedFoods([]);
+        setSearchQuery("");
+        setSearchResults([]);
+        fetchDashboardData();
+      } else {
+        throw new Error("Failed to save meal");
       }
-      await trackEvent("meal_log_complete", { source: "dashboard" });
-      const refresh = await fetch(`/api/patient/diary?date=${new Date().toISOString().slice(0, 10)}`);
-      const payload = await refresh.json();
-      setCalories(Math.round(payload?.totals?.energy_kcal ?? 0));
-      setProteins(Math.round(payload?.totals?.protein_g ?? 0));
-      toast.success(`Refeição registrada!`, {
-        description: `Item adicionado ao seu diário.`
+    } catch (error) {
+      toast.error("Erro ao salvar refeição", {
+        description: "Tente novamente em alguns instantes."
       });
-      setIsLogging(false);
-      setSearchTerm("");
-      setSelectedFood(null);
-      setGrams("");
-    } catch (err) {
-      toast.error("Não foi possível salvar.", {
-        description: err instanceof Error ? err.message : "Tente novamente.",
-      });
+      console.error("Error saving meal:", error);
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
+
+  const calories = dashboardData?.today.calories || 0;
+  const proteins = dashboardData?.today.protein || 0;
+  const carbs = dashboardData?.today.carbs || 0;
+  const goalCalories = dashboardData?.goals.calories || 2000;
+  const goalProtein = dashboardData?.goals.protein || 120;
+  const goalCarbs = dashboardData?.goals.carbs || 200;
+  const userName = dashboardData?.profile?.name?.split(" ")[0] || "Usuário";
+  const streak = dashboardData?.consistency.streak || 0;
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="patient">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col gap-8 max-w-md mx-auto md:max-w-4xl relative animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-        {/* Header - Improved Microcopy & Visuals */}
+        {/* Header */}
         <header className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Boa tarde, Maria</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{getGreeting()}, {userName}</h1>
             <p className="text-muted-foreground text-sm font-medium">Hoje é um ótimo dia para bater sua meta!</p>
           </div>
-          {!isSimpleMode && (
+          {!isSimpleMode && streak > 0 && (
             <div className="flex items-center gap-1.5 bg-gradient-to-br from-emerald-50 to-white text-emerald-600 px-3 py-1.5 rounded-full border border-emerald-100 animate-in fade-in slide-in-from-top-2 shadow-sm dark:from-emerald-950/40 dark:to-emerald-900/10 dark:border-emerald-900/50 dark:text-emerald-400">
               <Flame className="w-4 h-4 text-emerald-600 fill-emerald-600 dark:text-emerald-500 dark:fill-emerald-500" />
-              <span className="text-xs font-bold">12 dias</span>
+              <span className="text-xs font-bold">{streak} dias</span>
             </div>
           )}
         </header>
@@ -140,15 +207,14 @@ export default function PatientDashboard() {
           isSimpleMode ? 'max-w-sm mx-auto' : ''
         )}>
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            {/* Animated Ring */}
             {!isSimpleMode ? (
               <div className="relative group cursor-pointer hover:scale-105 transition-transform duration-300">
                 <CircularProgress
                   value={calories}
-                  max={DAILY_GOAL}
+                  max={goalCalories}
                   size="lg"
                   label={calories.toString()}
-                  sublabel="consumidas"
+                  sublabel="kcal"
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 rounded-full backdrop-blur-[2px]">
                   <span className="text-xs font-bold text-primary">Ver Macros</span>
@@ -159,7 +225,7 @@ export default function PatientDashboard() {
                 <span className="text-4xl font-black text-foreground tabular-nums tracking-tight">{calories}</span>
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Kcal consumidas</span>
                 <Badge className="mt-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none dark:bg-emerald-900/40 dark:text-emerald-400">
-                  Dentro da meta
+                  {calories <= goalCalories ? "Dentro da meta" : "Acima da meta"}
                 </Badge>
               </div>
             )}
@@ -170,12 +236,12 @@ export default function PatientDashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-foreground">Proteína</span>
-                    <span className="text-muted-foreground font-medium">{proteins}g <span className="text-muted-foreground/50">/ 120g</span></span>
+                    <span className="text-muted-foreground font-medium">{proteins}g <span className="text-muted-foreground/50">/ {goalProtein}g</span></span>
                   </div>
                   <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[hsl(var(--macro-protein))] rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${(proteins / 120) * 100}%` }}
+                      style={{ width: `${Math.min((proteins / goalProtein) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
@@ -184,26 +250,12 @@ export default function PatientDashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-foreground">Carboidrato</span>
-                    <span className="text-muted-foreground font-medium">{carbs}g <span className="text-muted-foreground/50">/ 200g</span></span>
+                    <span className="text-muted-foreground font-medium">{carbs}g <span className="text-muted-foreground/50">/ {goalCarbs}g</span></span>
                   </div>
                   <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[hsl(var(--macro-carb))] rounded-full"
-                      style={{ width: `${Math.min((carbs / 200) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fat Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-semibold text-foreground">Gordura</span>
-                    <span className="text-muted-foreground font-medium">{fats}g <span className="text-muted-foreground/50">/ 70g</span></span>
-                  </div>
-                  <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[hsl(var(--macro-fat))] rounded-full"
-                      style={{ width: `${Math.min((fats / 70) * 100, 100)}%` }}
+                      className="h-full bg-[hsl(var(--macro-carb))] rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${Math.min((carbs / goalCarbs) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
@@ -215,7 +267,7 @@ export default function PatientDashboard() {
         {/* Next Meal & Hydration */}
         <div className={`grid grid-cols-1 ${isSimpleMode ? '' : 'md:grid-cols-2'} gap-6`}>
 
-          {/* Section: Next Meal (Premium Card) */}
+          {/* Section: Next Meal */}
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-foreground">Sua Próxima Refeição</h2>
@@ -227,7 +279,6 @@ export default function PatientDashboard() {
             </div>
 
             <Card className="group relative overflow-hidden border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:border-muted-foreground/20">
-              {/* Header Semântico */}
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400">
@@ -250,7 +301,6 @@ export default function PatientDashboard() {
                 )}
               </div>
 
-              {/* Sugestão Visual - Nudge */}
               {!isSimpleMode && (
                 <div className="mb-5 rounded-xl bg-muted/30 p-3 border border-border/50 flex items-center gap-3 transition-colors group-hover:border-border">
                   <div className="h-10 w-10 shrink-0 rounded-lg bg-background shadow-sm flex items-center justify-center text-lg filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all border border-border/50">
@@ -266,7 +316,6 @@ export default function PatientDashboard() {
                 </div>
               )}
 
-              {/* Call to Action */}
               <Button
                 onClick={() => {
                   trackEvent("meal_log_start", { source: "dashboard" });
@@ -280,12 +329,11 @@ export default function PatientDashboard() {
             </Card>
           </section>
 
-          {/* Section: Hydration (Matched Style) */}
+          {/* Section: Hydration */}
           {!isSimpleMode && (
             <section className="space-y-4">
               <h2 className="text-lg font-bold text-foreground">Hidratação</h2>
               <Card className="p-6 bg-blue-50/50 border-blue-100 shadow-sm flex flex-col items-center justify-center gap-4 h-[calc(100%-2.5rem)] dark:bg-blue-950/10 dark:border-blue-900/20 relative overflow-hidden group">
-                {/* Decorative background blur/glow */}
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/10 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-400/20 transition-all duration-700" />
 
                 <div className="relative z-10">
@@ -315,60 +363,128 @@ export default function PatientDashboard() {
               <div className="p-5 border-b border-border flex justify-between items-center bg-muted/30">
                 <div>
                   <h3 className="font-bold text-xl text-foreground">Registrar Refeição</h3>
-                  <p className="text-xs text-muted-foreground">Adicione um item rápido ao seu diário</p>
+                  <p className="text-xs text-muted-foreground">Busque e adicione alimentos ao seu diário</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setIsLogging(false)} className="h-9 w-9 rounded-full bg-background border border-border hover:bg-muted text-muted-foreground">
+                <Button variant="ghost" size="icon" onClick={() => { setIsLogging(false); setSearchQuery(""); setSearchResults([]); }} className="h-9 w-9 rounded-full bg-background border border-border hover:bg-muted text-muted-foreground">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* Quick Add */}
-              <div className="p-5 space-y-4">
+              {/* Search */}
+              <div className="p-4 border-b border-border">
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar alimento (ex: arroz integral)"
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(event) => {
-                      setSearchTerm(event.target.value);
-                      setSelectedFood(null);
-                    }}
+                    placeholder="Buscar alimento (ex: frango, arroz...)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-11"
                   />
-                  {suggestions.length > 0 && !selectedFood && (
-                    <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-md border border-border bg-card shadow-lg">
-                      {suggestions.map((suggestion) => (
-                        <button
-                          type="button"
-                          key={suggestion.id}
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50"
-                          onClick={() => {
-                            setSelectedFood(suggestion);
-                            setSearchTerm(suggestion.name);
-                            setSuggestions([]);
-                          }}
-                        >
-                          {suggestion.name}
-                        </button>
-                      ))}
-                    </div>
+                  {isSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                   )}
                 </div>
-                <Input
-                  placeholder="Quantidade (g)"
-                  value={grams}
-                  onChange={(event) => setGrams(event.target.value)}
-                />
               </div>
+
+              {/* Food Selection List */}
+              <div className="p-4 max-h-[40vh] overflow-y-auto space-y-3">
+                {searchResults.length > 0 ? (
+                  <>
+                    <p className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider px-1">Resultados</p>
+                    {searchResults.map((food) => {
+                      const isSelected = selectedFoods.some(sf => sf.food.id === food.id);
+                      return (
+                        <button
+                          key={food.id}
+                          onClick={() => toggleFood(food)}
+                          className={cn(
+                            "w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 group text-left",
+                            isSelected
+                              ? "bg-emerald-50/80 border-emerald-500 shadow-[0_0_0_1px_rgba(16,185,129,1)] dark:bg-emerald-950/30 dark:border-emerald-500/50"
+                              : "bg-card border-border hover:bg-muted/50 hover:border-muted-foreground/30"
+                          )}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                              <span className="text-lg">🍽️</span>
+                            </div>
+                            <div>
+                              <p className={cn("font-bold text-sm", isSelected ? "text-emerald-900 dark:text-emerald-100" : "text-foreground")}>
+                                {food.name}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">por 100g</p>
+                                {food.histamineRisk === "high" && (
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Alto histamina</Badge>
+                                )}
+                                {food.histamineRisk === "medium" && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700">Médio</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {isSelected && (
+                              <div className="mb-1 flex justify-end">
+                                <div className="bg-emerald-500 text-white rounded-full p-0.5 w-4 h-4 flex items-center justify-center">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              </div>
+                            )}
+                            <span className="block font-bold text-muted-foreground text-sm tabular-nums">{food.nutrients.calories}</span>
+                            <span className="text-[10px] text-muted-foreground/70">kcal</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </>
+                ) : searchQuery.length >= 2 && !isSearching ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">Nenhum alimento encontrado</p>
+                    <p className="text-xs mt-1">Tente outro termo de busca</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Digite para buscar alimentos</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Foods Summary */}
+              {selectedFoods.length > 0 && (
+                <div className="p-4 border-t border-border bg-muted/10">
+                  <p className="text-xs font-bold text-muted-foreground uppercase mb-2">Selecionados ({selectedFoods.length})</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFoods.map(sf => (
+                      <Badge key={sf.food.id} variant="secondary" className="flex items-center gap-1">
+                        {sf.food.name}
+                        <button onClick={() => toggleFood(sf.food)} className="ml-1 hover:text-destructive">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Modal Footer / Action */}
               <div className="p-5 border-t border-border bg-muted/20">
                 <Button
-                  onClick={handleQuickAdd}
-                  disabled={!selectedFood || !grams || saving}
+                  onClick={handleLogMeal}
+                  disabled={selectedFoods.length === 0 || isSaving}
                   className="w-full h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all"
                 >
-                  {saving ? "Salvando..." : "Adicionar ao diário"}
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      Adicionar {selectedFoods.length > 0 && `(${Math.round(selectedFoods.reduce((acc, sf) => acc + sf.food.nutrients.calories, 0))} kcal)`}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
