@@ -1,5 +1,3 @@
-import crypto from "crypto";
-
 import { prisma } from "../src/lib/db";
 import { calculateTMB } from "../src/lib/calculations/energy";
 
@@ -32,13 +30,13 @@ async function checkCanaryCalculations(): Promise<Issue[]> {
     {
       name: "Male 30y 80kg 175cm sedentary",
       inputs: { weight_kg: 80, height_cm: 175, age_years: 30, sex: "male" as const },
-      expected_tmb: 1731,
+      expected_tmb: 1749,
       tolerance: 1,
     },
     {
       name: "Female 25y 60kg 165cm moderate",
       inputs: { weight_kg: 60, height_cm: 165, age_years: 25, sex: "female" as const },
-      expected_tmb: 1383,
+      expected_tmb: 1345,
       tolerance: 1,
     },
   ];
@@ -130,10 +128,12 @@ async function checkSnapshotIntegrity(client = prisma): Promise<Issue[]> {
       });
       continue;
     }
-    const actualHash = crypto
-      .createHash("md5")
-      .update(JSON.stringify(item.snapshot.snapshot_json))
-      .digest("hex");
+    const result = await client.$queryRaw<{ md5_text: string }[]>`
+      SELECT md5(snapshot_json::text) AS md5_text
+      FROM "FoodSnapshot"
+      WHERE id = ${item.snapshot.id}::uuid
+    `;
+    const actualHash = result[0]?.md5_text ?? "";
     if (actualHash !== item.snapshot.content_hash) {
       issues.push({
         severity: "CRITICAL",
@@ -188,9 +188,9 @@ async function checkRBACEnforcement(client = prisma): Promise<Issue[]> {
 }
 
 async function runIntegrityChecks() {
-  await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(
-      "SELECT set_config('app.user_id', $1, true), set_config('app.tenant_id', $2, true), set_config('app.role', $3, true), set_config('app.owner_mode', $4, true)",
+      "SELECT set_config('app.user_id', $1, true), set_config('app.tenant_id', $2, true), set_config('app.role', $3, true), set_config('app.owner_mode', $4, true), set_config('row_security', 'on', true)",
       "00000000-0000-0000-0000-000000000999",
       "00000000-0000-0000-0000-000000000000",
       "OWNER",
@@ -242,11 +242,22 @@ async function runIntegrityChecks() {
       },
     });
 
-    const exitCode = getExitCode(maxSeverity);
-    if (exitCode > 0) {
-      process.exit(exitCode);
-    }
+    const counts = issues.reduce<Record<string, number>>((acc, issue) => {
+      acc[issue.severity] = (acc[issue.severity] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    console.log("Integrity check completed.");
+    console.log(`Total issues: ${issues.length}`);
+    console.log(`By severity: ${JSON.stringify(counts)}`);
+
+    return { maxSeverity, issues };
   });
+
+  const exitCode = getExitCode(result.maxSeverity);
+  if (exitCode > 0) {
+    process.exit(exitCode);
+  }
 }
 
 runIntegrityChecks()

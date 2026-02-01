@@ -109,13 +109,18 @@ const DE_FOODS = [
 ];
 
 function buildNutrients(index: number) {
-  const base = 50 + index;
+  const protein = Number(((index % 20) + 5) / 2); // 2.5 - 12.5g
+  const carbs = Number(((index % 30) + 10) / 2); // 5 - 20g
+  const fat = Number(((index % 12) + 2) / 2); // 1 - 7g
+  const fiber = Number(((index % 8) + 1) / 2); // 0.5 - 4.5g
+  const energy = Number((protein * 4 + carbs * 4 + fat * 9).toFixed(1));
+
   return {
-    energy_kcal: base + 30,
-    protein_g: Number(((base % 20) + 5) / 2),
-    carbs_g: Number(((base % 40) + 10) / 2),
-    fat_g: Number(((base % 10) + 2) / 2),
-    fiber_g: Number(((base % 8) + 1) / 2),
+    energy_kcal: energy,
+    protein_g: protein,
+    carbs_g: carbs,
+    fat_g: fat,
+    fiber_g: fiber,
   };
 }
 
@@ -352,15 +357,16 @@ async function main() {
     );
 
     for (const [index, plan] of plans.entries()) {
-      const planVersion = await tx.planVersion.create({
-        data: {
-          tenant_id: plan.tenant_id,
-          plan_id: plan.id,
-          version_no: 1,
-          status: "published",
-          created_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-        },
-      });
+    const planVersion = await tx.planVersion.create({
+      data: {
+        tenant_id: plan.tenant_id,
+        plan_id: plan.id,
+        version_no: 1,
+        status: "published",
+        created_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+      },
+    });
+    const publishedAt = new Date();
 
       const foodPool = plan.tenant_id === tenantA.id ? tenantAData.foods : tenantBData.foods;
       const food = foodPool[index % foodPool.length];
@@ -397,23 +403,23 @@ async function main() {
         },
       });
 
-      await tx.planApproval.create({
-        data: {
-          tenant_id: plan.tenant_id,
-          plan_version_id: planVersion.id,
-          approved_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-          approved_at: new Date("2026-01-12"),
-        },
-      });
+    await tx.planApproval.create({
+      data: {
+        tenant_id: plan.tenant_id,
+        plan_version_id: planVersion.id,
+        approved_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+        approved_at: publishedAt,
+      },
+    });
 
-      await tx.planPublication.create({
-        data: {
-          tenant_id: plan.tenant_id,
-          plan_version_id: planVersion.id,
-          published_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-          published_at: new Date("2026-01-12"),
-        },
-      });
+    await tx.planPublication.create({
+      data: {
+        tenant_id: plan.tenant_id,
+        plan_version_id: planVersion.id,
+        published_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+        published_at: publishedAt,
+      },
+    });
 
       for (let day = 0; day < 5; day += 1) {
         const date = new Date();

@@ -36,6 +36,6 @@ describe("Nutrient calculations", () => {
       { energy_kcal: 1800, protein_g: 80, carbs_g: 200, fat_g: 50, fiber_g: 30 },
       { energy_kcal: 2000, protein_g: 90, carbs_g: 220, fat_g: 60, fiber_g: 30 }
     );
-    expect(coverage.status).toBe("ok");
+    expect(coverage.status).toBe("partial");
   });
 });

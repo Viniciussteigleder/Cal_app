@@ -202,7 +202,7 @@ model User {
 model Patient {
   id               String        @id @default(uuid())
   tenant_id        String
-  user_id          String?
+  user_id          String?       @unique
   assigned_team_id String?
   status           PatientStatus
   created_at       DateTime      @default(now())
@@ -359,6 +359,7 @@ model PatientDataPolicy {
   updated_by     String
   created_at     DateTime @default(now())
 
+  tenant             Tenant  @relation(fields: [tenant_id], references: [id])
   patient            Patient @relation(fields: [patient_id], references: [id])
   category_overrides PatientCategoryOverride[]
 
@@ -388,6 +389,7 @@ model FoodSnapshot {
   content_hash       String   @db.Text @default(dbgenerated("md5(snapshot_json::text)"))
   created_at         DateTime @default(now())
 
+  tenant          Tenant        @relation(fields: [tenant_id], references: [id])
   food            FoodCanonical @relation(fields: [food_id], references: [id])
   dataset_release DatasetRelease @relation(fields: [dataset_release_id], references: [id])
   meal_items      MealItem[]
@@ -405,6 +407,7 @@ model Meal {
   totals_json Json?
   created_at  DateTime @default(now())
 
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id])
   patient Patient @relation(fields: [patient_id], references: [id])
   items   MealItem[]
 
@@ -431,6 +434,7 @@ model Plan {
   status     PlanStatus
   created_at DateTime   @default(now())
 
+  tenant   Tenant       @relation(fields: [tenant_id], references: [id])
   patient  Patient      @relation(fields: [patient_id], references: [id])
   versions PlanVersion[]
 }

@@ -56,7 +56,7 @@ CREATE TABLE "User" (
 CREATE TABLE "Patient" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "tenant_id" uuid NOT NULL REFERENCES "Tenant"("id") ON DELETE RESTRICT,
-  "user_id" uuid REFERENCES "User"("id") ON DELETE SET NULL,
+  "user_id" uuid UNIQUE REFERENCES "User"("id") ON DELETE SET NULL,
   "assigned_team_id" uuid,
   "status" "PatientStatus" NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT now()
@@ -166,7 +166,7 @@ CREATE TABLE "ValidationReport" (
 
 CREATE TABLE "PatientDataPolicy" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "tenant_id" uuid NOT NULL,
+  "tenant_id" uuid NOT NULL REFERENCES "Tenant"("id") ON DELETE CASCADE,
   "patient_id" uuid NOT NULL REFERENCES "Patient"("id") ON DELETE CASCADE,
   "version_number" int NOT NULL,
   "is_active" boolean NOT NULL DEFAULT true,
@@ -190,7 +190,7 @@ CREATE TABLE "PatientCategoryOverride" (
 
 CREATE TABLE "FoodSnapshot" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "tenant_id" uuid NOT NULL,
+  "tenant_id" uuid NOT NULL REFERENCES "Tenant"("id") ON DELETE CASCADE,
   "patient_id" uuid NOT NULL REFERENCES "Patient"("id") ON DELETE CASCADE,
   "food_id" uuid NOT NULL REFERENCES "FoodCanonical"("id") ON DELETE CASCADE,
   "snapshot_json" jsonb NOT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE "FoodSnapshot" (
 
 CREATE TABLE "Meal" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "tenant_id" uuid NOT NULL,
+  "tenant_id" uuid NOT NULL REFERENCES "Tenant"("id") ON DELETE CASCADE,
   "patient_id" uuid NOT NULL REFERENCES "Patient"("id") ON DELETE CASCADE,
   "date" timestamptz NOT NULL,
   "type" "MealType" NOT NULL,
@@ -222,7 +222,7 @@ CREATE TABLE "MealItem" (
 
 CREATE TABLE "Plan" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "tenant_id" uuid NOT NULL,
+  "tenant_id" uuid NOT NULL REFERENCES "Tenant"("id") ON DELETE CASCADE,
   "patient_id" uuid NOT NULL REFERENCES "Patient"("id") ON DELETE CASCADE,
   "status" "PlanStatus" NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT now()

@@ -15,7 +15,7 @@ export async function withSession<T>(
 ) {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(
-      "SELECT set_config('app.user_id', $1, true), set_config('app.tenant_id', $2, true), set_config('app.role', $3, true), set_config('app.owner_mode', $4, true)",
+      "SELECT set_config('app.user_id', $1, true), set_config('app.tenant_id', $2, true), set_config('app.role', $3, true), set_config('app.owner_mode', $4, true), set_config('row_security', 'on', true)",
       claims.user_id,
       claims.tenant_id,
       claims.role,

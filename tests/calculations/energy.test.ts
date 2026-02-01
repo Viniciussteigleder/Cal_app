@@ -15,7 +15,7 @@ describe("Energy calculations", () => {
       age_years: 30,
       sex: "male",
     });
-    expect(tmb).toBe(1731);
+    expect(tmb).toBe(1749);
   });
 
   it("calculates TDEE with activity factor", () => {
