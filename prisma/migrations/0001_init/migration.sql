@@ -358,8 +358,15 @@ ALTER TABLE "CalcAudit" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "IntegrityCheckRun" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "IntegrityIssue" ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation ON "Tenant"
-  FOR SELECT USING (current_setting('app.role', true) = 'OWNER');
+CREATE POLICY tenant_owner_access ON "Tenant"
+  FOR ALL USING (
+    current_setting('app.role', true) = 'OWNER'
+    AND current_setting('app.owner_mode', true) = 'true'
+  )
+  WITH CHECK (
+    current_setting('app.role', true) = 'OWNER'
+    AND current_setting('app.owner_mode', true) = 'true'
+  );
 
 CREATE POLICY user_isolation ON "User"
   FOR ALL USING (

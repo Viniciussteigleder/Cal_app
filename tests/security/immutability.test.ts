@@ -6,9 +6,16 @@ describe("Snapshot immutability", () => {
   it("prevents update and delete on food_snapshot", async () => {
     const tenantId = "00000000-0000-0000-0000-000000000011";
     const userId = "00000000-0000-0000-0000-000000000012";
+    const ownerClaims = buildClaims({
+      tenant_id: tenantId,
+      user_id: "00000000-0000-0000-0000-000000000013",
+      role: "OWNER",
+    });
     const claims = buildClaims({ tenant_id: tenantId, user_id: userId, role: "TENANT_ADMIN" });
 
-    const snapshot = await withTestSession(claims, async (tx) => {
+    const snapshot = await withTestSession(
+      ownerClaims,
+      async (tx) => {
       const tenant = await tx.tenant.create({
         data: { id: tenantId, name: "Tenant Test", type: "B2C", status: "active" },
       });
@@ -58,7 +65,9 @@ describe("Snapshot immutability", () => {
           dataset_release_id: dataset.id,
         },
       });
-    });
+      },
+      { ownerMode: true }
+    );
 
     await expect(
       withTestSession(claims, (tx) =>

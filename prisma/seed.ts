@@ -119,8 +119,8 @@ function buildNutrients(index: number) {
   };
 }
 
-async function seedTenantData(tenantId: string, label: string) {
-  const tacoRelease = await prisma.datasetRelease.create({
+async function seedTenantData(tx: Prisma.TransactionClient, tenantId: string) {
+  const tacoRelease = await tx.datasetRelease.create({
     data: {
       tenant_id: tenantId,
       region: "BR",
@@ -131,7 +131,7 @@ async function seedTenantData(tenantId: string, label: string) {
     },
   });
 
-  const blsRelease = await prisma.datasetRelease.create({
+  const blsRelease = await tx.datasetRelease.create({
     data: {
       tenant_id: tenantId,
       region: "DE",
@@ -144,7 +144,7 @@ async function seedTenantData(tenantId: string, label: string) {
 
   const foods = await Promise.all(
     [...BR_FOODS, ...DE_FOODS].map((name, index) =>
-      prisma.foodCanonical.create({
+      tx.foodCanonical.create({
         data: {
           tenant_id: tenantId,
           name,
@@ -177,9 +177,9 @@ async function seedTenantData(tenantId: string, label: string) {
     }
   );
 
-  await prisma.foodNutrient.createMany({ data: nutrientRows });
+  await tx.foodNutrient.createMany({ data: nutrientRows });
 
-  await prisma.foodAlias.createMany({
+  await tx.foodAlias.createMany({
     data: foods.slice(0, 12).map((food) => ({
       tenant_id: tenantId,
       food_id: food.id,
@@ -194,242 +194,252 @@ async function seedTenantData(tenantId: string, label: string) {
 async function main() {
   console.log("Seeding database...");
 
-  const tenantA = await prisma.tenant.create({
-    data: { name: "Clínica A", type: "B2C", status: "active" },
-  });
-  const tenantB = await prisma.tenant.create({
-    data: { name: "Clínica B", type: "B2C", status: "active" },
-  });
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(
+      "SELECT set_config('app.user_id', $1, true), set_config('app.tenant_id', $2, true), set_config('app.role', $3, true), set_config('app.owner_mode', $4, true)",
+      "00000000-0000-0000-0000-000000000500",
+      "00000000-0000-0000-0000-000000000000",
+      "OWNER",
+      "true"
+    );
 
-  const owner = await prisma.user.create({
-    data: {
-      email: "owner@nutriplan.com",
-      name: "Owner Admin",
-      role: "OWNER",
-      tenant_id: tenantA.id,
-      status: "active",
-    },
-  });
+    const tenantA = await tx.tenant.create({
+      data: { name: "Clínica A", type: "B2C", status: "active" },
+    });
+    const tenantB = await tx.tenant.create({
+      data: { name: "Clínica B", type: "B2C", status: "active" },
+    });
 
-  const nutriA = await prisma.user.create({
-    data: {
-      email: "nutri-a@example.com",
-      name: "Nutricionista A",
-      role: "TENANT_ADMIN",
-      tenant_id: tenantA.id,
-      status: "active",
-    },
-  });
-  const nutriA2 = await prisma.user.create({
-    data: {
-      email: "nutri-b@example.com",
-      name: "Nutricionista B",
-      role: "TEAM",
-      tenant_id: tenantA.id,
-      status: "active",
-    },
-  });
-  const nutriB = await prisma.user.create({
-    data: {
-      email: "nutri-c@example.com",
-      name: "Nutricionista C",
-      role: "TENANT_ADMIN",
-      tenant_id: tenantB.id,
-      status: "active",
-    },
-  });
-
-  const patientUsers = await Promise.all(
-    [
-      { email: "patient1@example.com", name: "Maria Silva", tenant: tenantA },
-      { email: "patient2@example.com", name: "João Pereira", tenant: tenantA },
-      { email: "patient3@example.com", name: "Ana Souza", tenant: tenantA },
-      { email: "patient4@example.com", name: "Lena Fischer", tenant: tenantB },
-      { email: "patient5@example.com", name: "Paul Schmidt", tenant: tenantB },
-    ].map((user) =>
-      prisma.user.create({
-        data: {
-          email: user.email,
-          name: user.name,
-          role: "PATIENT",
-          tenant_id: user.tenant.id,
-          status: "active",
-        },
-      })
-    )
-  );
-
-  const patients = await Promise.all(
-    patientUsers.map((user, index) =>
-      prisma.patient.create({
-        data: {
-          tenant_id: user.tenant_id,
-          user_id: user.id,
-          assigned_team_id: user.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-          status: "active",
-          profile: {
-            create: {
-              tenant_id: user.tenant_id,
-              sex: index % 2 === 0 ? "female" : "male",
-              birth_date: new Date("1990-05-15"),
-              height_cm: new Prisma.Decimal(165 + index),
-              current_weight_kg: new Prisma.Decimal(68 + index),
-              target_weight_kg: new Prisma.Decimal(63 + index),
-              activity_level: "moderate",
-              goal: "loss",
-            },
-          },
-        },
-      })
-    )
-  );
-
-  const tenantAData = await seedTenantData(tenantA.id, "A");
-  const tenantBData = await seedTenantData(tenantB.id, "B");
-
-  for (const patient of patients) {
-    const isJourneyBR = patient.id === patients[0].id;
-    const isJourneyDE = patient.id === patients[3].id;
-    const policy = await prisma.patientDataPolicy.create({
+    const owner = await tx.user.create({
       data: {
-        tenant_id: patient.tenant_id,
-        patient_id: patient.id,
-        version_number: 1,
-        is_active: true,
-        default_region: isJourneyBR ? "BR" : isJourneyDE ? "DE" : patient.tenant_id === tenantA.id ? "BR" : "DE",
-        allowed_sources: isJourneyBR
-          ? ["TACO", "TBCA"]
-          : isJourneyDE
-          ? ["BLS"]
-          : patient.tenant_id === tenantA.id
-          ? ["TACO"]
-          : ["BLS"],
-        updated_by: patient.assigned_team_id ?? owner.id,
+        email: "owner@nutriplan.com",
+        name: "Owner Admin",
+        role: "OWNER",
+        tenant_id: tenantA.id,
+        status: "active",
       },
     });
 
-    if (isJourneyBR) {
-      await prisma.patientCategoryOverride.create({
-        data: {
-          policy_id: policy.id,
-          category_code: "grains",
-          preferred_source: "TACO",
-          notes: "Preferir TACO para grãos.",
-        },
-      });
-    }
-    if (isJourneyDE) {
-      await prisma.patientCategoryOverride.create({
-        data: {
-          policy_id: policy.id,
-          category_code: "dairy",
-          preferred_source: "BLS",
-          notes: "Priorizar BLS para laticínios.",
-        },
-      });
-    }
-  }
+    const nutriA = await tx.user.create({
+      data: {
+        email: "nutri-a@example.com",
+        name: "Nutricionista A",
+        role: "TENANT_ADMIN",
+        tenant_id: tenantA.id,
+        status: "active",
+      },
+    });
+    await tx.user.create({
+      data: {
+        email: "nutri-b@example.com",
+        name: "Nutricionista B",
+        role: "TEAM",
+        tenant_id: tenantA.id,
+        status: "active",
+      },
+    });
+    const nutriB = await tx.user.create({
+      data: {
+        email: "nutri-c@example.com",
+        name: "Nutricionista C",
+        role: "TENANT_ADMIN",
+        tenant_id: tenantB.id,
+        status: "active",
+      },
+    });
 
-  const plans = await Promise.all(
-    patients.map((patient, index) =>
-      prisma.plan.create({
+    const patientUsers = await Promise.all(
+      [
+        { email: "patient1@example.com", name: "Maria Silva", tenant: tenantA },
+        { email: "patient2@example.com", name: "João Pereira", tenant: tenantA },
+        { email: "patient3@example.com", name: "Ana Souza", tenant: tenantA },
+        { email: "patient4@example.com", name: "Lena Fischer", tenant: tenantB },
+        { email: "patient5@example.com", name: "Paul Schmidt", tenant: tenantB },
+      ].map((user) =>
+        tx.user.create({
+          data: {
+            email: user.email,
+            name: user.name,
+            role: "PATIENT",
+            tenant_id: user.tenant.id,
+            status: "active",
+          },
+        })
+      )
+    );
+
+    const patients = await Promise.all(
+      patientUsers.map((user, index) =>
+        tx.patient.create({
+          data: {
+            tenant_id: user.tenant_id,
+            user_id: user.id,
+            assigned_team_id: user.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+            status: "active",
+            profile: {
+              create: {
+                tenant_id: user.tenant_id,
+                sex: index % 2 === 0 ? "female" : "male",
+                birth_date: new Date("1990-05-15"),
+                height_cm: new Prisma.Decimal(165 + index),
+                current_weight_kg: new Prisma.Decimal(68 + index),
+                target_weight_kg: new Prisma.Decimal(63 + index),
+                activity_level: "moderate",
+                goal: "loss",
+              },
+            },
+          },
+        })
+      )
+    );
+
+    const tenantAData = await seedTenantData(tx, tenantA.id);
+    const tenantBData = await seedTenantData(tx, tenantB.id);
+
+    for (const patient of patients) {
+      const isJourneyBR = patient.id === patients[0].id;
+      const isJourneyDE = patient.id === patients[3].id;
+      const policy = await tx.patientDataPolicy.create({
         data: {
           tenant_id: patient.tenant_id,
           patient_id: patient.id,
-          status: "active",
+          version_number: 1,
+          is_active: true,
+          default_region: isJourneyBR ? "BR" : isJourneyDE ? "DE" : patient.tenant_id === tenantA.id ? "BR" : "DE",
+          allowed_sources: isJourneyBR
+            ? ["TACO", "TBCA"]
+            : isJourneyDE
+            ? ["BLS"]
+            : patient.tenant_id === tenantA.id
+            ? ["TACO"]
+            : ["BLS"],
+          updated_by: patient.assigned_team_id ?? owner.id,
         },
-      })
-    )
-  );
+      });
 
-  for (const [index, plan] of plans.entries()) {
-    const planVersion = await prisma.planVersion.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_id: plan.id,
-        version_no: 1,
-        status: "published",
-        created_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-      },
-    });
+      if (isJourneyBR) {
+        await tx.patientCategoryOverride.create({
+          data: {
+            policy_id: policy.id,
+            category_code: "grains",
+            preferred_source: "TACO",
+            notes: "Preferir TACO para grãos.",
+          },
+        });
+      }
+      if (isJourneyDE) {
+        await tx.patientCategoryOverride.create({
+          data: {
+            policy_id: policy.id,
+            category_code: "dairy",
+            preferred_source: "BLS",
+            notes: "Priorizar BLS para laticínios.",
+          },
+        });
+      }
+    }
 
-    const foodPool = plan.tenant_id === tenantA.id ? tenantAData.foods : tenantBData.foods;
-    const food = foodPool[index % foodPool.length];
-    const nutrients = buildNutrients(index);
-    const snapshotJson = {
-      nutrients,
-      source: plan.tenant_id === tenantA.id ? "TACO v7.1" : "BLS 3.02",
-      per_100g: true,
-    };
+    const plans = await Promise.all(
+      patients.map((patient) =>
+        tx.plan.create({
+          data: {
+            tenant_id: patient.tenant_id,
+            patient_id: patient.id,
+            status: "active",
+          },
+        })
+      )
+    );
 
-    const snapshot = await prisma.foodSnapshot.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        patient_id: plan.patient_id,
-        food_id: food.id,
-        snapshot_json: snapshotJson,
-        source: plan.tenant_id === tenantA.id ? "TACO" : "BLS",
-        dataset_release_id:
-          plan.tenant_id === tenantA.id
-            ? tenantAData.tacoRelease.id
-            : tenantBData.blsRelease.id,
-      },
-    });
+    for (const [index, plan] of plans.entries()) {
+      const planVersion = await tx.planVersion.create({
+        data: {
+          tenant_id: plan.tenant_id,
+          plan_id: plan.id,
+          version_no: 1,
+          status: "published",
+          created_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+        },
+      });
 
-    await prisma.planItem.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_version_id: planVersion.id,
-        meal_type: "lunch",
-        food_id: food.id,
-        grams: new Prisma.Decimal(150),
-        snapshot_id: snapshot.id,
-        instructions: "Cozinhar sem sal e temperar com ervas.",
-      },
-    });
+      const foodPool = plan.tenant_id === tenantA.id ? tenantAData.foods : tenantBData.foods;
+      const food = foodPool[index % foodPool.length];
+      const nutrients = buildNutrients(index);
+      const snapshotJson = {
+        nutrients,
+        source: plan.tenant_id === tenantA.id ? "TACO v7.1" : "BLS 3.02",
+        per_100g: true,
+      };
 
-    await prisma.planApproval.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_version_id: planVersion.id,
-        approved_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-        approved_at: new Date("2026-01-12"),
-      },
-    });
-
-    await prisma.planPublication.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_version_id: planVersion.id,
-        published_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-        published_at: new Date("2026-01-12"),
-      },
-    });
-
-    for (let day = 0; day < 5; day += 1) {
-      const date = new Date();
-      date.setDate(date.getDate() - day);
-
-      const meal = await prisma.meal.create({
+      const snapshot = await tx.foodSnapshot.create({
         data: {
           tenant_id: plan.tenant_id,
           patient_id: plan.patient_id,
-          date,
-          type: "lunch",
+          food_id: food.id,
+          snapshot_json: snapshotJson,
+          source: plan.tenant_id === tenantA.id ? "TACO" : "BLS",
+          dataset_release_id:
+            plan.tenant_id === tenantA.id
+              ? tenantAData.tacoRelease.id
+              : tenantBData.blsRelease.id,
         },
       });
 
-      await prisma.mealItem.create({
+      await tx.planItem.create({
         data: {
           tenant_id: plan.tenant_id,
-          meal_id: meal.id,
+          plan_version_id: planVersion.id,
+          meal_type: "lunch",
           food_id: food.id,
           grams: new Prisma.Decimal(150),
           snapshot_id: snapshot.id,
+          instructions: "Cozinhar sem sal e temperar com ervas.",
         },
       });
+
+      await tx.planApproval.create({
+        data: {
+          tenant_id: plan.tenant_id,
+          plan_version_id: planVersion.id,
+          approved_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+          approved_at: new Date("2026-01-12"),
+        },
+      });
+
+      await tx.planPublication.create({
+        data: {
+          tenant_id: plan.tenant_id,
+          plan_version_id: planVersion.id,
+          published_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+          published_at: new Date("2026-01-12"),
+        },
+      });
+
+      for (let day = 0; day < 5; day += 1) {
+        const date = new Date();
+        date.setDate(date.getDate() - day);
+
+        const meal = await tx.meal.create({
+          data: {
+            tenant_id: plan.tenant_id,
+            patient_id: plan.patient_id,
+            date,
+            type: "lunch",
+          },
+        });
+
+        await tx.mealItem.create({
+          data: {
+            tenant_id: plan.tenant_id,
+            meal_id: meal.id,
+            food_id: food.id,
+            grams: new Prisma.Decimal(150),
+            snapshot_id: snapshot.id,
+          },
+        });
+      }
     }
-  }
+  });
 
   console.log("Seed completed successfully.");
 }

@@ -8,8 +8,14 @@ describe("RBAC enforcement", () => {
     const patientUser1 = "00000000-0000-0000-0000-000000000102";
     const patientUser2 = "00000000-0000-0000-0000-000000000103";
 
+    const ownerClaims = buildClaims({
+      tenant_id: tenantId,
+      user_id: "00000000-0000-0000-0000-000000000150",
+      role: "OWNER",
+    });
+
     const patient1 = await withTestSession(
-      buildClaims({ tenant_id: tenantId, user_id: patientUser1, role: "TENANT_ADMIN" }),
+      ownerClaims,
       async (tx) => {
         await tx.tenant.create({
           data: { id: tenantId, name: "Tenant RBAC", type: "B2C", status: "active" },
@@ -43,7 +49,8 @@ describe("RBAC enforcement", () => {
         });
 
         return patient;
-      }
+      },
+      { ownerMode: true }
     );
 
     const otherPatient = await withTestSession(
@@ -58,8 +65,14 @@ describe("RBAC enforcement", () => {
     const tenantId = "00000000-0000-0000-0000-000000000201";
     const teamUser = "00000000-0000-0000-0000-000000000202";
 
+    const ownerClaims = buildClaims({
+      tenant_id: tenantId,
+      user_id: "00000000-0000-0000-0000-000000000250",
+      role: "OWNER",
+    });
+
     const { assignedPatientId, otherPatientId } = await withTestSession(
-      buildClaims({ tenant_id: tenantId, user_id: teamUser, role: "TENANT_ADMIN" }),
+      ownerClaims,
       async (tx) => {
         await tx.tenant.create({
           data: { id: tenantId, name: "Tenant Team", type: "B2C", status: "active" },
@@ -88,7 +101,8 @@ describe("RBAC enforcement", () => {
           },
         });
         return { assignedPatientId: assigned.id, otherPatientId: other.id };
-      }
+      },
+      { ownerMode: true }
     );
 
     const assignedRead = await withTestSession(
@@ -121,7 +135,8 @@ describe("RBAC enforcement", () => {
         await tx.patient.create({
           data: { tenant_id: otherTenantId, status: "active" },
         });
-      }
+      },
+      { ownerMode: true }
     );
 
     const withoutOwnerMode = await withTestSession(
