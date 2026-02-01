@@ -10,8 +10,8 @@ export default function PlanPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Meu Plano</h1>
-            <p className="text-sm text-slate-500">Versão 2.1 • Atualizado por Dr. Silva</p>
+            <h1 className="text-2xl font-bold text-foreground">Meu Plano</h1>
+            <p className="text-sm text-muted-foreground">Versão 2.1 • Atualizado por Dr. Silva</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="icon">
@@ -40,8 +40,8 @@ export default function PlanPage() {
             <button
               key={day}
               className={`flex-1 min-w-[60px] flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${i === 0
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/25"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-primary/50"
+                ? "bg-primary text-white border-primary shadow-lg shadow-primary/25"
+                : "bg-card text-muted-foreground border-border hover:border-primary/50"
                 }`}
             >
               <span className="text-[10px] font-bold">{day}</span>
@@ -52,22 +52,22 @@ export default function PlanPage() {
 
         <section className="space-y-4">
           {["Café da Manhã (08:00)", "Colação (10:30)", "Almoço (13:00)"].map((meal, index) => (
-            <Card key={index} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-card transition-shadow">
-              <div className="bg-slate-50 p-3 border-b border-slate-100 flex justify-between items-center">
-                <h3 className="font-bold text-slate-700 text-sm">{meal}</h3>
-                <Badge variant="secondary" className="bg-white border-slate-200 font-normal">
+            <Card key={index} className="overflow-hidden border-border shadow-sm hover:shadow-card transition-shadow">
+              <div className="bg-muted/40 p-3 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="font-bold text-muted-foreground text-sm">{meal}</h3>
+                <Badge variant="secondary" className="bg-card border-border font-normal">
                   Opção 1
                 </Badge>
               </div>
               <div className="p-4 space-y-3">
                 <ul className="space-y-3">
                   <li className="flex justify-between items-center text-sm">
-                    <span className="text-slate-700">Pão 100% Integral</span>
-                    <span className="text-slate-500 font-mono text-xs bg-slate-100 px-2 py-1 rounded">2 fatias</span>
+                    <span className="text-muted-foreground">Pão 100% Integral</span>
+                    <span className="text-muted-foreground font-mono text-xs bg-muted px-2 py-1 rounded">2 fatias</span>
                   </li>
                   <li className="flex justify-between items-center text-sm">
-                    <span className="text-slate-700">Ovos Mexidos</span>
-                    <span className="text-slate-500 font-mono text-xs bg-slate-100 px-2 py-1 rounded">2 un</span>
+                    <span className="text-muted-foreground">Ovos Mexidos</span>
+                    <span className="text-muted-foreground font-mono text-xs bg-muted px-2 py-1 rounded">2 un</span>
                   </li>
                 </ul>
               </div>

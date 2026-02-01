@@ -11,11 +11,11 @@ export default function ProgressPage() {
             <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Meu Progresso</h1>
-                        <p className="text-slate-500 text-sm">Visualizando últimos 30 dias</p>
+                        <h1 className="text-2xl font-bold text-foreground">Meu Progresso</h1>
+                        <p className="text-muted-foreground text-sm">Visualizando últimos 30 dias</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" className="bg-white">Exportar Relatório</Button>
+                        <Button variant="outline" className="bg-card">Exportar Relatório</Button>
                         <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200">
                             + Registrar Peso
                         </Button>
@@ -23,28 +23,28 @@ export default function ProgressPage() {
                 </header>
 
                 {/* Big Chart Area (Mocked with CSS/SVG) */}
-                <Card className="border-none shadow-card bg-white p-6 relative overflow-hidden">
+                <Card className="border-none shadow-card bg-card p-6 relative overflow-hidden">
                     <CardHeader className="px-0 pt-0 pb-6 flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-lg text-slate-700 flex items-center gap-2">
+                            <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                 <Weight className="h-5 w-5 text-emerald-500" />
                                 Evolução de Peso
                             </CardTitle>
-                            <p className="text-3xl font-bold text-slate-900 mt-2">72.4 kg <span className="text-sm font-medium text-emerald-600 ml-2">-1.2kg</span></p>
+                            <p className="text-3xl font-bold text-foreground mt-2">72.4 kg <span className="text-sm font-medium text-emerald-600 ml-2">-1.2kg</span></p>
                         </div>
-                        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                            <button className="px-3 py-1 rounded bg-white shadow-sm text-xs font-bold text-slate-900">1M</button>
-                            <button className="px-3 py-1 rounded text-xs font-medium text-slate-500 hover:text-slate-900">3M</button>
-                            <button className="px-3 py-1 rounded text-xs font-medium text-slate-500 hover:text-slate-900">6M</button>
+                        <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                            <button className="px-3 py-1 rounded bg-card shadow-sm text-xs font-bold text-foreground">1M</button>
+                            <button className="px-3 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground">3M</button>
+                            <button className="px-3 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground">6M</button>
                         </div>
                     </CardHeader>
 
                     {/* Mock Chart Visualization */}
-                    <div className="h-64 w-full bg-slate-50 rounded-xl relative flex items-end justify-between px-4 pb-0 pt-10 overflow-hidden border border-slate-100">
+                    <div className="h-64 w-full bg-muted/30 rounded-xl relative flex items-end justify-between px-4 pb-0 pt-10 overflow-hidden border border-slate-100">
                         {/* Grid Lines */}
-                        <div className="absolute inset-x-0 top-1/4 h-px bg-slate-200 border-dashed border-b" />
-                        <div className="absolute inset-x-0 top-2/4 h-px bg-slate-200 border-dashed border-b" />
-                        <div className="absolute inset-x-0 top-3/4 h-px bg-slate-200 border-dashed border-b" />
+                        <div className="absolute inset-x-0 top-1/4 h-px bg-border border-dashed border-b" />
+                        <div className="absolute inset-x-0 top-2/4 h-px bg-border border-dashed border-b" />
+                        <div className="absolute inset-x-0 top-3/4 h-px bg-border border-dashed border-b" />
 
                         {/* Data Trend Line (SVG) */}
                         <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
@@ -71,8 +71,8 @@ export default function ProgressPage() {
                         {/* Data Points (Tooltips implied) */}
                         {[74.0, 73.8, 73.5, 73.9, 73.2, 73.0, 72.4].map((val, i) => (
                             <div key={i} className="relative z-10 flex flex-col items-center group cursor-pointer pb-4">
-                                <div className="w-3 h-3 bg-white border-2 border-emerald-500 rounded-full group-hover:scale-125 transition-transform shadow-sm mb-2" />
-                                <span className="text-[10px] text-slate-400 font-medium group-hover:text-emerald-600 absolute -bottom-0 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                <div className="w-3 h-3 bg-card border-2 border-emerald-500 rounded-full group-hover:scale-125 transition-transform shadow-sm mb-2" />
+                                <span className="text-[10px] text-muted-foreground font-medium group-hover:text-emerald-600 absolute -bottom-0 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                     {val} kg
                                 </span>
                             </div>
@@ -104,9 +104,9 @@ export default function ProgressPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-card bg-white">
+                    <Card className="border-none shadow-card bg-card">
                         <CardHeader>
-                            <CardTitle className="text-slate-800">Adesão por Refeição</CardTitle>
+                            <CardTitle className="text-foreground">Adesão por Refeição</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {[
@@ -117,10 +117,10 @@ export default function ProgressPage() {
                             ].map((item) => (
                                 <div key={item.label} className="space-y-1">
                                     <div className="flex justify-between text-sm">
-                                        <span className="font-medium text-slate-700">{item.label}</span>
-                                        <span className="text-slate-500">{item.val}%</span>
+                                        <span className="font-medium text-foreground">{item.label}</span>
+                                        <span className="text-muted-foreground">{item.val}%</span>
                                     </div>
-                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                                         <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.val}%` }} />
                                     </div>
                                 </div>

@@ -76,13 +76,13 @@ export default function StudioDashboard() {
                             <Zap className="h-5 w-5 text-amber-500 fill-amber-500" />
                             <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">Painel Clínico</span>
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Centro de Controle (Disbiose)</h1>
-                        <p className="text-slate-500 max-w-xl text-sm mt-1">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Centro de Controle (Disbiose)</h1>
+                        <p className="text-muted-foreground max-w-xl text-sm mt-1">
                             Monitoramento em tempo real de carga histamínica e integridade da barreira intestinal.
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" className="border-slate-200">
+                        <Button variant="outline" className="border-border">
                             <Filter className="w-4 h-4 mr-2" />
                             Filtros
                         </Button>
@@ -94,7 +94,7 @@ export default function StudioDashboard() {
 
                 {/* TOP ROW: Vital Signals Triage */}
                 <section className="space-y-3">
-                    <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                         <Activity className="h-4 w-4" />
                         Sinais Vitais do Consultório (Hoje)
                     </h2>
@@ -110,15 +110,15 @@ export default function StudioDashboard() {
                             </CardHeader>
                             <CardContent className="space-y-3 pt-2">
                                 {CLINICAL_ALERTS.map((alert) => (
-                                    <div key={alert.id} className="group flex items-start justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer">
+                                    <div key={alert.id} className="group flex items-start justify-between p-3 rounded-lg bg-muted/30 border border-border bg-card hover:shadow-md transition-all cursor-pointer">
                                         <div className="flex gap-3">
                                             <div className={`mt-1 h-2 w-2 rounded-full ${alert.level === 'critical' ? 'bg-red-500' : 'bg-amber-500'}`}></div>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-sm text-slate-800">{alert.patient}</span>
-                                                    <span className="text-[10px] text-slate-400 font-mono bg-slate-100 px-1 rounded">{alert.timestamp}</span>
+                                                    <span className="font-semibold text-sm text-foreground">{alert.patient}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono bg-muted px-1 rounded">{alert.timestamp}</span>
                                                 </div>
-                                                <p className="text-sm text-slate-600 font-medium">{alert.message}</p>
+                                                <p className="text-sm text-muted-foreground font-medium">{alert.message}</p>
                                                 <p className="text-xs text-slate-400">Gatilho: {alert.trigger}</p>
                                             </div>
                                         </div>
@@ -126,7 +126,7 @@ export default function StudioDashboard() {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button size="icon" variant="ghost" className="h-8 w-8 bg-green-50 text-green-700 hover:bg-green-100">
+                                                        <Button size="icon" variant="ghost" className="h-8 w-8 bg-green-50 dark:bg-green-950/20 text-green-700 hover:bg-green-100">
                                                             <MessageCircle className="h-4 w-4" />
                                                         </Button>
                                                     </TooltipTrigger>
@@ -135,7 +135,7 @@ export default function StudioDashboard() {
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 bg-muted text-muted-foreground hover:bg-slate-200">
                                                 <ArrowRight className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -145,7 +145,7 @@ export default function StudioDashboard() {
                         </Card>
 
                         {/* CARD 2: HISTAMINE BUCKET LOAD (The "Trends" Bucket) */}
-                        <Card className="bg-slate-900 text-white border-none shadow-card">
+                        <Card className="bg-slate-900 dark:bg-slate-800 text-white border-none shadow-card">
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center gap-2 text-base text-slate-100">
                                     <Flame className="h-4 w-4 text-orange-500" />
@@ -182,23 +182,23 @@ export default function StudioDashboard() {
 
                 {/* BOTTOM ROW: Deep Dive & Patterns */}
                 <section className="space-y-3">
-                    <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                         <TrendingUp className="h-4 w-4" />
                         Correlações Descobertas (IA)
                     </h2>
-                    <Card className="border-slate-100 shadow-sm">
+                    <Card className="border-border shadow-sm">
                         <div className="divide-y divide-slate-100">
-                            <div className="p-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors cursor-pointer">
-                                <div className="p-2 bg-purple-50 rounded-lg">
+                            <div className="p-4 flex items-start gap-4 hover:bg-muted/30/50 transition-colors cursor-pointer">
+                                <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
                                     <Zap className="h-5 w-5 text-purple-600" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between">
-                                        <h4 className="font-medium text-slate-900">Padrão Identificado: Ana Silva</h4>
-                                        <Badge variant="outline" className="text-purple-600 bg-purple-50 border-purple-100">Alta Confiança (92%)</Badge>
+                                        <h4 className="font-medium text-foreground">Padrão Identificado: Ana Silva</h4>
+                                        <Badge variant="outline" className="text-purple-600 bg-purple-50 dark:bg-purple-950/20 border-purple-100">Alta Confiança (92%)</Badge>
                                     </div>
-                                    <p className="text-sm text-slate-600 mt-1">
-                                        Correlação forte detectada entre consumo de <span className="font-semibold text-slate-900">Alimentos Reaquecidos (Sobras)</span> e episódios de <span className="font-semibold text-slate-900">Enxaqueca</span>.
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Correlação forte detectada entre consumo de <span className="font-semibold text-foreground">Alimentos Reaquecidos (Sobras)</span> e episódios de <span className="font-semibold text-foreground">Enxaqueca</span>.
                                         O intervalo médio é de 45-60 min.
                                     </p>
                                     <div className="flex gap-2 mt-3">
@@ -207,16 +207,16 @@ export default function StudioDashboard() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors cursor-pointer">
-                                <div className="p-2 bg-blue-50 rounded-lg">
+                            <div className="p-4 flex items-start gap-4 hover:bg-muted/30/50 transition-colors cursor-pointer">
+                                <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                                     <Clock className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between">
-                                        <h4 className="font-medium text-slate-900">Feedback: Beto Atleta</h4>
-                                        <Badge variant="outline" className="text-blue-600 bg-blue-50 border-blue-100">Feedback Positivo</Badge>
+                                        <h4 className="font-medium text-foreground">Feedback: Beto Atleta</h4>
+                                        <Badge variant="outline" className="text-blue-600 bg-blue-50 dark:bg-blue-950/20 border-blue-100">Feedback Positivo</Badge>
                                     </div>
-                                    <p className="text-sm text-slate-600 mt-1">
+                                    <p className="text-sm text-muted-foreground mt-1">
                                         Paciente relatou 0 desconforto pós-treino após substituir Whey Protein por Proteína de Arroz, conforme sugerido semana passada.
                                     </p>
                                 </div>

@@ -139,7 +139,7 @@ export default function PatientSymptomsPage() {
                   {BRISTOL_SCALE.map((type) => (
                     <button
                       key={type.value}
-                      className={`p-2 rounded-lg border text-center hover:bg-muted transition-all active:scale-95 ${type.status === "ideal" ? "border-emerald-500 bg-emerald-50" : "border-slate-200"
+                      className={`p-2 rounded-lg border text-center hover:bg-muted transition-all active:scale-95 ${type.status === "ideal" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-border"
                         }`}
                       title={type.description}
                     >
@@ -164,8 +164,8 @@ export default function PatientSymptomsPage() {
                       key={i}
                       onClick={() => setSelectedDiscomfort(i)}
                       className={`flex-1 min-w-[32px] p-2 rounded border text-sm hover:bg-muted transition-all ${selectedDiscomfort === i
-                        ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600" : i < 7 ? "bg-amber-500 text-white border-amber-600" : "bg-red-500 text-white border-red-600")
-                        : "border-slate-200"
+                        ? (i < 4 ? "bg-emerald-50 dark:bg-emerald-950/200 text-white border-emerald-600" : i < 7 ? "bg-amber-500 text-white border-amber-600" : "bg-red-500 text-white border-red-600")
+                        : "border-border"
                         }`}
                     >
                       {i}
@@ -190,8 +190,8 @@ export default function PatientSymptomsPage() {
                             key={symptom.id}
                             variant={isSelected ? "default" : "outline"}
                             className={`cursor-pointer transition-all py-1.5 px-3 select-none ${isSelected
-                              ? (key === 'histamine_systemic' ? "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200")
-                              : "hover:bg-slate-100 border-slate-200 text-slate-600"
+                              ? (key === 'histamine_systemic' ? "bg-red-100 dark:bg-red-950/20 text-red-700 hover:bg-red-200 border-red-200" : "bg-emerald-100 dark:bg-emerald-950/20 text-emerald-800 hover:bg-emerald-200 border-emerald-200 dark:border-emerald-900/30")
+                              : "hover:bg-muted border-border text-muted-foreground"
                               }`}
                             onClick={() => toggleSymptom(symptom.id)}
                           >
@@ -219,7 +219,7 @@ export default function PatientSymptomsPage() {
               {/* Link to meal */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Gatilho Suspeito (Refeição)</label>
-                <select className="w-full p-2 border border-slate-200 rounded-md text-sm bg-white h-10">
+                <select className="w-full p-2 border border-border rounded-md text-sm bg-card h-10">
                   <option value="">Selecione uma refeição recente...</option>
                   <option value="1">Hoje - Almoço (12:30) - Arroz, Feijão...</option>
                   <option value="2">Hoje - Café da Manhã (07:30) - Ovos, Mamão</option>
@@ -251,7 +251,7 @@ export default function PatientSymptomsPage() {
           <Card className="border-none shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="h-5 w-5 text-slate-500" />
+                <Calendar className="h-5 w-5 text-muted-foreground" />
                 Histórico Recente
               </CardTitle>
             </CardHeader>
@@ -260,25 +260,25 @@ export default function PatientSymptomsPage() {
                 {RECENT_LOGS.map((log) => (
                   <div
                     key={log.id}
-                    className="p-3 rounded-lg border border-slate-100 flex items-start justify-between bg-slate-50/50"
+                    className="p-3 rounded-lg border border-slate-100 flex items-start justify-between bg-muted/40/50"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900">{log.date}</span>
+                        <span className="text-sm font-medium text-foreground">{log.date}</span>
                         {log.discomfort >= 7 && <Badge variant="destructive" className="text-[10px] h-5 px-1">Crise</Badge>}
                       </div>
 
                       <div className="flex flex-wrap gap-1 text-xs">
-                        <Badge variant="secondary" className="bg-white border text-slate-500">Bristol {log.bristol}</Badge>
-                        <Badge variant="secondary" className="bg-white border text-slate-500">Dor: {log.discomfort}</Badge>
+                        <Badge variant="secondary" className="bg-card border text-muted-foreground">Bristol {log.bristol}</Badge>
+                        <Badge variant="secondary" className="bg-card border text-muted-foreground">Dor: {log.discomfort}</Badge>
                         {log.symptoms.map((s) => {
                           // Quick lookup for label
                           const label = Object.values(SYMPTOM_CATEGORIES).flatMap(c => c.options).find(o => o.id === s)?.label;
-                          return label ? <Badge key={s} variant="outline" className="bg-white">{label}</Badge> : null;
+                          return label ? <Badge key={s} variant="outline" className="bg-card">{label}</Badge> : null;
                         })}
                       </div>
                       {log.notes && (
-                        <p className="text-xs text-slate-500 mt-1 italic">"{log.notes}"</p>
+                        <p className="text-xs text-muted-foreground mt-1 italic">"{log.notes}"</p>
                       )}
                     </div>
                   </div>
@@ -305,7 +305,7 @@ export default function PatientSymptomsPage() {
               {CORRELATION_INSIGHTS.map((insight, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg ${insight.type === "warning" ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm" : "bg-emerald-500/10 border-emerald-500/20"
+                  className={`p-3 rounded-lg ${insight.type === "warning" ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm" : "bg-emerald-50 dark:bg-emerald-950/200/10 border-emerald-500/20"
                     } border`}
                 >
                   <div className="flex gap-2">
@@ -315,8 +315,8 @@ export default function PatientSymptomsPage() {
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <p className="text-sm text-slate-200 leading-relaxed">{insight.message}</p>
-                      <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-wider">
+                      <p className={`text-sm leading-relaxed ${insight.type === "warning" ? "text-slate-700" : "text-slate-200"}`}>{insight.message}</p>
+                      <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">
                         Confiança: {insight.confidence}%
                       </p>
                     </div>
