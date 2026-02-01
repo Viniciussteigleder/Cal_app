@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,13 @@ import {
   Clock,
   CheckCheck,
   Loader2,
+  Mic,
+  MicOff,
+  Globe,
+  StopCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceInput, processMultilingualText } from "@/components/voice-input";
 
 interface Message {
   id: string;
@@ -31,6 +36,7 @@ interface Message {
     subtitle: string;
   }>;
   status?: "sent" | "delivered" | "read";
+  detectedLanguages?: string[];
 }
 
 interface QuickTemplate {
@@ -66,6 +72,9 @@ export default function PatientChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceInterimText, setVoiceInterimText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickTemplates: QuickTemplate[] = [
@@ -104,6 +113,12 @@ export default function PatientChatPage() {
     { id: "sym-1", title: "Inchaço leve", time: "14:00", intensity: 3 },
   ];
 
+  const languageFlags: Record<string, string> = {
+    "pt-BR": "🇧🇷",
+    "de-DE": "🇩🇪",
+    "en-US": "🇺🇸",
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -112,7 +127,7 @@ export default function PatientChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (content: string, attachments?: Message["attachments"]) => {
+  const handleSendMessage = async (content: string, attachments?: Message["attachments"], detectedLanguages?: string[]) => {
     if (!content.trim() && !attachments?.length) return;
 
     const newMessage: Message = {
@@ -122,10 +137,13 @@ export default function PatientChatPage() {
       timestamp: new Date().toISOString(),
       attachments,
       status: "sent",
+      detectedLanguages,
     };
 
     setMessages((prev) => [...prev, newMessage]);
     setInputValue("");
+    setVoiceInterimText("");
+    setShowVoiceInput(false);
     setIsLoading(true);
 
     // Simulate message delivery
@@ -150,6 +168,28 @@ export default function PatientChatPage() {
       setMessages((prev) => [...prev, response]);
       setIsLoading(false);
     }, 2000);
+  };
+
+  const handleVoiceTranscript = (text: string, language?: string) => {
+    const processed = processMultilingualText(text);
+
+    // Add to input or send directly
+    if (inputValue) {
+      setInputValue(inputValue + " " + text);
+    } else {
+      setInputValue(text);
+    }
+
+    // Show toast with detected info
+    if (processed.foodMentions.length > 0) {
+      toast.success(`Detectados: ${processed.foodMentions.join(", ")}`, {
+        description: `Idiomas: ${processed.detectedLanguages.map(l => languageFlags[l] || l).join(" ")}`,
+      });
+    }
+  };
+
+  const handleVoiceInterim = (text: string) => {
+    setVoiceInterimText(text);
   };
 
   const handleTemplateSelect = (template: QuickTemplate) => {
@@ -274,6 +314,14 @@ export default function PatientChatPage() {
                       ? "text-primary-foreground/70"
                       : "text-muted-foreground"
                   }`}>
+                    {/* Language indicators for patient messages */}
+                    {message.role === "patient" && message.detectedLanguages && message.detectedLanguages.length > 0 && (
+                      <div className="flex items-center gap-0.5 mr-1">
+                        {message.detectedLanguages.map((lang) => (
+                          <span key={lang} className="text-xs">{languageFlags[lang] || ""}</span>
+                        ))}
+                      </div>
+                    )}
                     <span className="text-xs">
                       {new Date(message.timestamp).toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
@@ -303,6 +351,43 @@ export default function PatientChatPage() {
 
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Voice Input Panel */}
+          {showVoiceInput && (
+            <div className="p-4 border-t bg-gradient-to-r from-primary/5 to-primary/10">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mic className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Mensagem por voz</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Globe className="h-3 w-3" />
+                    <span>🇧🇷 🇩🇪 🇺🇸</span>
+                  </div>
+                </div>
+
+                <VoiceInput
+                  onTranscript={handleVoiceTranscript}
+                  onInterimTranscript={handleVoiceInterim}
+                  placeholder="Toque para gravar sua mensagem..."
+                  showLanguageIndicator={false}
+                  autoLanguageDetection={true}
+                />
+
+                {/* Interim text preview */}
+                {voiceInterimText && (
+                  <div className="p-2 rounded-lg bg-background/80 border">
+                    <p className="text-sm text-muted-foreground">{voiceInterimText}</p>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground text-center">
+                  Fale em português, alemão ou inglês - ou misture os idiomas!
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Quick Templates */}
           {showTemplates && (
@@ -385,6 +470,7 @@ export default function PatientChatPage() {
                 onClick={() => {
                   setShowAttachmentMenu(!showAttachmentMenu);
                   setShowTemplates(false);
+                  setShowVoiceInput(false);
                 }}
               >
                 <Paperclip className="h-5 w-5" />
@@ -395,15 +481,27 @@ export default function PatientChatPage() {
                 onClick={() => {
                   setShowTemplates(!showTemplates);
                   setShowAttachmentMenu(false);
+                  setShowVoiceInput(false);
                 }}
               >
                 <Image className="h-5 w-5" />
+              </Button>
+              <Button
+                variant={showVoiceInput ? "default" : "ghost"}
+                size="icon"
+                onClick={() => {
+                  setShowVoiceInput(!showVoiceInput);
+                  setShowTemplates(false);
+                  setShowAttachmentMenu(false);
+                }}
+              >
+                <Mic className="h-5 w-5" />
               </Button>
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem..."
+                placeholder="Digite ou use voz (🇧🇷🇩🇪🇺🇸)..."
                 className="flex-1"
               />
               <Button
@@ -414,6 +512,12 @@ export default function PatientChatPage() {
                 <Send className="h-5 w-5" />
               </Button>
             </div>
+
+            {/* Language support indicator */}
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              <Globe className="h-3 w-3 inline mr-1" />
+              Suporte multilíngue: Português, Deutsch, English
+            </p>
           </div>
         </Card>
       </div>

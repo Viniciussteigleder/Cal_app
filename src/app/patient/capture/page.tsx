@@ -18,16 +18,18 @@ import {
   Check,
   Loader2,
   Clock,
-  MapPin,
   Utensils,
   Home,
   Briefcase,
   Plane,
   Zap,
+  Globe,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceInput, processMultilingualText } from "@/components/voice-input";
 
-type Step = "capture" | "checkin" | "details" | "confirm";
+type Step = "capture" | "voice" | "checkin" | "details" | "confirm";
 type PortionSize = "small" | "normal" | "large";
 type MealTag = "homemade" | "restaurant" | "delivery" | "work" | "travel";
 
@@ -47,6 +49,9 @@ export default function CaptureMealPage() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [description, setDescription] = useState("");
+  const [voiceDescription, setVoiceDescription] = useState("");
+  const [detectedFoods, setDetectedFoods] = useState<string[]>([]);
+  const [detectedLanguages, setDetectedLanguages] = useState<string[]>([]);
   const [portion, setPortion] = useState<PortionSize>("normal");
   const [tags, setTags] = useState<MealTag[]>(["homemade"]);
   const [mealTime, setMealTime] = useState(
@@ -60,6 +65,8 @@ export default function CaptureMealPage() {
     craving: "none",
     rushed: false,
   });
+  const [showVoiceForFeeling, setShowVoiceForFeeling] = useState(false);
+  const [feelingVoiceText, setFeelingVoiceText] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,12 +84,80 @@ export default function CaptureMealPage() {
     fileInputRef.current?.click();
   };
 
+  const handleVoiceOnly = () => {
+    setStep("voice");
+  };
+
+  const handleVoiceTranscript = (text: string, language?: string) => {
+    setVoiceDescription(text);
+    const processed = processMultilingualText(text);
+    setDetectedFoods(processed.foodMentions);
+    setDetectedLanguages(processed.detectedLanguages);
+
+    // Automatically populate description
+    setDescription((prev) => {
+      if (prev) return prev + " " + text;
+      return text;
+    });
+
+    toast.success("Voz processada!", {
+      description: `Detectado: ${processed.foodMentions.length} alimentos`,
+    });
+  };
+
+  const handleVoiceInterim = (text: string) => {
+    setVoiceDescription(text);
+  };
+
+  const handleFeelingVoiceTranscript = (text: string) => {
+    setFeelingVoiceText(text);
+
+    // Try to extract feeling indicators from voice
+    const lowerText = text.toLowerCase();
+
+    // Hunger detection
+    if (lowerText.includes("faminto") || lowerText.includes("muito fome") || lowerText.includes("starving") || lowerText.includes("sehr hungrig")) {
+      setCheckin(prev => ({ ...prev, hunger: 9 }));
+    } else if (lowerText.includes("fome") || lowerText.includes("hungry") || lowerText.includes("hungrig")) {
+      setCheckin(prev => ({ ...prev, hunger: 7 }));
+    } else if (lowerText.includes("sem fome") || lowerText.includes("not hungry") || lowerText.includes("nicht hungrig")) {
+      setCheckin(prev => ({ ...prev, hunger: 2 }));
+    }
+
+    // Energy detection
+    if (lowerText.includes("cansado") || lowerText.includes("tired") || lowerText.includes("müde")) {
+      setCheckin(prev => ({ ...prev, energy: 3 }));
+    } else if (lowerText.includes("energia") || lowerText.includes("energized") || lowerText.includes("energisch")) {
+      setCheckin(prev => ({ ...prev, energy: 8 }));
+    }
+
+    // Stress detection
+    if (lowerText.includes("estressado") || lowerText.includes("stressed") || lowerText.includes("gestresst")) {
+      setCheckin(prev => ({ ...prev, stress: 8 }));
+    } else if (lowerText.includes("relaxado") || lowerText.includes("relaxed") || lowerText.includes("entspannt")) {
+      setCheckin(prev => ({ ...prev, stress: 2 }));
+    }
+
+    // Mood detection
+    if (lowerText.includes("feliz") || lowerText.includes("happy") || lowerText.includes("glücklich") || lowerText.includes("bem")) {
+      setCheckin(prev => ({ ...prev, mood: 8 }));
+    } else if (lowerText.includes("triste") || lowerText.includes("sad") || lowerText.includes("traurig") || lowerText.includes("mal")) {
+      setCheckin(prev => ({ ...prev, mood: 3 }));
+    }
+
+    toast.success("Sentimento detectado e aplicado aos sliders");
+  };
+
   const handleSkipCheckin = () => {
     setStep("details");
   };
 
   const handleCompleteCheckin = () => {
     setStep("details");
+  };
+
+  const handleCompleteVoice = () => {
+    setStep("checkin");
   };
 
   const handleSave = async () => {
@@ -140,6 +215,12 @@ export default function CaptureMealPage() {
     </div>
   );
 
+  const languageFlags: Record<string, string> = {
+    "pt-BR": "🇧🇷",
+    "de-DE": "🇩🇪",
+    "en-US": "🇺🇸",
+  };
+
   return (
     <DashboardLayout role="patient">
       <div className="max-w-md mx-auto">
@@ -158,7 +239,7 @@ export default function CaptureMealPage() {
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="text-center">
               <h1 className="text-2xl font-bold">Registrar Refeição</h1>
-              <p className="text-muted-foreground">Tire uma foto do seu prato</p>
+              <p className="text-muted-foreground">Foto ou descrição por voz</p>
             </div>
 
             <Card className="aspect-[4/3] flex items-center justify-center bg-muted/30 border-dashed border-2 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -182,18 +263,113 @@ export default function CaptureMealPage() {
                 <ImageIcon className="h-4 w-4 mr-2" />
                 Galeria
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button variant="default" className="flex-1" onClick={handleVoiceOnly}>
                 <Mic className="h-4 w-4 mr-2" />
-                Descrever
+                Apenas Voz
               </Button>
+            </div>
+
+            {/* Multilingual indicator */}
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Globe className="h-4 w-4" />
+              <span>Suporte: 🇧🇷 Português 🇩🇪 Deutsch 🇺🇸 English</span>
             </div>
 
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => router.push("/patient/dashboard")}
+              onClick={() => router.push("/patient/today")}
             >
               Cancelar
+            </Button>
+          </div>
+        )}
+
+        {/* Step: Voice Only */}
+        {step === "voice" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="icon" onClick={() => setStep("capture")}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <div className="text-center">
+                <h1 className="text-lg font-bold">Descreva sua refeição</h1>
+                <p className="text-sm text-muted-foreground">
+                  Fale o que você comeu
+                </p>
+              </div>
+              <div className="w-9" />
+            </div>
+
+            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <CardContent className="pt-6 space-y-4">
+                <VoiceInput
+                  onTranscript={handleVoiceTranscript}
+                  onInterimTranscript={handleVoiceInterim}
+                  placeholder="Toque e fale sua refeição..."
+                  showLanguageIndicator={true}
+                  autoLanguageDetection={true}
+                />
+
+                {/* Voice description preview */}
+                {voiceDescription && (
+                  <div className="p-3 rounded-lg bg-background border">
+                    <p className="text-sm font-medium mb-1">Descrição detectada:</p>
+                    <p className="text-sm text-muted-foreground">{voiceDescription}</p>
+                  </div>
+                )}
+
+                {/* Detected foods */}
+                {detectedFoods.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Alimentos identificados:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {detectedFoods.map((food, i) => (
+                        <Badge key={i} variant="secondary">
+                          {food}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Detected languages */}
+                {detectedLanguages.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Globe className="h-3 w-3" />
+                    <span>Idiomas detectados:</span>
+                    {detectedLanguages.map((lang) => (
+                      <span key={lang}>{languageFlags[lang] || lang}</span>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Example phrases */}
+            <Card className="bg-muted/30">
+              <CardContent className="pt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Exemplos de como falar:
+                </p>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p>🇧🇷 "Comi arroz, feijão e frango grelhado"</p>
+                  <p>🇩🇪 "Ich habe Reis mit Huhn gegessen"</p>
+                  <p>🇺🇸 "I had rice, beans and chicken"</p>
+                  <p className="text-primary/70 mt-2">
+                    Você pode misturar idiomas na mesma frase!
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button
+              className="w-full"
+              onClick={handleCompleteVoice}
+              disabled={!voiceDescription && !description}
+            >
+              Continuar
+              <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         )}
@@ -202,7 +378,7 @@ export default function CaptureMealPage() {
         {step === "checkin" && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" onClick={() => setStep("capture")}>
+              <Button variant="ghost" size="icon" onClick={() => setStep(photo ? "capture" : "voice")}>
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <div className="text-center">
@@ -227,38 +403,90 @@ export default function CaptureMealPage() {
               </div>
             )}
 
+            {/* Voice description preview (if no photo) */}
+            {!photo && voiceDescription && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="h-4 w-4 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Sua descrição:</p>
+                      <p className="text-sm text-muted-foreground">{voiceDescription}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardContent className="pt-4 space-y-6">
-                {renderSlider(
-                  "Nível de fome",
-                  checkin.hunger,
-                  (val) => setCheckin({ ...checkin, hunger: val }),
-                  "Sem fome",
-                  "Faminto"
-                )}
+                {/* Voice check-in option */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Mic className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Descrever por voz</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowVoiceForFeeling(!showVoiceForFeeling)}
+                  >
+                    {showVoiceForFeeling ? "Usar sliders" : "Usar voz"}
+                  </Button>
+                </div>
 
-                {renderSlider(
-                  "Energia",
-                  checkin.energy,
-                  (val) => setCheckin({ ...checkin, energy: val }),
-                  "Cansado",
-                  "Energizado"
-                )}
+                {showVoiceForFeeling ? (
+                  <div className="space-y-4">
+                    <VoiceInput
+                      onTranscript={handleFeelingVoiceTranscript}
+                      placeholder="Como você está se sentindo?"
+                      showLanguageIndicator={false}
+                    />
 
-                {renderSlider(
-                  "Humor",
-                  checkin.mood,
-                  (val) => setCheckin({ ...checkin, mood: val }),
-                  "Ruim",
-                  "Ótimo"
-                )}
+                    {feelingVoiceText && (
+                      <div className="p-3 rounded-lg bg-muted/30 text-sm">
+                        <p className="text-muted-foreground">{feelingVoiceText}</p>
+                      </div>
+                    )}
 
-                {renderSlider(
-                  "Estresse",
-                  checkin.stress,
-                  (val) => setCheckin({ ...checkin, stress: val }),
-                  "Relaxado",
-                  "Estressado"
+                    <p className="text-xs text-muted-foreground text-center">
+                      Diga coisas como: "Estou com muita fome", "Feeling tired", "Ich bin gestresst"
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {renderSlider(
+                      "Nível de fome",
+                      checkin.hunger,
+                      (val) => setCheckin({ ...checkin, hunger: val }),
+                      "Sem fome",
+                      "Faminto"
+                    )}
+
+                    {renderSlider(
+                      "Energia",
+                      checkin.energy,
+                      (val) => setCheckin({ ...checkin, energy: val }),
+                      "Cansado",
+                      "Energizado"
+                    )}
+
+                    {renderSlider(
+                      "Humor",
+                      checkin.mood,
+                      (val) => setCheckin({ ...checkin, mood: val }),
+                      "Ruim",
+                      "Ótimo"
+                    )}
+
+                    {renderSlider(
+                      "Estresse",
+                      checkin.stress,
+                      (val) => setCheckin({ ...checkin, stress: val }),
+                      "Relaxado",
+                      "Estressado"
+                    )}
+                  </>
                 )}
 
                 {/* Craving */}
@@ -341,26 +569,49 @@ export default function CaptureMealPage() {
 
             <Card>
               <CardContent className="pt-4 space-y-4">
-                {/* Description */}
+                {/* Description with voice */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    O que você comeu? (opcional)
+                    O que você comeu?
                   </label>
-                  <div className="relative">
+                  <div className="space-y-2">
                     <Textarea
-                      placeholder="Ex: Arroz, feijão e frango grelhado"
+                      placeholder="Ex: Arroz, feijão e frango grelhado / Rice with chicken / Reis mit Huhn"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       className="min-h-[80px]"
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute bottom-2 right-2"
-                    >
-                      <Mic className="h-4 w-4" />
-                    </Button>
+
+                    <VoiceInput
+                      onTranscript={(text) => {
+                        setDescription((prev) => prev ? prev + " " + text : text);
+                        const processed = processMultilingualText(text);
+                        if (processed.foodMentions.length > 0) {
+                          setDetectedFoods((prev) => [...new Set([...prev, ...processed.foodMentions])]);
+                        }
+                      }}
+                      placeholder="Ou adicione por voz..."
+                      showLanguageIndicator={true}
+                      className="pt-2"
+                    />
                   </div>
+
+                  {/* Detected foods chips */}
+                  {detectedFoods.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-2">
+                      {detectedFoods.map((food, i) => (
+                        <Badge
+                          key={i}
+                          variant="secondary"
+                          className="text-xs cursor-pointer"
+                          onClick={() => setDetectedFoods((prev) => prev.filter((f) => f !== food))}
+                        >
+                          {food}
+                          <X className="h-3 w-3 ml-1" />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Portion */}
