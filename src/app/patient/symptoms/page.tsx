@@ -164,8 +164,8 @@ export default function PatientSymptomsPage() {
                       key={i}
                       onClick={() => setSelectedDiscomfort(i)}
                       className={`flex-1 min-w-[32px] p-2 rounded border text-sm hover:bg-muted transition-all ${selectedDiscomfort === i
-                        ? (i < 4 ? "bg-emerald-50 dark:bg-emerald-950/200 text-white border-emerald-600" : i < 7 ? "bg-amber-500 text-white border-amber-600" : "bg-red-500 text-white border-red-600")
-                        : "border-border"
+                        ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-200" : i < 7 ? "bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-200" : "bg-red-500 text-white border-red-600 shadow-md shadow-red-200")
+                        : "border-border hover:border-emerald-200 hover:bg-emerald-50/50"
                         }`}
                     >
                       {i}
@@ -305,17 +305,19 @@ export default function PatientSymptomsPage() {
               {CORRELATION_INSIGHTS.map((insight, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg ${insight.type === "warning" ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm" : "bg-emerald-50 dark:bg-emerald-950/200/10 border-emerald-500/20"
-                    } border`}
+                  className={`p-4 rounded-xl border transition-all ${insight.type === "warning"
+                    ? "bg-gradient-to-br from-white to-amber-50 border-amber-100 shadow-sm"
+                    : "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm"
+                    }`}
                 >
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     {insight.type === "warning" ? (
-                      <AlertCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     ) : (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <p className={`text-sm leading-relaxed ${insight.type === "warning" ? "text-slate-700" : "text-slate-200"}`}>{insight.message}</p>
+                      <p className="text-sm border-slate-700 font-medium text-slate-700 leading-relaxed">{insight.message}</p>
                       <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">
                         Confiança: {insight.confidence}%
                       </p>

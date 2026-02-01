@@ -21,7 +21,7 @@ export function PortalShell({
   children,
 }: PortalShellProps) {
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,_#fffaf3_0%,_#fdf2e3_65%,_#f9e8d2_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-emerald-50/60 via-slate-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <header className="border-b border-border/70 bg-background/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-6 md:flex-row md:items-end md:justify-between">
           <div>
