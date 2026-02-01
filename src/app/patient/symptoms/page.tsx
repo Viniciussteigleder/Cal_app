@@ -1,3 +1,5 @@
+'use client';
+
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -162,8 +164,8 @@ export default function PatientSymptomsPage() {
                       key={i}
                       onClick={() => setSelectedDiscomfort(i)}
                       className={`flex-1 min-w-[32px] p-2 rounded border text-sm hover:bg-muted transition-all ${selectedDiscomfort === i
-                          ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600" : i < 7 ? "bg-amber-500 text-white border-amber-600" : "bg-red-500 text-white border-red-600")
-                          : "border-slate-200"
+                        ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600" : i < 7 ? "bg-amber-500 text-white border-amber-600" : "bg-red-500 text-white border-red-600")
+                        : "border-slate-200"
                         }`}
                     >
                       {i}
@@ -188,8 +190,8 @@ export default function PatientSymptomsPage() {
                             key={symptom.id}
                             variant={isSelected ? "default" : "outline"}
                             className={`cursor-pointer transition-all py-1.5 px-3 select-none ${isSelected
-                                ? (key === 'histamine_systemic' ? "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200")
-                                : "hover:bg-slate-100 border-slate-200 text-slate-600"
+                              ? (key === 'histamine_systemic' ? "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200")
+                              : "hover:bg-slate-100 border-slate-200 text-slate-600"
                               }`}
                             onClick={() => toggleSymptom(symptom.id)}
                           >

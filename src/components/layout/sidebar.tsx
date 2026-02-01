@@ -95,6 +95,45 @@ export function Sidebar({ role }: SidebarProps) {
             </div>
 
             <div className="border-t border-border p-3 flex flex-col gap-1">
+                {/* Feature Toggles (Simple Mode & Dark Mode) */}
+                <div className={cn("px-3 py-2 space-y-3 mb-2", collapsed && "px-0 items-center flex flex-col")}>
+                    {!collapsed && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Preferências</p>}
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Activity className={cn("h-4 w-4 text-slate-500", !collapsed && "mr-0")} />
+                            {!collapsed && <span className="text-xs font-medium text-slate-600">Modo Simples</span>}
+                        </div>
+                        {!collapsed && (
+                            <Switch
+                                id="simple-mode"
+                                className="scale-75"
+                                onCheckedChange={(checked) => {
+                                    localStorage.setItem('simple-mode', checked ? 'true' : 'false');
+                                    window.dispatchEvent(new Event('storage'));
+                                }}
+                            />
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Snowflake className={cn("h-4 w-4 text-slate-500", !collapsed && "mr-0")} />
+                            {!collapsed && <span className="text-xs font-medium text-slate-600">Modo Escuro</span>}
+                        </div>
+                        {!collapsed && (
+                            <Switch
+                                id="dark-mode"
+                                className="scale-75"
+                                onCheckedChange={(checked) => {
+                                    document.documentElement.classList.toggle('dark', checked);
+                                    localStorage.setItem('dark-mode', checked ? 'true' : 'false');
+                                }}
+                            />
+                        )}
+                    </div>
+                </div>
+
                 <Link
                     href="/settings"
                     className={cn(
