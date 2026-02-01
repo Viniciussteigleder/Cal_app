@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ export default function StudioPlansPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -37,11 +37,11 @@ export default function StudioPlansPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.patientId]);
 
   useEffect(() => {
     refresh();
-  }, [params.patientId]);
+  }, [refresh]);
 
   const publishPlan = async () => {
     if (!planId) return;

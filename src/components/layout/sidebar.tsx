@@ -8,11 +8,9 @@ import {
     Calendar,
     TrendingUp,
     Activity,
-    MessageSquare,
     Settings,
     LogOut,
     ChevronLeft,
-    ChevronRight,
     User,
     Snowflake
 } from "lucide-react";

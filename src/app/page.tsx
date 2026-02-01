@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Check, ShieldCheck, Heart, Zap, ArrowRight, Quote } from "lucide-react";
+import { ShieldCheck, Heart, Zap, ArrowRight } from "lucide-react";
 
 export default function LandingPage() {
   return (

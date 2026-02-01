@@ -5,13 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-    AlertCircle,
     Activity,
     MessageCircle,
     ArrowRight,
     Flame,
     Clock,
-    CheckCircle2,
     Zap,
     TrendingUp,
     Filter
@@ -203,7 +201,7 @@ export default function StudioDashboard() {
                                     </p>
                                     <div className="flex gap-2 mt-3">
                                         <Button size="sm" variant="outline" className="text-xs h-7">Ver Logs Originais</Button>
-                                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-xs h-7">Sugerir Protocolo "Low Histamine"</Button>
+                                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-xs h-7">Sugerir Protocolo &quot;Low Histamine&quot;</Button>
                                     </div>
                                 </div>
                             </div>

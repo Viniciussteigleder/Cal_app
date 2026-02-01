@@ -1,6 +1,6 @@
 import type { PatientCategoryOverride, PatientDataPolicy } from "@prisma/client";
 
-import { prisma, type SessionClaims, withSession } from "./db";
+import { type SessionClaims, withSession } from "./db";
 
 export interface ResolveSourceInput {
   policy: PatientDataPolicy;

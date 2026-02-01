@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Download, Share2 } from "lucide-react";
+import { Download, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PlanPage() {

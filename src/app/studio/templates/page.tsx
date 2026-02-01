@@ -217,7 +217,7 @@ export default function TemplatesPage() {
           <h3 className="font-medium mb-2">Como usar templates?</h3>
           <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
             <li>Escolha um template base que corresponda ao objetivo do paciente</li>
-            <li>Use "Duplicar" para criar uma versão personalizada</li>
+            <li>Use &quot;Duplicar&quot; para criar uma versão personalizada</li>
             <li>Ao criar um plano, selecione o template para pré-preencher as refeições</li>
             <li>Ajuste as porções e alimentos conforme necessário</li>
           </ol>

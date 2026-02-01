@@ -9,20 +9,16 @@ export async function getSupabaseClaims(): Promise<SessionClaims | null> {
     return null;
   }
 
-  const { user } = data.session;
-  const tenant_id = (user.app_metadata?.tenant_id ?? user.user_metadata?.tenant_id) as
-    | string
-    | undefined;
-  const role = (user.app_metadata?.role ?? user.user_metadata?.role) as
-    | SessionClaims["role"]
-    | undefined;
+  const claims = data.session.user.app_metadata ?? {};
+  const tenant_id = claims.tenant_id as string | undefined;
+  const role = claims.role as SessionClaims["role"] | undefined;
 
   if (!tenant_id || !role) {
     return null;
   }
 
   return {
-    user_id: user.id,
+    user_id: data.session.user.id,
     tenant_id,
     role,
   };

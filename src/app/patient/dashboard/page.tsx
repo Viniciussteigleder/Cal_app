@@ -70,10 +70,6 @@ export default function PatientDashboard() {
     return () => controller.abort();
   }, [searchTerm]);
 
-  const handleLogMeal = () => {
-    setIsLogging(true);
-  };
-
   const handleQuickAdd = async () => {
     if (!selectedFood || !grams) return;
     const numericGrams = Number.parseFloat(grams.replace(",", ".").match(/\d+([.,]\d+)?/)?.[0] ?? "");

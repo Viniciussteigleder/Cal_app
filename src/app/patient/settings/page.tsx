@@ -2,19 +2,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-    User,
     Clock,
     ShieldCheck,
     Download,
     Trash2,
-    Bell,
     Smartphone,
-    Info
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/dashboard-layout";

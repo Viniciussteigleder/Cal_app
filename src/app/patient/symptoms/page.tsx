@@ -281,7 +281,7 @@ export default function PatientSymptomsPage() {
                         })}
                       </div>
                       {log.notes && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">"{log.notes}"</p>
+                        <p className="text-xs text-muted-foreground mt-1 italic">&quot;{log.notes}&quot;</p>
                       )}
                     </div>
                   </div>

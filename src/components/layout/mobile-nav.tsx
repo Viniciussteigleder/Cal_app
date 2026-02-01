@@ -18,6 +18,10 @@ interface MobileNavProps {
 export function MobileNav({ role }: MobileNavProps) {
     const pathname = usePathname();
 
+    if (role === "nutritionist") {
+        return null;
+    }
+
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 flex h-[72px] items-center justify-between border-t border-border bg-card px-6 pb-safe shadow-elevated md:hidden">
             <Link

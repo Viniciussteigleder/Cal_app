@@ -3,7 +3,7 @@
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, TrendingUp, Calendar, Weight } from "lucide-react";
+import { TrendingUp, Weight } from "lucide-react";
 
 export default function ProgressPage() {
     return (

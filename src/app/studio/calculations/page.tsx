@@ -17,8 +17,88 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+type HistamineInput = {
+    food: string;
+    histamineScore: number;
+    quantity: number;
+    freshnessPenalty: number;
+    subtotal: number;
+};
+
+type HistamineDetails = {
+    formula: string;
+    inputs: HistamineInput[];
+    threshold: number;
+    source: string;
+    confidence: number;
+};
+
+type CorrelationDetails = {
+    formula: string;
+    analysis: {
+        totalMeals: number;
+        mealsWithFeijao: number;
+        bloatingEvents: number;
+        bloatingAfterFeijao: number;
+        timeWindow: string;
+        correlation: number;
+        pValue: number;
+        interpretation: string;
+    };
+    source: string;
+    confidence: number;
+};
+
+type TdeeInputs = {
+    weight: number;
+    height: number;
+    age: number;
+    sex: string;
+    tmb: number;
+    activityFactor: number;
+    objective: string;
+    adjustment: number;
+};
+
+type TdeeDetails = {
+    formula: string;
+    inputs: TdeeInputs;
+    calculation: string;
+    source: string;
+    confidence: number;
+};
+
+type CalculationLog =
+    | {
+        id: number;
+        patient: string;
+        type: "Histamine Load";
+        timestamp: string;
+        result: number;
+        status: "critical" | "warning" | "normal";
+        details: HistamineDetails;
+    }
+    | {
+        id: number;
+        patient: string;
+        type: "Symptom Correlation";
+        timestamp: string;
+        result: string;
+        status: "critical" | "warning" | "normal";
+        details: CorrelationDetails;
+    }
+    | {
+        id: number;
+        patient: string;
+        type: "Cálculo TDEE";
+        timestamp: string;
+        result: number;
+        status: "critical" | "warning" | "normal";
+        details: TdeeDetails;
+    };
+
 // Sample calculation log data
-const CALCULATION_LOGS = [
+const CALCULATION_LOGS: CalculationLog[] = [
     {
         id: 1,
         patient: "Ana Silva",
@@ -176,9 +256,9 @@ export default function CalculationLogPage() {
                                             <span className="text-sm font-semibold text-slate-700">Dados de Entrada</span>
                                         </div>
 
-                                        {log.type === "Histamine Load" && Array.isArray(log.details.inputs) && (
+                                        {log.type === "Histamine Load" && (
                                             <div className="space-y-2">
-                                                {log.details.inputs.map((input: any, idx: number) => (
+                                                {log.details.inputs.map((input, idx) => (
                                                     <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-slate-100 text-sm">
                                                         <span className="font-medium text-slate-700">{input.food}</span>
                                                         <div className="flex items-center gap-4 text-xs text-slate-500">
@@ -221,24 +301,24 @@ export default function CalculationLogPage() {
                                             </div>
                                         )}
 
-                                        {log.type === "Cálculo TDEE" && log.details.inputs && (
+                                        {log.type === "Cálculo TDEE" && (
                                             <div className="space-y-2">
                                                 <div className="grid grid-cols-4 gap-2 text-sm">
                                                     <div className="p-2 bg-white rounded border">
                                                         <div className="text-[10px] text-slate-500">Peso</div>
-                                                        <div className="font-semibold">{(log.details.inputs as any).weight} kg</div>
+                                                        <div className="font-semibold">{log.details.inputs.weight} kg</div>
                                                     </div>
                                                     <div className="p-2 bg-white rounded border">
                                                         <div className="text-[10px] text-slate-500">Altura</div>
-                                                        <div className="font-semibold">{(log.details.inputs as any).height} cm</div>
+                                                        <div className="font-semibold">{log.details.inputs.height} cm</div>
                                                     </div>
                                                     <div className="p-2 bg-white rounded border">
                                                         <div className="text-[10px] text-slate-500">Idade</div>
-                                                        <div className="font-semibold">{(log.details.inputs as any).age} anos</div>
+                                                        <div className="font-semibold">{log.details.inputs.age} anos</div>
                                                     </div>
                                                     <div className="p-2 bg-white rounded border">
                                                         <div className="text-[10px] text-slate-500">Sexo</div>
-                                                        <div className="font-semibold">{(log.details.inputs as any).sex}</div>
+                                                        <div className="font-semibold">{log.details.inputs.sex}</div>
                                                     </div>
                                                 </div>
                                                 <div className="p-3 bg-emerald-50 rounded border border-emerald-200 text-sm">
