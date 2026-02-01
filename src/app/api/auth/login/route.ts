@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-// Demo users with their passwords (in production, use proper hashing)
-const DEMO_USERS: Record<string, { password: string; role: string }> = {
-  "patient@demo.nutriplan.com": { password: "demo123", role: "PATIENT" },
-  "nutri@demo.nutriplan.com": { password: "demo123", role: "TENANT_ADMIN" },
-  "owner@demo.nutriplan.com": { password: "demo123", role: "OWNER" },
+// Demo users configuration - passwords from environment variables
+const DEMO_USERS: Record<string, { role: string }> = {
+  "patient@demo.nutriplan.com": { role: "PATIENT" },
+  "nutri@demo.nutriplan.com": { role: "TENANT_ADMIN" },
+  "owner@demo.nutriplan.com": { role: "OWNER" },
 };
+
+// Get demo password from environment (defaults to empty string if not set)
+function getDemoPassword(): string {
+  return process.env.DEMO_PASSWORD || "";
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,12 +25,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase();
+
     // Check demo users first
-    const demoUser = DEMO_USERS[email.toLowerCase()];
-    if (demoUser && demoUser.password === password) {
+    const demoUser = DEMO_USERS[normalizedEmail];
+    const demoPassword = getDemoPassword();
+
+    if (demoUser && demoPassword && password === demoPassword) {
       // Find or create demo user in database
       let user = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() },
+        where: { email: normalizedEmail },
         include: { patient: true },
       });
 
@@ -48,7 +57,7 @@ export async function POST(request: NextRequest) {
         // Create the demo user
         user = await prisma.user.create({
           data: {
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             name: getDemoUserName(email),
             role: demoUser.role as "OWNER" | "TENANT_ADMIN" | "TEAM" | "PATIENT",
             tenant_id: tenant.id,
@@ -122,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     // Check database for existing users
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
       include: { patient: true },
     });
 
@@ -133,8 +142,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For non-demo users, we would check password hash here
-    // For now, allow any password for existing users (demo mode)
+    // For database users, verify password
+    // In production, implement proper password hashing with bcrypt
+    // For now, check against DEMO_PASSWORD for seeded users
+    if (demoPassword && password !== demoPassword) {
+      return NextResponse.json(
+        { error: "Email ou senha incorretos" },
+        { status: 401 }
+      );
+    }
 
     const sessionData = {
       userId: user.id,
