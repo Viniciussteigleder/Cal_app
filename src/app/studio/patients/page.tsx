@@ -54,8 +54,8 @@ export default function StudioPatientsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${patient.status === "Active"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                            : "bg-amber-50 text-amber-700 border border-amber-100"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          : "bg-gradient-to-br from-emerald-50 to-white text-emerald-700 border border-emerald-100"
                           }`}>
                           {patient.status === "Active" ? "Ativo" : "Pendente"}
                         </span>

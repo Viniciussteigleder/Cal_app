@@ -48,7 +48,7 @@ export function Sidebar({ role }: SidebarProps) {
     return (
         <aside
             className={cn(
-                "hidden border-r border-border bg-white transition-all duration-300 md:flex md:flex-col sticky top-0 h-screen overflow-y-auto",
+                "hidden border-r border-border bg-card transition-all duration-300 md:flex md:flex-col sticky top-0 h-screen overflow-y-auto",
                 collapsed ? "w-[72px]" : "w-[280px]"
             )}
         >
@@ -82,11 +82,11 @@ export function Sidebar({ role }: SidebarProps) {
                                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                                 isActive
                                     ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-muted-foreground hover:bg-slate-50 hover:text-foreground",
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                                 collapsed && "justify-center px-2"
                             )}
                         >
-                            <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-slate-500")} />
+                            <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-muted-foreground")} />
                             {!collapsed && <span>{link.label}</span>}
                             {isActive && !collapsed && (
                                 <div className="ml-auto w-1 h-1 rounded-full bg-white/50" />
@@ -99,12 +99,12 @@ export function Sidebar({ role }: SidebarProps) {
             <div className="border-t border-border p-3 flex flex-col gap-1">
                 {/* Feature Toggles (Simple Mode & Dark Mode) */}
                 <div className={cn("px-3 py-2 space-y-3 mb-2", collapsed && "px-0 items-center flex flex-col")}>
-                    {!collapsed && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Preferências</p>}
+                    {!collapsed && <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-2">Preferências</p>}
 
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Activity className={cn("h-4 w-4 text-slate-500", !collapsed && "mr-0")} />
-                            {!collapsed && <span className="text-xs font-medium text-slate-600">Modo Simples</span>}
+                            <Activity className={cn("h-4 w-4 text-muted-foreground", !collapsed && "mr-0")} />
+                            {!collapsed && <span className="text-xs font-medium text-foreground">Modo Simples</span>}
                         </div>
                         {!collapsed && (
                             <Switch
@@ -120,8 +120,8 @@ export function Sidebar({ role }: SidebarProps) {
 
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Snowflake className={cn("h-4 w-4 text-slate-500", !collapsed && "mr-0")} />
-                            {!collapsed && <span className="text-xs font-medium text-slate-600">Modo Escuro</span>}
+                            <Snowflake className={cn("h-4 w-4 text-muted-foreground", !collapsed && "mr-0")} />
+                            {!collapsed && <span className="text-xs font-medium text-foreground">Modo Escuro</span>}
                         </div>
                         {!collapsed && (
                             <Switch
@@ -139,21 +139,21 @@ export function Sidebar({ role }: SidebarProps) {
                 <Link
                     href={role === "patient" ? "/patient/settings" : "/studio/settings"}
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground transition-all",
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all",
                         collapsed && "justify-center px-2"
                     )}
                 >
-                    <Settings className="h-5 w-5 text-slate-500" />
+                    <Settings className="h-5 w-5 text-muted-foreground" />
                     {!collapsed && <span>Configurações</span>}
                 </Link>
                 <Link
                     href="/"
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-slate-50 hover:text-destructive transition-all",
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-destructive transition-all",
                         collapsed && "justify-center px-2"
                     )}
                 >
-                    <LogOut className="h-5 w-5 text-slate-500 hover:text-destructive" />
+                    <LogOut className="h-5 w-5 text-muted-foreground hover:text-destructive" />
                     {!collapsed && <span>Sair</span>}
                 </Link>
 

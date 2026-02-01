@@ -39,8 +39,8 @@ export default function PatientSettingsPage() {
         <DashboardLayout role="patient">
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Configurações</h1>
-                    <p className="text-slate-500 mt-1">Gerencie seu perfil, preferências de dieta e privacidade.</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Configurações</h1>
+                    <p className="text-muted-foreground mt-1">Gerencie seu perfil, preferências de dieta e privacidade.</p>
                 </div>
 
                 <div className="grid gap-6">
@@ -69,16 +69,16 @@ export default function PatientSettingsPage() {
                                             <SelectItem value="08:00">08:00 AM</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <div className="text-xs text-slate-500 flex items-center bg-slate-50 px-3 rounded-md border border-slate-100 italic">
+                                    <div className="text-xs text-muted-foreground flex items-center bg-muted/40 px-3 rounded-md border border-border italic">
                                         Útil para trabalhadores noturnos ou regime de plantão.
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 rounded-xl bg-purple-50 border border-purple-100">
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-purple-50 border border-purple-100 dark:bg-purple-950/20 dark:border-purple-900/40">
                                 <div className="space-y-0.5">
-                                    <Label className="text-purple-900">Push de Histamina</Label>
-                                    <p className="text-xs text-purple-700">Notificar quando reaquecer alimentos com alto risco.</p>
+                                    <Label className="text-purple-900 dark:text-purple-100">Push de Histamina</Label>
+                                    <p className="text-xs text-purple-700 dark:text-purple-300">Notificar quando reaquecer alimentos com alto risco.</p>
                                 </div>
                                 <Switch defaultChecked />
                             </div>
@@ -96,8 +96,8 @@ export default function PatientSettingsPage() {
                         <CardContent className="pt-6 space-y-6">
                             <div className="flex items-start justify-between">
                                 <div className="space-y-1">
-                                    <h4 className="text-sm font-bold text-slate-900">Exportar Meus Dados</h4>
-                                    <p className="text-xs text-slate-500 leading-relaxed max-w-md">
+                                    <h4 className="text-sm font-bold text-foreground">Exportar Meus Dados</h4>
+                                    <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
                                         Baixe uma cópia completa de todos os seus registros alimentares, sintomas e notas em formato legível por máquina (JSON/CSV).
                                     </p>
                                 </div>
@@ -107,10 +107,10 @@ export default function PatientSettingsPage() {
                                 </Button>
                             </div>
 
-                            <div className="border-t border-slate-100 pt-6 flex items-start justify-between">
+                            <div className="border-t border-border pt-6 flex items-start justify-between">
                                 <div className="space-y-1">
                                     <h4 className="text-sm font-bold text-red-600">Excluir Conta e Dados</h4>
-                                    <p className="text-xs text-slate-500 leading-relaxed max-w-md">
+                                    <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
                                         Remoção definitiva de todos os dados clínicos dos nossos servidores. Esta ação não pode ser desfeita.
                                     </p>
                                 </div>

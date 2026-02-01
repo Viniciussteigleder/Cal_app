@@ -149,10 +149,10 @@ export default function PatientLogPage() {
               </div>
 
               {/* Critical Histamine/Gut Conditions */}
-              <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-4 space-y-4">
+              <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 space-y-4 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                  <label className="text-sm font-bold text-amber-900">Condições Críticas (Histamina)</label>
+                  <AlertCircle className="w-4 h-4 text-emerald-600" />
+                  <label className="text-sm font-bold text-emerald-900">Condições Críticas (Histamina)</label>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

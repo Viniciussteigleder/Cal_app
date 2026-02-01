@@ -305,12 +305,12 @@ export default function PatientSymptomsPage() {
               {CORRELATION_INSIGHTS.map((insight, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg ${insight.type === "warning" ? "bg-amber-500/10 border-amber-500/20" : "bg-emerald-500/10 border-emerald-500/20"
+                  className={`p-3 rounded-lg ${insight.type === "warning" ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm" : "bg-emerald-500/10 border-emerald-500/20"
                     } border`}
                 >
                   <div className="flex gap-2">
                     {insight.type === "warning" ? (
-                      <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     )}

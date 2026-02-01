@@ -72,7 +72,7 @@ const GOAL_CONFIG = {
   maintain: { icon: Minus, label: "Manutenção", color: "text-blue-600 bg-blue-50" },
   protocol_fodmap: { icon: Target, label: "FODMAP", color: "text-purple-600 bg-purple-50" },
   protocol_lactose: { icon: Target, label: "Sem Lactose", color: "text-pink-600 bg-pink-50" },
-  protocol_gluten: { icon: Target, label: "Sem Glúten", color: "text-amber-600 bg-amber-50" },
+  protocol_gluten: { icon: Target, label: "Sem Glúten", color: "text-emerald-600 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100" },
   custom: { icon: FileEdit, label: "Personalizado", color: "text-gray-600 bg-gray-50" },
 };
 

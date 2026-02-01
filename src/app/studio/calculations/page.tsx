@@ -127,7 +127,7 @@ export default function CalculationLogPage() {
                                             <CardTitle className="text-lg">{log.patient}</CardTitle>
                                             <Badge
                                                 variant={log.status === 'critical' ? 'destructive' : log.status === 'warning' ? 'default' : 'secondary'}
-                                                className={log.status === 'warning' ? 'bg-amber-100 text-amber-700 border-amber-200' : ''}
+                                                className={log.status === 'warning' ? 'bg-gradient-to-br from-emerald-50 to-white text-emerald-700 border-emerald-200' : ''}
                                             >
                                                 {log.type}
                                             </Badge>
@@ -210,9 +210,9 @@ export default function CalculationLogPage() {
                                                     <div className="text-xs text-slate-500">Total de Inchaço</div>
                                                     <div className="text-2xl font-bold text-slate-900">{log.details.analysis.bloatingEvents}</div>
                                                 </div>
-                                                <div className="p-3 bg-amber-50 rounded border border-amber-200">
-                                                    <div className="text-xs text-amber-600">Inchaço APÓS Feijão</div>
-                                                    <div className="text-2xl font-bold text-amber-700">{log.details.analysis.bloatingAfterFeijao}</div>
+                                                <div className="p-3 bg-gradient-to-br from-emerald-50 to-white rounded border border-emerald-100">
+                                                    <div className="text-xs text-emerald-600">Inchaço APÓS Feijão</div>
+                                                    <div className="text-2xl font-bold text-emerald-700">{log.details.analysis.bloatingAfterFeijao}</div>
                                                 </div>
                                                 <div className="col-span-2 p-3 bg-blue-50 rounded border border-blue-200">
                                                     <div className="text-xs text-blue-600 mb-1">Interpretação Estatística</div>

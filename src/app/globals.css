@@ -78,9 +78,48 @@
   }
 
   .dark {
+    /* Dark Mode Overrides */
     --background: 222 47% 11%;
+    /* #0F172A Slate 900 */
     --foreground: 210 40% 98%;
-    /* Add full dark mode overrides if requested, but brief focuses on 'professional, modern' which often implies light/clean for clinical, with dark sidebar option. Assuming light mode primary for now per brief colors (white backgrounds) */
+    /* #F1F5F9 Slate 100 */
+
+    --primary: 160 84% 39%;
+    /* Emerald 500 (Keep same identity) */
+    --primary-foreground: 0 0% 100%;
+
+    --primary-dark: 161 94% 30%;
+    --primary-light: 161 90% 15%;
+    /* Much darker green for backgrounds */
+
+    --card: 222 47% 11%;
+    /* Slate 900 base */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --secondary: 217 33% 17.5%;
+    /* Slate 800 */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17.5%;
+    /* Slate 800 */
+    --muted-foreground: 215 20% 65%;
+    /* Slate 400 */
+
+    --accent: 217 33% 17.5%;
+    /* Slate 800 */
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    /* Darker Red */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17.5%;
+    /* Slate 800 */
+    --input: 217 33% 17.5%;
+    --ring: 160 84% 39%;
   }
 }
 

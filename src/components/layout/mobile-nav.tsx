@@ -19,7 +19,7 @@ export function MobileNav({ role }: MobileNavProps) {
     const pathname = usePathname();
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex h-[72px] items-center justify-between border-t border-border bg-white px-6 pb-safe shadow-elevated md:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex h-[72px] items-center justify-between border-t border-border bg-card px-6 pb-safe shadow-elevated md:hidden">
             <Link
                 href="/patient/dashboard"
                 className={cn("flex flex-col items-center gap-1", pathname === "/patient/dashboard" ? "text-primary" : "text-muted-foreground")}

@@ -8,7 +8,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, role = "patient" }: DashboardLayoutProps) {
     return (
-        <div className="flex min-h-screen bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-emerald-50/60 via-slate-50 to-white">
+        <div className="flex min-h-screen bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-emerald-50/60 via-slate-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             <Sidebar role={role} />
             <div className="flex-1 flex flex-col min-h-screen pb-[72px] md:pb-0">
                 <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
