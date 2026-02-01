@@ -31,3 +31,7 @@ pnpm integrity:run
 - Protocolos GI estruturados estão em MVP2.
 - i18n completo (DE) em MVP3.
 - Autenticação Supabase é planejada, com stub via session variables no MVP1.
+
+## Assumptions
+- Claims são fornecidas via session variables no banco enquanto Supabase Auth
+  não é integrado ao MVP1.
