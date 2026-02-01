@@ -2,26 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 40 33% 96%;
-  --foreground: 210 11% 15%;
-  --card: 40 33% 98%;
-  --card-foreground: 210 11% 15%;
-  --muted: 45 20% 92%;
-  --muted-foreground: 215 10% 38%;
-  --primary: 14 71% 51%;
-  --primary-foreground: 0 0% 98%;
-  --border: 30 15% 86%;
-  --ring: 14 71% 51%;
-  --radius: 12px;
+@layer base {
+  :root {
+    /* NutriPlan Theme - Clinical Trust & Freshness */
+
+    /* Primary: Emerald #10B981 -> 160 84% 39% */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Hover/Dark: Emerald Dark #059669 -> 161 94% 30% */
+    --primary-dark: 161 94% 30%;
+
+    /* Light/Bg: Emerald Light #D1FAE5 -> 150 86% 90% */
+    --primary-light: 150 86% 90%;
+
+    /* Secondary: Used for accents, sticking to Slate 100/200 for now or specific semantics */
+    --secondary: 210 40% 96.1%;
+    /* Slate 100 */
+    --secondary-foreground: 222 47.4% 11.2%;
+    /* Slate 900 */
+
+    /* Backgrounds */
+    --background: 210 40% 98%;
+    /* Slate 50 #F8FAFC */
+    --foreground: 222 47% 11%;
+    /* Slate 900 #0F172A */
+
+    /* Cards */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* UI Elements */
+    --muted: 210 40% 96.1%;
+    /* Slate 100 */
+    --muted-foreground: 215 16% 47%;
+    /* Slate 400 approx */
+
+    --accent: 150 86% 90%;
+    /* Emerald Light */
+    --accent-foreground: 161 94% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    /* Error #EF4444 */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    /* Slate 200 #E2E8F0 */
+    --input: 214.3 31.8% 91.4%;
+    --ring: 160 84% 39%;
+    /* Primary Ring */
+
+    --radius: 0.75rem;
+    /* 12px (Medium) default */
+
+    /* Semantic Colors */
+    --success: 142 71% 45%;
+    /* #22C55E */
+    --warning: 38 92% 50%;
+    /* #F59E0B */
+    --error: 0 84% 60%;
+    /* #EF4444 */
+    --info: 217 91% 60%;
+    /* #3B82F6 */
+
+    /* Macros */
+    --macro-protein: 0 100% 71%;
+    /* #FF6B6B */
+    --macro-carb: 271 91% 65%;
+    /* #A855F7 */
+    --macro-fat: 38 92% 50%;
+    /* #F59E0B */
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    /* Add full dark mode overrides if requested, but brief focuses on 'professional, modern' which often implies light/clean for clinical, with dark sidebar option. Assuming light mode primary for now per brief colors (white backgrounds) */
+  }
 }
 
-* {
-  border-color: hsl(var(--border));
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-body {
-  @apply bg-background text-foreground;
-  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", sans-serif;
+/* Custom Utilities requested in brief */
+@layer utilities {
+  .shadow-subtle {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .shadow-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .shadow-elevated {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .shadow-modal {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
 }

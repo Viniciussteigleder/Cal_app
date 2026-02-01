@@ -1,0 +1,53 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: NutriPlan
+          - heading "Portal do Nutricionista" [level=1] [ref=e7]
+          - paragraph [ref=e8]: Gerencie pacientes, consultas e planos com auditoria completa.
+        - navigation [ref=e9]:
+          - link "Pacientes" [ref=e10] [cursor=pointer]:
+            - /url: /studio/patients
+          - link "Protocolos" [ref=e11] [cursor=pointer]:
+            - /url: /studio/protocols
+          - link "Receitas" [ref=e12] [cursor=pointer]:
+            - /url: /studio/recipes
+          - link "Templates" [ref=e13] [cursor=pointer]:
+            - /url: /studio/templates
+          - link "Planos" [ref=e14] [cursor=pointer]:
+            - /url: /studio/plans/1
+    - main [ref=e15]:
+      - generic [ref=e17]:
+        - heading "Pacientes ativos" [level=3] [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - generic [ref=e23]: Buscar paciente
+              - textbox "Nome, e-mail ou prontuário" [ref=e24]
+            - button "Novo paciente" [active] [ref=e25] [cursor=pointer]
+          - table [ref=e27]:
+            - rowgroup [ref=e28]:
+              - row "Paciente Status Última consulta Plano ativo" [ref=e29]:
+                - columnheader "Paciente" [ref=e30]
+                - columnheader "Status" [ref=e31]
+                - columnheader "Última consulta" [ref=e32]
+                - columnheader "Plano ativo" [ref=e33]
+            - rowgroup [ref=e34]:
+              - row "Maria Silva Ativo 15/01/2026 Versão 3" [ref=e35]:
+                - cell "Maria Silva" [ref=e36]
+                - cell "Ativo" [ref=e37]
+                - cell "15/01/2026" [ref=e38]
+                - cell "Versão 3" [ref=e39]
+              - row "João Pereira Ativo 09/01/2026 Versão 2" [ref=e40]:
+                - cell "João Pereira" [ref=e41]
+                - cell "Ativo" [ref=e42]
+                - cell "09/01/2026" [ref=e43]
+                - cell "Versão 2" [ref=e44]
+  - button "Open Next.js Dev Tools" [ref=e50] [cursor=pointer]:
+    - img [ref=e51]
+  - alert [ref=e54]
+```
