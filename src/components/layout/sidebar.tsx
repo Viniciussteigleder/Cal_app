@@ -8,18 +8,24 @@ import {
     Calendar,
     TrendingUp,
     Activity,
-    MessageSquare,
     Settings,
     LogOut,
     ChevronLeft,
-    ChevronRight,
     User,
-    Snowflake
+    Snowflake,
+    Users,
+    FileText,
+    BookOpen,
+    ClipboardList,
+    Building2,
+    Database,
+    ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
+import { useUser } from "@/components/user-provider";
 
 interface SidebarProps {
     role: "patient" | "nutritionist" | "admin";
@@ -28,6 +34,7 @@ interface SidebarProps {
 export function Sidebar({ role }: SidebarProps) {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const { user, logout } = useUser();
 
     const patientLinks = [
         { href: "/patient/dashboard", label: "Início", icon: Home },
@@ -38,12 +45,21 @@ export function Sidebar({ role }: SidebarProps) {
     ];
 
     const nutritionistLinks = [
-        { href: "/studio/dashboard", label: "Dashboard", icon: Home }, // Using Home for consistency in this example
-        { href: "/studio/patients", label: "Pacientes", icon: User },
-        // Add other links per brief
+        { href: "/studio/dashboard", label: "Dashboard", icon: Home },
+        { href: "/studio/patients", label: "Pacientes", icon: Users },
+        { href: "/studio/protocols", label: "Protocolos", icon: FileText },
+        { href: "/studio/recipes", label: "Receitas", icon: BookOpen },
+        { href: "/studio/templates", label: "Templates", icon: ClipboardList },
     ];
 
-    const links = role === "patient" ? patientLinks : nutritionistLinks;
+    const adminLinks = [
+        { href: "/owner/tenants", label: "Clínicas", icon: Building2 },
+        { href: "/owner/users", label: "Usuários", icon: Users },
+        { href: "/owner/datasets", label: "Datasets", icon: Database },
+        { href: "/owner/integrity", label: "Integridade", icon: ShieldCheck },
+    ];
+
+    const links = role === "patient" ? patientLinks : role === "admin" ? adminLinks : nutritionistLinks;
 
     return (
         <aside
@@ -146,23 +162,28 @@ export function Sidebar({ role }: SidebarProps) {
                     <Settings className="h-5 w-5 text-muted-foreground" />
                     {!collapsed && <span>Configurações</span>}
                 </Link>
-                <Link
-                    href="/"
+                <button
+                    onClick={logout}
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-destructive transition-all",
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-destructive transition-all w-full",
                         collapsed && "justify-center px-2"
                     )}
                 >
                     <LogOut className="h-5 w-5 text-muted-foreground hover:text-destructive" />
                     {!collapsed && <span>Sair</span>}
-                </Link>
+                </button>
 
                 <div className={cn("mt-4 flex items-center gap-3 px-1", collapsed && "justify-center")}>
-                    <div className="h-8 w-8 rounded-full bg-slate-200" />
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                        {user?.name?.charAt(0) || "U"}
+                    </div>
                     {!collapsed && (
                         <div className="overflow-hidden">
-                            <p className="truncate text-sm font-medium">Maria Sola</p>
-                            <p className="truncate text-xs text-muted-foreground">Paciente</p>
+                            <p className="truncate text-sm font-medium">{user?.name || "Usuário"}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                                {user?.role === "PATIENT" ? "Paciente" :
+                                 user?.role === "OWNER" ? "Administrador" : "Nutricionista"}
+                            </p>
                         </div>
                     )}
                 </div>
