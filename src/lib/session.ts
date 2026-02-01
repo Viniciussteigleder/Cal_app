@@ -8,9 +8,9 @@ const CLAIMS_COOKIE_KEYS = {
   role: "np_role",
 } as const;
 
-export function getSessionClaims(): SessionClaims | null {
-  const cookieStore = cookies();
-  const headerStore = headers();
+export async function getSessionClaims(): Promise<SessionClaims | null> {
+  const cookieStore = await cookies();
+  const headerStore = await headers();
 
   const user_id =
     cookieStore.get(CLAIMS_COOKIE_KEYS.user_id)?.value ??
@@ -31,7 +31,7 @@ export function getSessionClaims(): SessionClaims | null {
   return { user_id, tenant_id, role };
 }
 
-export function getOwnerModeFromHeaders() {
-  const headerStore = headers();
+export async function getOwnerModeFromHeaders() {
+  const headerStore = await headers();
   return headerStore.get("x-owner-mode") === "true";
 }

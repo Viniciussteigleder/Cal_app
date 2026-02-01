@@ -207,14 +207,16 @@ model Patient {
   status           PatientStatus
   created_at       DateTime      @default(now())
 
-  tenant        Tenant        @relation(fields: [tenant_id], references: [id])
-  user          User?         @relation(fields: [user_id], references: [id])
-  profile       PatientProfile?
-  conditions    PatientCondition[]
-  data_policies PatientDataPolicy[]
-  consultations Consultation[]
-  plans         Plan[]
-  meals         Meal[]
+  tenant             Tenant        @relation(fields: [tenant_id], references: [id])
+  user               User?         @relation(fields: [user_id], references: [id])
+  profile            PatientProfile?
+  conditions         PatientCondition[]
+  data_policies      PatientDataPolicy[]
+  consultations      Consultation[]
+  plans              Plan[]
+  meals              Meal[]
+  symptom_logs       SymptomLog[]
+  protocol_instances PatientProtocolInstance[]
 }
 
 model PatientProfile {
@@ -244,6 +246,67 @@ model PatientCondition {
   patient Patient @relation(fields: [patient_id], references: [id])
 }
 
+// ============================================================================
+// MVP2: Symptom Logging & Tracking
+// ============================================================================
+
+enum BristolScale {
+  type_1  // Hard lumps
+  type_2  // Lumpy sausage
+  type_3  // Sausage with cracks
+  type_4  // Smooth snake (ideal)
+  type_5  // Soft blobs
+  type_6  // Fluffy pieces
+  type_7  // Watery
+}
+
+enum SymptomType {
+  gas
+  bloating
+  abdominal_pain
+  nausea
+  reflux
+  diarrhea
+  constipation
+  cramping
+  fatigue
+  headache
+  other
+}
+
+model SymptomLog {
+  id             String       @id @default(uuid())
+  tenant_id      String
+  patient_id     String
+  logged_at      DateTime     @default(now())
+  bristol_scale  BristolScale?
+  discomfort_level Int?       // 0-10 scale
+  symptoms       SymptomType[]
+  notes          String?
+  created_at     DateTime     @default(now())
+
+  patient      Patient           @relation(fields: [patient_id], references: [id])
+  correlations SymptomMealCorrelation[]
+
+  @@index([patient_id, logged_at])
+}
+
+model SymptomMealCorrelation {
+  id              String   @id @default(uuid())
+  tenant_id       String
+  symptom_log_id  String
+  meal_id         String
+  correlation_score Decimal? // 0-1 score indicating correlation strength
+  notes           String?
+  is_flagged      Boolean  @default(false) // Manual flag for review
+  created_at      DateTime @default(now())
+
+  symptom_log SymptomLog @relation(fields: [symptom_log_id], references: [id])
+  meal        Meal       @relation(fields: [meal_id], references: [id])
+
+  @@unique([symptom_log_id, meal_id])
+}
+
 model Consultation {
   id         String   @id @default(uuid())
   tenant_id  String
@@ -255,13 +318,115 @@ model Consultation {
   patient Patient @relation(fields: [patient_id], references: [id])
 }
 
+// ============================================================================
+// MVP2: Protocol Engine
+// ============================================================================
+
+enum ProtocolType {
+  FODMAP
+  LACTOSE
+  GLUTEN
+  CONSTIPATION
+  REFLUX
+  DIARRHEA
+  CUSTOM
+}
+
+enum ProtocolPhaseType {
+  elimination
+  reintroduction
+  maintenance
+  custom
+}
+
+enum FoodTagAction {
+  allowed
+  avoid
+  caution
+}
+
 model Protocol {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   tenant_id   String
-  name        String
+  code        String       // e.g., "FODMAP", "LACTOSE"
+  name        String       // Display name in pt-BR
+  type        ProtocolType
   description String?
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
+  is_active   Boolean      @default(true)
+  is_system   Boolean      @default(false) // System protocols can't be deleted
+  created_at  DateTime     @default(now())
+
+  phases    ProtocolPhase[]
+  instances PatientProtocolInstance[]
+
+  @@unique([tenant_id, code])
+}
+
+model ProtocolPhase {
+  id              String           @id @default(uuid())
+  protocol_id     String
+  phase_type      ProtocolPhaseType
+  name            String           // e.g., "Eliminação", "Reintrodução"
+  description     String?
+  order           Int              // Phase order
+  default_days    Int?             // Default duration in days
+  rules_json      Json?            // Additional rules for this phase
+  created_at      DateTime         @default(now())
+
+  protocol  Protocol            @relation(fields: [protocol_id], references: [id])
+  food_tags ProtocolFoodTag[]
+  patient_phases PatientProtocolPhase[]
+
+  @@unique([protocol_id, order])
+}
+
+model ProtocolFoodTag {
+  id            String        @id @default(uuid())
+  phase_id      String
+  food_group    FoodGroup     // Which food group this applies to
+  tag           String        // e.g., "high_fodmap", "lactose_high"
+  action        FoodTagAction // allowed, avoid, caution
+  notes         String?       // Additional guidance
+  created_at    DateTime      @default(now())
+
+  phase ProtocolPhase @relation(fields: [phase_id], references: [id])
+
+  @@unique([phase_id, food_group, tag])
+}
+
+model PatientProtocolInstance {
+  id            String   @id @default(uuid())
+  tenant_id     String
+  patient_id    String
+  protocol_id   String
+  started_at    DateTime @default(now())
+  ended_at      DateTime?
+  is_active     Boolean  @default(true)
+  notes         String?
+  created_by    String   // Nutritionist who assigned
+  created_at    DateTime @default(now())
+
+  patient  Patient                @relation(fields: [patient_id], references: [id])
+  protocol Protocol               @relation(fields: [protocol_id], references: [id])
+  phases   PatientProtocolPhase[]
+
+  @@index([patient_id, is_active])
+}
+
+model PatientProtocolPhase {
+  id                  String    @id @default(uuid())
+  instance_id         String
+  phase_id            String
+  started_at          DateTime  @default(now())
+  ended_at            DateTime?
+  is_current          Boolean   @default(true)
+  transition_note     String?   // Note when transitioning phases
+  created_at          DateTime  @default(now())
+
+  instance PatientProtocolInstance @relation(fields: [instance_id], references: [id])
+  phase    ProtocolPhase           @relation(fields: [phase_id], references: [id])
+
+  @@index([instance_id, is_current])
 }
 
 model FoodCanonical {
@@ -273,9 +438,81 @@ model FoodCanonical {
   is_generic Boolean
   created_at DateTime   @default(now())
 
-  nutrients FoodNutrient[]
-  aliases   FoodAlias[]
-  snapshots FoodSnapshot[]
+  nutrients     FoodNutrient[]
+  aliases       FoodAlias[]
+  snapshots     FoodSnapshot[]
+  substitutions FoodSubstitution[]  @relation("OriginalFood")
+  substitutes   FoodSubstitution[]  @relation("SubstituteFood")
+  recipe_ingredients RecipeIngredient[]
+}
+
+// ============================================================================
+// MVP2: Recipe & Substitution Library
+// ============================================================================
+
+enum SubstitutionType {
+  isocaloric      // Same calories
+  isoproteic      // Same protein
+  low_fodmap      // FODMAP-safe alternative
+  lactose_free    // Lactose-free alternative
+  gluten_free     // Gluten-free alternative
+  general         // General substitution
+}
+
+model Recipe {
+  id              String   @id @default(uuid())
+  tenant_id       String
+  name            String
+  description     String?
+  instructions    String?  // Cooking instructions
+  prep_time_min   Int?     // Preparation time in minutes
+  cook_time_min   Int?     // Cooking time in minutes
+  servings        Int      @default(1)
+  is_public       Boolean  @default(false) // Shared across clinic
+  is_favorite     Boolean  @default(false) // Clinic favorite
+  tags            String[] // e.g., ["low_fodmap", "high_protein"]
+  created_by      String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+
+  @@index([tenant_id, is_public])
+  @@index([tenant_id, is_favorite])
+}
+
+model RecipeIngredient {
+  id          String   @id @default(uuid())
+  recipe_id   String
+  food_id     String
+  grams       Decimal
+  notes       String?  // e.g., "diced", "cooked"
+  order       Int      @default(0)
+  created_at  DateTime @default(now())
+
+  recipe Recipe        @relation(fields: [recipe_id], references: [id])
+  food   FoodCanonical @relation(fields: [food_id], references: [id])
+
+  @@unique([recipe_id, food_id])
+}
+
+model FoodSubstitution {
+  id                  String           @id @default(uuid())
+  tenant_id           String
+  original_food_id    String
+  substitute_food_id  String
+  substitution_type   SubstitutionType
+  ratio               Decimal          @default(1.0) // grams substitute per gram original
+  notes               String?
+  is_verified         Boolean          @default(false)
+  created_by          String
+  created_at          DateTime         @default(now())
+
+  original_food   FoodCanonical @relation("OriginalFood", fields: [original_food_id], references: [id])
+  substitute_food FoodCanonical @relation("SubstituteFood", fields: [substitute_food_id], references: [id])
+
+  @@unique([tenant_id, original_food_id, substitute_food_id, substitution_type])
+  @@index([tenant_id, substitution_type])
 }
 
 model FoodAlias {
@@ -407,9 +644,10 @@ model Meal {
   totals_json Json?
   created_at  DateTime @default(now())
 
-  tenant  Tenant  @relation(fields: [tenant_id], references: [id])
-  patient Patient @relation(fields: [patient_id], references: [id])
-  items   MealItem[]
+  tenant       Tenant  @relation(fields: [tenant_id], references: [id])
+  patient      Patient @relation(fields: [patient_id], references: [id])
+  items        MealItem[]
+  correlations SymptomMealCorrelation[]
 
   @@index([patient_id, date])
 }
@@ -427,12 +665,65 @@ model MealItem {
   snapshot FoodSnapshot @relation(fields: [snapshot_id], references: [id])
 }
 
+// ============================================================================
+// MVP2: Plan Templates
+// ============================================================================
+
+enum TemplateGoal {
+  loss
+  gain
+  maintain
+  protocol_fodmap
+  protocol_lactose
+  protocol_gluten
+  custom
+}
+
+model PlanTemplate {
+  id            String       @id @default(uuid())
+  tenant_id     String
+  name          String
+  description   String?
+  goal          TemplateGoal
+  target_kcal   Int?         // Target calories (can be null for percentage-based)
+  macro_split   Json?        // e.g., { protein: 30, carbs: 40, fat: 30 }
+  is_public     Boolean      @default(false)
+  is_system     Boolean      @default(false) // System templates can't be deleted
+  tags          String[]
+  created_by    String
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+
+  items PlanTemplateItem[]
+
+  @@index([tenant_id, is_public])
+  @@index([tenant_id, goal])
+}
+
+model PlanTemplateItem {
+  id              String   @id @default(uuid())
+  template_id     String
+  meal_type       MealType
+  food_id         String?  // Optional - can be placeholder
+  placeholder     String?  // e.g., "Proteína magra", "Carboidrato complexo"
+  grams           Decimal?
+  percentage_kcal Decimal? // Percentage of daily calories
+  instructions    String?
+  order           Int      @default(0)
+  created_at      DateTime @default(now())
+
+  template PlanTemplate @relation(fields: [template_id], references: [id])
+
+  @@index([template_id, meal_type])
+}
+
 model Plan {
-  id         String     @id @default(uuid())
-  tenant_id  String
-  patient_id String
-  status     PlanStatus
-  created_at DateTime   @default(now())
+  id           String     @id @default(uuid())
+  tenant_id    String
+  patient_id   String
+  template_id  String?    // Optional template used as base
+  status       PlanStatus
+  created_at   DateTime   @default(now())
 
   tenant   Tenant       @relation(fields: [tenant_id], references: [id])
   patient  Patient      @relation(fields: [patient_id], references: [id])

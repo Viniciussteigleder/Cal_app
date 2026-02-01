@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "./supabase/server";
 import type { SessionClaims } from "./db";
 
 export async function getSupabaseClaims(): Promise<SessionClaims | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getSession();
 
   if (error || !data.session) {

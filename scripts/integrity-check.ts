@@ -1,13 +1,15 @@
-import { prisma } from "../src/lib/db";
+import { prisma, TransactionClient } from "../src/lib/db";
 import { calculateTMB } from "../src/lib/calculations/energy";
 
 type Severity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
+import { Prisma } from "@prisma/client";
 
 interface Issue {
   severity: Severity;
   entity_type: string;
   entity_id?: string;
-  details: Record<string, unknown>;
+  details: Prisma.JsonObject;
 }
 
 function getExitCode(maxSeverity: Severity | null) {
@@ -62,7 +64,7 @@ async function checkCanaryCalculations(): Promise<Issue[]> {
   });
 }
 
-async function checkDatasetSanity(client = prisma): Promise<Issue[]> {
+async function checkDatasetSanity(client: TransactionClient | typeof prisma = prisma): Promise<Issue[]> {
   const issues: Issue[] = [];
 
   const negatives = await client.foodNutrient.findMany({
@@ -112,7 +114,7 @@ async function checkDatasetSanity(client = prisma): Promise<Issue[]> {
   return issues;
 }
 
-async function checkSnapshotIntegrity(client = prisma): Promise<Issue[]> {
+async function checkSnapshotIntegrity(client: TransactionClient | typeof prisma = prisma): Promise<Issue[]> {
   const issues: Issue[] = [];
   const mealItems = await client.mealItem.findMany({
     include: { snapshot: true },
@@ -147,7 +149,7 @@ async function checkSnapshotIntegrity(client = prisma): Promise<Issue[]> {
   return issues;
 }
 
-async function checkImmutability(client = prisma): Promise<Issue[]> {
+async function checkImmutability(client: TransactionClient | typeof prisma = prisma): Promise<Issue[]> {
   const issues: Issue[] = [];
 
   const publishedVersions = await client.planVersion.findMany({
@@ -163,8 +165,8 @@ async function checkImmutability(client = prisma): Promise<Issue[]> {
         entity_id: version.id,
         details: {
           issue: "published_plan_modified",
-          published_at: version.publication.published_at,
-          updated_at: version.updated_at,
+          published_at: version.publication.published_at.toISOString(),
+          updated_at: version.updated_at.toISOString(),
         },
       });
     }
@@ -173,7 +175,7 @@ async function checkImmutability(client = prisma): Promise<Issue[]> {
   return issues;
 }
 
-async function checkRBACEnforcement(client = prisma): Promise<Issue[]> {
+async function checkRBACEnforcement(client: TransactionClient | typeof prisma = prisma): Promise<Issue[]> {
   const issues: Issue[] = [];
   // Smoke checks are placeholders; proper verification lives in unit tests.
   const patientCount = await client.patient.count();

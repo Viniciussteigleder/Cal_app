@@ -11,9 +11,10 @@ export default function StudioLayout({
       subtitle="Gerencie pacientes, consultas e planos com auditoria completa."
       nav={[
         { href: "/studio/patients", label: "Pacientes" },
-        { href: "/studio/consultations/1", label: "Consulta" },
+        { href: "/studio/protocols", label: "Protocolos" },
+        { href: "/studio/recipes", label: "Receitas" },
+        { href: "/studio/templates", label: "Templates" },
         { href: "/studio/plans/1", label: "Planos" },
-        { href: "/studio/policies/1", label: "Políticas" },
       ]}
     >
       {children}
