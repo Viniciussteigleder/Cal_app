@@ -18,9 +18,7 @@ import {
   CheckCheck,
   Loader2,
   Mic,
-  MicOff,
   Globe,
-  StopCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput, processMultilingualText } from "@/components/voice-input";
@@ -73,7 +71,7 @@ export default function PatientChatPage() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const messageIdRef = useRef(0);
   const [voiceInterimText, setVoiceInterimText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -130,8 +128,9 @@ export default function PatientChatPage() {
   const handleSendMessage = async (content: string, attachments?: Message["attachments"], detectedLanguages?: string[]) => {
     if (!content.trim() && !attachments?.length) return;
 
+    messageIdRef.current += 1;
     const newMessage: Message = {
-      id: `msg-${Date.now()}`,
+      id: `msg-${messageIdRef.current}`,
       role: "patient",
       content: content.trim(),
       timestamp: new Date().toISOString(),
@@ -159,8 +158,9 @@ export default function PatientChatPage() {
         prev.map((m) => (m.id === newMessage.id ? { ...m, status: "read" } : m))
       );
 
+      messageIdRef.current += 1;
       const response: Message = {
-        id: `msg-${Date.now()}`,
+        id: `msg-${messageIdRef.current}`,
         role: "nutritionist",
         content: "Obrigado por compartilhar! Vou analisar e te respondo em breve. Se tiver alguma urgência, pode me avisar.",
         timestamp: new Date().toISOString(),

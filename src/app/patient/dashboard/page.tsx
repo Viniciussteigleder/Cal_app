@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CircularProgress } from "@/components/ui/circular-progress";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -37,11 +36,6 @@ export default function PatientDashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSimpleMode, setIsSimpleMode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [suggestions, setSuggestions] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedFood, setSelectedFood] = useState<{ id: string; name: string } | null>(null);
-  const [grams, setGrams] = useState("");
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const checkSimpleMode = () => {
@@ -87,13 +81,7 @@ export default function PatientDashboard() {
     } finally {
       setIsSearching(false);
     }
-    const controller = new AbortController();
-    fetch(`/api/patient/foods?q=${encodeURIComponent(searchTerm)}&limit=6`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
-      .then((payload) => setSuggestions(payload.results ?? []))
-      .catch(() => undefined);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {

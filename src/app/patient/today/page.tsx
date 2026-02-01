@@ -37,6 +37,18 @@ export default function TodayPage() {
   const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
   const [waterIntake, setWaterIntake] = useState(5); // 5 glasses = 1.25L
 
+  function getMealTypeName(type: string) {
+    const names: Record<string, string> = {
+      breakfast: "Café da manhã",
+      morning_snack: "Lanche da manhã",
+      lunch: "Almoço",
+      afternoon_snack: "Lanche da tarde",
+      dinner: "Jantar",
+      supper: "Ceia",
+    };
+    return names[type] || type;
+  }
+
   useEffect(() => {
     // Build timeline from mock data
     const items: TimelineItem[] = [];
@@ -115,20 +127,9 @@ export default function TodayPage() {
       return (aH * 60 + aM) - (bH * 60 + bM);
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTimelineItems(items);
   }, []);
-
-  const getMealTypeName = (type: string) => {
-    const names: Record<string, string> = {
-      breakfast: "Café da manhã",
-      morning_snack: "Lanche da manhã",
-      lunch: "Almoço",
-      afternoon_snack: "Lanche da tarde",
-      dinner: "Jantar",
-      supper: "Ceia",
-    };
-    return names[type] || type;
-  };
 
   const getTimelineIcon = (type: string) => {
     switch (type) {

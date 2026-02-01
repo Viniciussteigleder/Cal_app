@@ -196,6 +196,7 @@ export function VoiceInput({
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [interimText, setInterimText] = useState("");
+  const [finalTranscript, setFinalTranscript] = useState("");
   const [detectedLang, setDetectedLang] = useState<string>("pt-BR");
   const [currentLangIndex, setCurrentLangIndex] = useState(0);
   const [isSupported, setIsSupported] = useState(true);
@@ -223,6 +224,7 @@ export function VoiceInput({
         window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsSupported(false);
         return;
       }
@@ -237,6 +239,7 @@ export function VoiceInput({
         setIsListening(true);
         setError(null);
         finalTranscriptRef.current = "";
+        setFinalTranscript("");
       };
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -254,6 +257,7 @@ export function VoiceInput({
 
         if (final) {
           finalTranscriptRef.current += final;
+          setFinalTranscript(finalTranscriptRef.current);
 
           // Detect language and process
           if (autoLanguageDetection) {
@@ -300,6 +304,7 @@ export function VoiceInput({
 
         setIsProcessing(false);
         setInterimText("");
+        setFinalTranscript("");
       };
 
       recognitionRef.current = recognition;
@@ -319,6 +324,7 @@ export function VoiceInput({
       recognitionRef.current.stop();
     } else {
       finalTranscriptRef.current = "";
+      setFinalTranscript("");
       setInterimText("");
       recognitionRef.current.lang = preferredLanguages[currentLangIndex];
       recognitionRef.current.start();
@@ -412,13 +418,13 @@ export function VoiceInput({
           <div className="flex items-start gap-2">
             <Volume2 className={cn("h-4 w-4 mt-0.5 text-primary", isListening && "animate-pulse")} />
             <div className="flex-1">
-              {finalTranscriptRef.current && (
-                <span className="text-foreground">{finalTranscriptRef.current}</span>
+              {finalTranscript && (
+                <span className="text-foreground">{finalTranscript}</span>
               )}
               {interimText && (
                 <span className="text-muted-foreground italic">{interimText}</span>
               )}
-              {!finalTranscriptRef.current && !interimText && isListening && (
+              {!finalTranscript && !interimText && isListening && (
                 <span className="text-muted-foreground italic">Ouvindo...</span>
               )}
             </div>

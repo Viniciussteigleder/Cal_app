@@ -88,7 +88,7 @@ export default function CaptureMealPage() {
     setStep("voice");
   };
 
-  const handleVoiceTranscript = (text: string, language?: string) => {
+  const handleVoiceTranscript = (text: string) => {
     setVoiceDescription(text);
     const processed = processMultilingualText(text);
     setDetectedFoods(processed.foodMentions);
@@ -353,9 +353,9 @@ export default function CaptureMealPage() {
                   Exemplos de como falar:
                 </p>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>🇧🇷 "Comi arroz, feijão e frango grelhado"</p>
-                  <p>🇩🇪 "Ich habe Reis mit Huhn gegessen"</p>
-                  <p>🇺🇸 "I had rice, beans and chicken"</p>
+                  <p>🇧🇷 &quot;Comi arroz, feijão e frango grelhado&quot;</p>
+                  <p>🇩🇪 &quot;Ich habe Reis mit Huhn gegessen&quot;</p>
+                  <p>🇺🇸 &quot;I had rice, beans and chicken&quot;</p>
                   <p className="text-primary/70 mt-2">
                     Você pode misturar idiomas na mesma frase!
                   </p>
@@ -450,7 +450,7 @@ export default function CaptureMealPage() {
                     )}
 
                     <p className="text-xs text-muted-foreground text-center">
-                      Diga coisas como: "Estou com muita fome", "Feeling tired", "Ich bin gestresst"
+                      Diga coisas como: &quot;Estou com muita fome&quot;, &quot;Feeling tired&quot;, &quot;Ich bin gestresst&quot;
                     </p>
                   </div>
                 ) : (

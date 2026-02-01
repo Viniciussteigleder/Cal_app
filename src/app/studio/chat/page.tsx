@@ -20,7 +20,7 @@ import {
   TrendingUp,
   Calendar,
 } from "lucide-react";
-import { MOCK_PATIENT_CASES, MOCK_AI_PROMPTS, MOCK_PATIENTS } from "@/lib/mock-data";
+import { MOCK_PATIENT_CASES, MOCK_PATIENTS } from "@/lib/mock-data";
 
 interface Message {
   id: string;
@@ -42,6 +42,7 @@ export default function AIChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messageIdRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -84,11 +85,13 @@ export default function AIChatPage() {
     if (selectedPatient) {
       const patientCase = MOCK_PATIENT_CASES.find(c => c.patientId === selectedPatient);
       if (patientCase && patientCase.chatHistory.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMessages(patientCase.chatHistory.map(m => ({
           ...m,
           patientContext: patientCase.patientName,
         })));
       } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMessages([]);
       }
     }
@@ -99,8 +102,9 @@ export default function AIChatPage() {
 
     const patientName = MOCK_PATIENTS.find(p => p.id === selectedPatient)?.name || "Paciente";
 
+    messageIdRef.current += 1;
     const userMessage: Message = {
-      id: `msg-${Date.now()}`,
+      id: `msg-${messageIdRef.current}`,
       role: "user",
       content: content.trim(),
       timestamp: new Date().toISOString(),
@@ -129,8 +133,9 @@ export default function AIChatPage() {
         response = generateGeneralResponse(patientCase, patientName, content);
       }
 
+      messageIdRef.current += 1;
       const assistantMessage: Message = {
-        id: `msg-${Date.now()}`,
+        id: `msg-${messageIdRef.current}`,
         role: "assistant",
         content: response,
         timestamp: new Date().toISOString(),
