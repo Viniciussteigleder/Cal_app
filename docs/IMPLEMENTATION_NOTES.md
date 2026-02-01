@@ -6,6 +6,7 @@
 - `owner_mode` habilita acesso cross-tenant somente em rotas `/owner`.
 - Snapshots imutáveis com `content_hash` gerado no banco.
   - Middleware (`src/middleware.ts`) adiciona header `x-owner-mode=true`.
+  - `getRequestClaims()` lê JWT do Supabase ou fallback de headers/cookies.
 
 ## Tradeoffs
 - `calc_audit` é gravado apenas para TMB/TDEE e sobrescritas manuais.
