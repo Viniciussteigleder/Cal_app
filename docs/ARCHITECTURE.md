@@ -10,6 +10,11 @@ versionados e snapshots são imutáveis para auditoria total.
 - **Claims**: `user_id`, `tenant_id`, `role` (OWNER, TENANT_ADMIN, TEAM, PATIENT).
 - **Owner mode**: `app.owner_mode = true` somente em rotas `/owner`.
 
+### Supabase JWT (setup)
+Definir `tenant_id` e `role` em `app_metadata` no Supabase Auth e garantir que
+esses campos entrem no JWT. O app usa `getSupabaseClaims()` para ler as claims
+e `withSession()` para setar variáveis no Postgres.
+
 ## RBAC
 Implementado em `src/lib/rbac.ts` com mapa de permissões por recurso e ação.
 Toda mutação protegida deve verificar RBAC no servidor.

@@ -5,6 +5,7 @@
   garantir isolamento por tenant e reduzir dependências externas no MVP1.
 - `owner_mode` habilita acesso cross-tenant somente em rotas `/owner`.
 - Snapshots imutáveis com `content_hash` gerado no banco.
+  - Middleware (`src/middleware.ts`) adiciona header `x-owner-mode=true`.
 
 ## Tradeoffs
 - `calc_audit` é gravado apenas para TMB/TDEE e sobrescritas manuais.

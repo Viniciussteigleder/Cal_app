@@ -30,3 +30,8 @@ export function getSessionClaims(): SessionClaims | null {
 
   return { user_id, tenant_id, role };
 }
+
+export function getOwnerModeFromHeaders() {
+  const headerStore = headers();
+  return headerStore.get("x-owner-mode") === "true";
+}
