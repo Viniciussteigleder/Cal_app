@@ -13,10 +13,12 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
-    User
+    User,
+    Snowflake
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
 interface SidebarProps {
@@ -135,7 +137,7 @@ export function Sidebar({ role }: SidebarProps) {
                 </div>
 
                 <Link
-                    href="/settings"
+                    href={role === "patient" ? "/patient/settings" : "/studio/settings"}
                     className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-slate-50 hover:text-foreground transition-all",
                         collapsed && "justify-center px-2"

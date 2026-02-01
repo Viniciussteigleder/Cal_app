@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { useEffect } from "react";
 
 // Mock Data for "Simulated Database"
 const FOOD_DATABASE = [
@@ -21,6 +22,16 @@ export default function PatientDashboard() {
   const [proteins, setProteins] = useState(65);
   const [isLogging, setIsLogging] = useState(false);
   const [selectedFoods, setSelectedFoods] = useState<number[]>([]);
+  const [isSimpleMode, setIsSimpleMode] = useState(false);
+
+  useEffect(() => {
+    const checkSimpleMode = () => {
+      setIsSimpleMode(localStorage.getItem('simple-mode') === 'true');
+    };
+    checkSimpleMode();
+    window.addEventListener('storage', checkSimpleMode);
+    return () => window.removeEventListener('storage', checkSimpleMode);
+  }, []);
 
   const toggleFood = (id: number) => {
     if (selectedFoods.includes(id)) {
@@ -53,67 +64,81 @@ export default function PatientDashboard() {
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Boa tarde, Maria</h1>
+            <h1 className="text-2xl font-bold text-slate-900tracking-tight">Boa tarde, Maria</h1>
             <p className="text-slate-500 text-sm">Vamos manter o foco hoje?</p>
           </div>
-          <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full border border-amber-100 animate-in fade-in slide-in-from-top-2">
-            <Flame className="w-4 h-4 fill-amber-600" />
-            <span className="text-xs font-bold">12 dias</span>
-          </div>
+          {!isSimpleMode && (
+            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full border border-amber-100 animate-in fade-in slide-in-from-top-2">
+              <Flame className="w-4 h-4 fill-amber-600" />
+              <span className="text-xs font-bold">12 dias</span>
+            </div>
+          )}
         </header>
 
         {/* Main Stats */}
-        <Card className="p-6 shadow-card border-none bg-white relative overflow-hidden transition-all duration-500">
+        <Card className={`p-6 shadow-card border-none bg-white relative overflow-hidden transition-all duration-500 ${isSimpleMode ? 'max-w-sm' : ''}`}>
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
             {/* Animated Ring */}
-            <div className="relative group cursor-pointer hover:scale-105 transition-transform duration-300">
-              <CircularProgress
-                value={calories}
-                max={2000}
-                size="lg"
-                label={calories.toString()}
-                sublabel="kcal"
-              />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded-full backdrop-blur-[2px]">
-                <span className="text-xs font-bold text-primary">Ver Detalhes</span>
+            {!isSimpleMode ? (
+              <div className="relative group cursor-pointer hover:scale-105 transition-transform duration-300">
+                <CircularProgress
+                  value={calories}
+                  max={2000}
+                  size="lg"
+                  label={calories.toString()}
+                  sublabel="kcal"
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded-full backdrop-blur-[2px]">
+                  <span className="text-xs font-bold text-primary">Ver Detalhes</span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <span className="text-4xl font-black text-slate-900">{calories}</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Kcal Consumidas</span>
+                <Badge className="mt-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">Dentro da meta</Badge>
+              </div>
+            )}
 
-            <div className="flex-1 w-full space-y-5">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-slate-700">Proteína</span>
-                  <span className="text-slate-500">{proteins}g / 120g</span>
+            {!isSimpleMode && (
+              <div className="flex-1 w-full space-y-5">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-slate-700">Proteína</span>
+                    <span className="text-slate-500">{proteins}g / 120g</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[hsl(var(--macro-protein))] rounded-full transition-all duration-1000"
+                      style={{ width: `${(proteins / 120) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[hsl(var(--macro-protein))] rounded-full transition-all duration-1000"
-                    style={{ width: `${(proteins / 120) * 100}%` }}
-                  />
+                {/* Other macros static for demo */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-slate-700">Carboidrato</span>
+                    <span className="text-slate-500">120g / 200g</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[hsl(var(--macro-carb))] w-[60%] rounded-full" />
+                  </div>
                 </div>
               </div>
-              {/* Other macros static for demo */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-slate-700">Carboidrato</span>
-                  <span className="text-slate-500">120g / 200g</span>
-                </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[hsl(var(--macro-carb))] w-[60%] rounded-full" />
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </Card>
 
         {/* Next Meal & Hydration */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`grid grid-cols-1 ${isSimpleMode ? '' : 'md:grid-cols-2'} gap-6`}>
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">Próxima Refeição</h2>
-              <Button variant="ghost" className="text-primary hover:text-primary-dark h-auto p-0 text-sm font-semibold">
-                Ver plano completo
-              </Button>
+              {!isSimpleMode && (
+                <Button variant="ghost" className="text-primary hover:text-primary-dark h-auto p-0 text-sm font-semibold">
+                  Ver plano completo
+                </Button>
+              )}
             </div>
 
             <Card className="p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all group">
@@ -124,23 +149,27 @@ export default function PatientDashboard() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900">Jantar</h3>
-                    <p className="text-xs text-slate-500 font-medium">Recomendado para 19:00</p>
+                    {!isSimpleMode && <p className="text-xs text-slate-500 font-medium">Recomendado para 19:00</p>}
                   </div>
                 </div>
-                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
-                  450 kcal
-                </Badge>
+                {!isSimpleMode && (
+                  <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+                    450 kcal
+                  </Badge>
+                )}
               </div>
 
               {/* Visual Recommendation ONLY */}
-              <div className="space-y-3 opacity-60">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 border border-slate-100">
-                  <div className="w-10 h-10 bg-slate-200 rounded-md shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">Sugestão: Frango</p>
+              {!isSimpleMode && (
+                <div className="space-y-3 opacity-60">
+                  <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="w-10 h-10 bg-slate-200 rounded-md shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Sugestão: Frango</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <Button
                 onClick={() => setIsLogging(true)}
@@ -151,21 +180,23 @@ export default function PatientDashboard() {
             </Card>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-800">Hidratação</h2>
-            <Card className="p-6 bg-blue-50/50 border-blue-100 shadow-none flex flex-col items-center justify-center gap-4 h-[calc(100%-2.5rem)]">
-              <div className="relative">
-                <Droplets className="w-16 h-16 text-blue-400" />
-                <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  +250ml
+          {!isSimpleMode && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-bold text-slate-800">Hidratação</h2>
+              <Card className="p-6 bg-blue-50/50 border-blue-100 shadow-none flex flex-col items-center justify-center gap-4 h-[calc(100%-2.5rem)]">
+                <div className="relative">
+                  <Droplets className="w-16 h-16 text-blue-400" />
+                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    +250ml
+                  </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-slate-900">1.25L</p>
-                <p className="text-sm text-slate-500">de 2.5L diários</p>
-              </div>
-            </Card>
-          </section>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-slate-900">1.25L</p>
+                  <p className="text-sm text-slate-500">de 2.5L diários</p>
+                </div>
+              </Card>
+            </section>
+          )}
         </div>
 
         {/* LOGGING MODAL / DRAWER SIMULATION */}
@@ -186,8 +217,8 @@ export default function PatientDashboard() {
                     key={food.id}
                     onClick={() => toggleFood(food.id)}
                     className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${selectedFoods.includes(food.id)
-                        ? "bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500"
-                        : "bg-white border-slate-100 hover:bg-slate-50"
+                      ? "bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500"
+                      : "bg-white border-slate-100 hover:bg-slate-50"
                       }`}
                   >
                     <div className="flex items-center gap-3">
