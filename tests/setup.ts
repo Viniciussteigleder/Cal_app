@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config(); // Load .env file
+
 import { beforeEach, afterAll } from "vitest";
 
 import { prisma } from "./helpers";

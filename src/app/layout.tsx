@@ -1,12 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
-
-const ibmPlexSans = IBM_Plex_Sans({
-  weight: ["300", "400", "500", "600", "700"],
-  subsets: ["latin"],
-  variable: "--font-ibm-plex",
-});
 
 export const metadata: Metadata = {
   title: "NutriPlan",
@@ -21,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${ibmPlexSans.variable} antialiased`}>
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>

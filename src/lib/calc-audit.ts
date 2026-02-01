@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma, type SessionClaims } from "./db";
 import { ROUNDING_POLICY } from "./calculations/rounding";
 
@@ -16,9 +17,9 @@ export async function logCalcAudit({
   claims: SessionClaims;
   patient_id?: string;
   calc_type: CalcType;
-  inputs_json: unknown;
-  params_json: unknown;
-  output_json: unknown;
+  inputs_json: Prisma.InputJsonValue;
+  params_json: Prisma.InputJsonValue;
+  output_json: Prisma.InputJsonValue;
   dataset_release_id?: string;
   override_note?: string;
 }) {
