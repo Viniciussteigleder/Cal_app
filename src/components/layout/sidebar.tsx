@@ -19,7 +19,9 @@ import {
     ClipboardList,
     Building2,
     Database,
-    ShieldCheck
+    ShieldCheck,
+    MessageSquare,
+    Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,16 +39,18 @@ export function Sidebar({ role }: SidebarProps) {
     const { user, logout } = useUser();
 
     const patientLinks = [
-        { href: "/patient/dashboard", label: "Início", icon: Home },
-        { href: "/patient/diary", label: "Diário Alimentar", icon: Utensils },
+        { href: "/patient/today", label: "Hoje", icon: Home },
+        { href: "/patient/capture", label: "Registrar", icon: Utensils },
         { href: "/patient/plan", label: "Meu Plano", icon: Calendar },
         { href: "/patient/progress", label: "Progresso", icon: TrendingUp },
         { href: "/patient/symptoms", label: "Sintomas", icon: Activity },
+        { href: "/patient/chat", label: "Chat", icon: MessageSquare },
     ];
 
     const nutritionistLinks = [
         { href: "/studio/dashboard", label: "Dashboard", icon: Home },
         { href: "/studio/patients", label: "Pacientes", icon: Users },
+        { href: "/studio/chat", label: "Chat IA", icon: MessageSquare },
         { href: "/studio/protocols", label: "Protocolos", icon: FileText },
         { href: "/studio/recipes", label: "Receitas", icon: BookOpen },
         { href: "/studio/templates", label: "Templates", icon: ClipboardList },
@@ -55,6 +59,7 @@ export function Sidebar({ role }: SidebarProps) {
     const adminLinks = [
         { href: "/owner/tenants", label: "Clínicas", icon: Building2 },
         { href: "/owner/users", label: "Usuários", icon: Users },
+        { href: "/owner/ai", label: "Gestão IA", icon: Brain },
         { href: "/owner/datasets", label: "Datasets", icon: Database },
         { href: "/owner/integrity", label: "Integridade", icon: ShieldCheck },
     ];
