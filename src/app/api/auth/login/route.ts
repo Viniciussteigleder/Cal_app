@@ -26,11 +26,12 @@ export async function POST(request: NextRequest) {
 
     if (mockUser && password === demoPassword) {
       // Set session cookie with mock user data
+      const userRole = mockUser.role as string;
       const sessionData = {
         userId: mockUser.id,
         email: mockUser.email,
         name: mockUser.name,
-        role: mockUser.role,
+        role: userRole,
         tenantId: mockUser.tenantId,
         patientId: mockUser.patientId,
       };
@@ -46,9 +47,9 @@ export async function POST(request: NextRequest) {
 
       // Determine redirect path
       let redirect = "/patient/dashboard";
-      if (mockUser.role === "OWNER") {
+      if (userRole === "OWNER") {
         redirect = "/owner/tenants";
-      } else if (mockUser.role === "TENANT_ADMIN" || mockUser.role === "TEAM") {
+      } else if (userRole === "TENANT_ADMIN" || userRole === "TEAM") {
         redirect = "/studio/dashboard";
       }
 
