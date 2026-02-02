@@ -401,12 +401,11 @@ export default function PatientDashboard() {
                                 {food.name}
                               </p>
                               <div className="flex items-center gap-2">
-                                <p className="text-xs text-muted-foreground">por 100g</p>
                                 {food.histamineRisk === "high" && (
-                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Alto histamina</Badge>
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">⚠️ Evitar</Badge>
                                 )}
                                 {food.histamineRisk === "medium" && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700">Médio</Badge>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700">Moderar</Badge>
                                 )}
                               </div>
                             </div>
@@ -468,10 +467,10 @@ export default function PatientDashboard() {
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Salvando...
                     </>
+                  ) : selectedFoods.length === 0 ? (
+                    "Selecione alimentos"
                   ) : (
-                    <>
-                      Adicionar {selectedFoods.length > 0 && `(${Math.round(selectedFoods.reduce((acc, sf) => acc + sf.food.nutrients.calories, 0))} kcal)`}
-                    </>
+                    `Registrar ${selectedFoods.length} ${selectedFoods.length === 1 ? 'alimento' : 'alimentos'}`
                   )}
                 </Button>
               </div>
