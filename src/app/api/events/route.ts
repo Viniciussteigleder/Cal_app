@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 
 import { requireClaims, withSession } from "@/lib/api-helpers";
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
           action: "CREATE",
           entity_type: "analytics_event",
           entity_id: crypto.randomUUID(),
-          after_json: { name, properties },
+          after_json: { name, properties: properties ?? null } as Prisma.InputJsonValue,
           request_id: crypto.randomUUID(),
         },
       });

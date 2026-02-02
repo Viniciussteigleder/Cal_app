@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { requireClaims, withSession } from "@/lib/api-helpers";
 import { can } from "@/lib/rbac";
 
 export async function POST(
-  _request: Request,
-  { params }: { params: { planId: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ planId: string }> }
 ) {
   try {
+    const { planId } = await params;
     const claims = await requireClaims();
     if (!can(claims.role, "publish", "plan")) {
       return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
@@ -15,7 +16,7 @@ export async function POST(
 
     const plan = await withSession(claims, async (tx) => {
       return tx.plan.findFirst({
-        where: { id: params.planId, tenant_id: claims.tenant_id },
+        where: { id: planId, tenant_id: claims.tenant_id },
         include: { versions: { orderBy: { version_no: "desc" }, take: 1 } },
       });
     });
