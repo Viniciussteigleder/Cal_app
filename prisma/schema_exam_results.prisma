@@ -1,0 +1,36 @@
+// Add these models to your schema.prisma file
+
+model ExamResult {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String   @db.Uuid
+  patient_id   String   @db.Uuid
+  exam_type    String   // e.g., "blood_test", "imaging", "other"
+  exam_date    DateTime @db.Timestamptz(6)
+  lab_name     String?
+  doctor_name  String?
+  extracted_data Json   // AI-extracted structured data
+  document_url String?  // URL to stored PDF
+  file_name    String
+  file_size    Int
+  uploaded_by  String   @db.Uuid
+  uploaded_at  DateTime @default(now()) @db.Timestamptz(6)
+  notes        String?
+
+  @@index([patient_id, exam_date])
+  @@index([tenant_id, patient_id])
+}
+
+model MealPhoto {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  patient_id  String   @db.Uuid
+  meal_id     String?  @db.Uuid  // Optional: link to specific meal
+  photo_url   String   // URL to stored image
+  file_name   String
+  file_size   Int
+  captured_at DateTime @default(now()) @db.Timestamptz(6)
+  ai_analysis Json?    // AI-extracted food items and quantities
+
+  @@index([patient_id, captured_at])
+  @@index([meal_id])
+}

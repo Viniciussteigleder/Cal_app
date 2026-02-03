@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import DashboardLayout from '@/components/layout/dashboard-layout';
 import { toast } from 'sonner';
 
 interface Exercise {
@@ -109,14 +110,15 @@ export default function ExerciseTrackingPage() {
     };
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-4xl">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    Exercícios
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Registre suas atividades físicas
-                </p>
+        <DashboardLayout role="patient">
+            <div className="container mx-auto py-8 px-4 max-w-4xl">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        Exercícios
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Registre suas atividades físicas
+                    </p>
             </div>
 
             {/* Summary Cards */}
@@ -334,5 +336,6 @@ export default function ExerciseTrackingPage() {
                 </CardContent>
             </Card>
         </div>
+        </DashboardLayout>
     );
 }
