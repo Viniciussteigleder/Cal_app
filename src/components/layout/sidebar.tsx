@@ -11,6 +11,7 @@ import {
     Settings,
     LogOut,
     ChevronLeft,
+    ChevronRight,
     User,
     Snowflake,
     Users,
@@ -88,14 +89,30 @@ export function Sidebar({ role }: SidebarProps) {
                 {collapsed && (
                     <div className="mx-auto h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">N</div>
                 )}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn("ml-auto hidden", !collapsed && "flex")}
-                    onClick={() => setCollapsed(!collapsed)}
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
+                {/* Collapse button - shows when expanded */}
+                {!collapsed && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-auto"
+                        onClick={() => setCollapsed(true)}
+                        title="Recolher menu"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                )}
+                {/* Expand button - shows when collapsed */}
+                {collapsed && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-auto"
+                        onClick={() => setCollapsed(false)}
+                        title="Expandir menu"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
 
             <div className="flex-1 py-6 flex flex-col gap-1 px-3">
