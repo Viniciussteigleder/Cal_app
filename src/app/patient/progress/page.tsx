@@ -3,7 +3,7 @@
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Weight } from "lucide-react";
+import { TrendingUp, Weight, Activity, Droplets, Zap, TrendingDown, Ruler } from "lucide-react";
 
 export default function ProgressPage() {
     return (
@@ -128,6 +128,90 @@ export default function ProgressPage() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Additional Metrics Grid */}
+                <div className="grid md:grid-cols-3 gap-4">
+                    <Card className="border-none shadow-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="p-2 bg-blue-500/10 rounded-lg">
+                                    <Droplets className="h-5 w-5 text-blue-500" />
+                                </div>
+                                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">+15%</span>
+                            </div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Hidratação Média</h3>
+                            <p className="text-2xl font-bold text-foreground">2.8L <span className="text-sm text-muted-foreground font-normal">/ dia</span></p>
+                            <p className="text-xs text-muted-foreground mt-2">Meta: 3.0L • 93% alcançado</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-card bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="p-2 bg-amber-500/10 rounded-lg">
+                                    <Zap className="h-5 w-5 text-amber-500" />
+                                </div>
+                                <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">↑</span>
+                            </div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Energia Média</h3>
+                            <p className="text-2xl font-bold text-foreground">7.2 <span className="text-sm text-muted-foreground font-normal">/ 10</span></p>
+                            <p className="text-xs text-muted-foreground mt-2">Melhorou 22% vs. mês passado</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-card bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <Activity className="h-5 w-5 text-purple-500" />
+                                </div>
+                                <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">-35%</span>
+                            </div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-1">Sintomas</h3>
+                            <p className="text-2xl font-bold text-foreground">3 <span className="text-sm text-muted-foreground font-normal">/ semana</span></p>
+                            <p className="text-xs text-muted-foreground mt-2">Redução significativa</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Body Measurements */}
+                <Card className="border-none shadow-card">
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                        <div className="flex items-center gap-2">
+                            <Ruler className="h-5 w-5 text-foreground" />
+                            <CardTitle className="text-lg text-foreground">Medidas Corporais</CardTitle>
+                        </div>
+                        <Button variant="outline" size="sm">+ Adicionar Medição</Button>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid md:grid-cols-4 gap-6">
+                            {[
+                                { label: "Cintura", current: "82 cm", previous: "85 cm", change: "-3 cm", positive: true },
+                                { label: "Quadril", current: "95 cm", previous: "97 cm", change: "-2 cm", positive: true },
+                                { label: "% Gordura", current: "22%", previous: "24%", change: "-2%", positive: true },
+                                { label: "Massa Magra", current: "56.4 kg", previous: "55.8 kg", change: "+0.6 kg", positive: true },
+                            ].map((measurement) => (
+                                <div key={measurement.label} className="space-y-2">
+                                    <p className="text-sm text-muted-foreground">{measurement.label}</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-2xl font-bold text-foreground">{measurement.current}</p>
+                                        <div className="flex items-center gap-1">
+                                            {measurement.positive ? (
+                                                <TrendingDown className="h-3 w-3 text-emerald-500" />
+                                            ) : (
+                                                <TrendingUp className="h-3 w-3 text-red-500" />
+                                            )}
+                                            <span className={`text-xs font-medium ${measurement.positive ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {measurement.change}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Anterior: {measurement.previous}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </DashboardLayout>
     );

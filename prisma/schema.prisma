@@ -781,3 +781,37 @@ enum TemplateGoal {
   protocol_gluten
   custom
 }
+
+model ExamResult {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String   @db.Uuid
+  patient_id     String   @db.Uuid
+  exam_type      String
+  exam_date      DateTime @db.Timestamptz(6)
+  lab_name       String?
+  doctor_name    String?
+  extracted_data Json?
+  document_url   String
+  file_name      String
+  file_size      Int
+  uploaded_by    String   @db.Uuid
+  notes          String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([patient_id, exam_date])
+}
+
+model MealPhoto {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  patient_id  String   @db.Uuid
+  meal_id     String?  @db.Uuid
+  photo_url   String
+  file_name   String
+  file_size   Int
+  ai_analysis Json?
+  captured_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([patient_id, captured_at])
+  @@index([meal_id])
+}

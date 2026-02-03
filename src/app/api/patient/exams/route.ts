@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireClaims, withSession, getScopedPatient, ApiError } from "@/lib/api-helpers";
 import { can } from "@/lib/rbac";
+import { uploadFile } from "@/lib/storage";
 
 // GET /api/patient/exams - List patient exam results
 export async function GET(request: NextRequest) {
@@ -12,9 +13,6 @@ export async function GET(request: NextRequest) {
     const exams = await withSession(claims, async (tx) => {
       const patient = await getScopedPatient(tx, claims, patientId);
 
-      // For now, return empty array until ExamResult model is added to schema
-      // Once added, uncomment:
-      /*
       const results = await tx.examResult.findMany({
         where: {
           tenant_id: claims.tenant_id,
@@ -23,9 +21,6 @@ export async function GET(request: NextRequest) {
         orderBy: { exam_date: "desc" },
       });
       return results;
-      */
-
-      return [];
     });
 
     return NextResponse.json({ exams });
@@ -66,13 +61,16 @@ export async function POST(request: NextRequest) {
     const result = await withSession(claims, async (tx) => {
       const patient = await getScopedPatient(tx, claims, patientId);
 
+      // Upload file to cloud storage
+      const uploadResult = await uploadFile(file, "exams", claims.tenant_id, patient.id);
+
+      if (!uploadResult.success) {
+        throw new ApiError(`Erro ao fazer upload: ${uploadResult.error}`, 500);
+      }
+
       // Read file content for AI processing
       const buffer = await file.arrayBuffer();
       const base64 = Buffer.from(buffer).toString('base64');
-
-      // TODO: Store file in cloud storage (S3, Cloudflare R2, etc.)
-      // For now, we'll just store the filename and prepare for AI extraction
-      const documentUrl = `pending-upload/${file.name}`; // Replace with actual storage
 
       // TODO: Call AI service to extract data from PDF
       // const extractedData = await extractExamData(base64, examType);
@@ -81,8 +79,6 @@ export async function POST(request: NextRequest) {
         message: "AI extraction will be implemented"
       };
 
-      // Once ExamResult model is added to schema, uncomment:
-      /*
       const examResult = await tx.examResult.create({
         data: {
           tenant_id: claims.tenant_id,
@@ -92,7 +88,7 @@ export async function POST(request: NextRequest) {
           lab_name: labName,
           doctor_name: doctorName,
           extracted_data: extractedData,
-          document_url: documentUrl,
+          document_url: uploadResult.url!,
           file_name: file.name,
           file_size: file.size,
           uploaded_by: claims.user_id,
@@ -101,16 +97,6 @@ export async function POST(request: NextRequest) {
       });
 
       return examResult;
-      */
-
-      // Temporary response
-      return {
-        id: "temp-id",
-        exam_type: examType,
-        exam_date: examDate,
-        file_name: file.name,
-        message: "Schema needs to be migrated first. Uncomment code in route.ts after running migration."
-      };
     });
 
     return NextResponse.json({ success: true, exam: result });
