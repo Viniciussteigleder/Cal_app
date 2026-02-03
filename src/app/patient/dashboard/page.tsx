@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { SkeletonDashboard, SkeletonFoodList } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -238,9 +239,7 @@ export default function PatientDashboard() {
   if (isLoading) {
     return (
       <DashboardLayout role="patient">
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <SkeletonDashboard />
       </DashboardLayout>
     );
   }
@@ -676,7 +675,9 @@ export default function PatientDashboard() {
                       })}
                     </div>
                   </>
-                ) : searchQuery.length >= 2 && !isSearching ? (
+                ) : isSearching ? (
+                  <SkeletonFoodList />
+                ) : searchQuery.length >= 2 ? (
                   <div className="text-center py-12 text-muted-foreground" role="status">
                     <p className="text-base font-medium">Nenhum alimento encontrado</p>
                     <p className="text-sm mt-2">Tente outro termo de busca</p>
