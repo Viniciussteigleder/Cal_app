@@ -37,7 +37,7 @@ export async function GET(request: Request) {
         },
         include: {
           items: {
-            include: { food: true, snapshot: true },
+            include: { snapshot: { include: { food: true } } },
             orderBy: { created_at: "asc" },
           },
         },
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
           [
             meal.date.toISOString().slice(0, 10),
             meal.type,
-            csvEscape(item.food.name),
+            csvEscape(item.snapshot.food.name),
             Number(item.grams).toFixed(0),
             (totals.energy_kcal ?? 0).toFixed(0),
             (totals.protein_g ?? 0).toFixed(1),

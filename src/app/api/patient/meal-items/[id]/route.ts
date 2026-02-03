@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { ApiError, getScopedPatient, isSameDay, requireClaims, withSession } from "@/lib/api-helpers";
 import { can } from "@/lib/rbac";
 
 export async function DELETE(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const claims = await requireClaims();
     const { id } = await params;
+    const claims = await requireClaims();
     await withSession(claims, async (tx) => {
       if (claims.role !== "PATIENT" && !can(claims.role, "update", "patient")) {
         throw new ApiError("Acesso negado.", 403);

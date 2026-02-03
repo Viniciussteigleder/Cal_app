@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { requireClaims, withSession } from "@/lib/api-helpers";
 import { can } from "@/lib/rbac";
 
 export async function POST(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ planId: string }> }
 ) {
   try {
-    const claims = await requireClaims();
     const { planId } = await params;
+    const claims = await requireClaims();
     if (!can(claims.role, "publish", "plan")) {
       return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
     }

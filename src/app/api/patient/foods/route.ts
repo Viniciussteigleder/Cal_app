@@ -35,14 +35,14 @@ export async function GET(request: Request) {
 
       const recentItems = await tx.mealItem.findMany({
         where: { tenant_id: claims.tenant_id, meal: { patient_id: patient.id } },
-        include: { food: true },
+        include: { snapshot: { include: { food: true } } },
         orderBy: { created_at: "desc" },
         take: 5,
       });
 
       const recent = recentItems.map((item) => ({
-        id: item.food.id,
-        name: item.food.name,
+        id: item.snapshot.food.id,
+        name: item.snapshot.food.name,
       }));
 
       const favorites = await tx.mealItem.groupBy({

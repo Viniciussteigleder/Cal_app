@@ -79,7 +79,7 @@ export async function POST(request: Request) {
           grams,
           snapshot_id: snapshot.id,
         },
-        include: { food: true, snapshot: true },
+        include: { snapshot: true },
       });
 
       const nutrients =
