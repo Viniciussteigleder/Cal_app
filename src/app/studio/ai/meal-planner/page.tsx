@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Calendar, TrendingUp, DollarSign, Loader2 } from 'lucide-react';
+import DashboardLayout from '@/components/layout/dashboard-layout';
+import { Sparkles, Calendar, TrendingUp, DollarSign, Loader2, Plus, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { ptBR } from '@/i18n/pt-BR';
 
 interface MealPlanDay {
     day: string;
@@ -31,22 +35,35 @@ interface MealPlanResult {
 }
 
 const DIETARY_PREFERENCES = [
-    'Vegetarian',
-    'Vegan',
-    'Low-carb',
-    'High-protein',
-    'Mediterranean',
-    'Keto',
-    'Paleo',
+    { id: 'vegetarian', label: 'Vegetariano' },
+    { id: 'vegan', label: 'Vegano' },
+    { id: 'low-carb', label: 'Low-Carb' },
+    { id: 'high-protein', label: 'Alto em Proteína' },
+    { id: 'mediterranean', label: 'Mediterrânea' },
+    { id: 'keto', label: 'Cetogênica' },
+    { id: 'paleo', label: 'Paleo' },
 ];
 
-const RESTRICTIONS = [
-    'Lactose-free',
-    'Gluten-free',
-    'Nut-free',
-    'Soy-free',
-    'Egg-free',
-    'Shellfish-free',
+const ALLERGIES = [
+    { id: 'gluten', label: 'Glúten' },
+    { id: 'lactose', label: 'Lactose' },
+    { id: 'nuts', label: 'Oleaginosas' },
+    { id: 'shellfish', label: 'Frutos do Mar' },
+    { id: 'eggs', label: 'Ovos' },
+    { id: 'soy', label: 'Soja' },
+    { id: 'fish', label: 'Peixe' },
+    { id: 'peanuts', label: 'Amendoim' },
+];
+
+const MEDICAL_CONDITIONS = [
+    { id: 'histamine', label: 'Intolerância à Histamina' },
+    { id: 'fodmap', label: 'Sensibilidade FODMAP' },
+    { id: 'diabetes', label: 'Diabetes' },
+    { id: 'hypertension', label: 'Hipertensão' },
+    { id: 'kidney', label: 'Doença Renal' },
+    { id: 'liver', label: 'Doença Hepática' },
+    { id: 'ibs', label: 'Síndrome do Intestino Irritável' },
+    { id: 'crohn', label: 'Doença de Crohn' },
 ];
 
 export default function MealPlannerPage() {
@@ -57,7 +74,13 @@ export default function MealPlannerPage() {
         fat: 25,
     });
     const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
-    const [selectedRestrictions, setSelectedRestrictions] = useState<string[]>([]);
+    const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+    const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+    const [includeFoods, setIncludeFoods] = useState<string[]>([]);
+    const [excludeFoods, setExcludeFoods] = useState<string[]>([]);
+    const [currentIncludeFood, setCurrentIncludeFood] = useState('');
+    const [currentExcludeFood, setCurrentExcludeFood] = useState('');
+    const [customCondition, setCustomCondition] = useState('');
     const [daysCount, setDaysCount] = useState(7);
     const [isGenerating, setIsGenerating] = useState(false);
     const [result, setResult] = useState<MealPlanResult | null>(null);
@@ -68,10 +91,38 @@ export default function MealPlannerPage() {
         );
     };
 
-    const toggleRestriction = (rest: string) => {
-        setSelectedRestrictions((prev) =>
-            prev.includes(rest) ? prev.filter((r) => r !== rest) : [...prev, rest]
+    const toggleAllergy = (allergy: string) => {
+        setSelectedAllergies((prev) =>
+            prev.includes(allergy) ? prev.filter((a) => a !== allergy) : [...prev, allergy]
         );
+    };
+
+    const toggleCondition = (condition: string) => {
+        setSelectedConditions((prev) =>
+            prev.includes(condition) ? prev.filter((c) => c !== condition) : [...prev, condition]
+        );
+    };
+
+    const addIncludeFood = () => {
+        if (currentIncludeFood.trim()) {
+            setIncludeFoods([...includeFoods, currentIncludeFood.trim()]);
+            setCurrentIncludeFood('');
+        }
+    };
+
+    const addExcludeFood = () => {
+        if (currentExcludeFood.trim()) {
+            setExcludeFoods([...excludeFoods, currentExcludeFood.trim()]);
+            setCurrentExcludeFood('');
+        }
+    };
+
+    const removeIncludeFood = (food: string) => {
+        setIncludeFoods(includeFoods.filter(f => f !== food));
+    };
+
+    const removeExcludeFood = (food: string) => {
+        setExcludeFoods(excludeFoods.filter(f => f !== food));
     };
 
     const handleMacroChange = (macro: 'protein' | 'carbs' | 'fat', value: number) => {
@@ -102,12 +153,16 @@ export default function MealPlannerPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    patientId: 'current-patient-id', // Get from context
-                    tenantId: 'current-tenant-id', // Get from context
+                    patientId: 'current-patient-id',
+                    tenantId: 'current-tenant-id',
                     targetKcal,
                     macroSplit,
                     preferences: selectedPreferences,
-                    restrictions: selectedRestrictions,
+                    allergies: selectedAllergies,
+                    conditions: selectedConditions,
+                    includeFoods,
+                    excludeFoods,
+                    customCondition,
                     daysCount,
                 }),
             });
@@ -116,13 +171,13 @@ export default function MealPlannerPage() {
 
             if (data.success) {
                 setResult(data.data);
-                toast.success('Meal plan generated successfully!');
+                toast.success('Plano alimentar gerado com sucesso!');
             } else {
-                toast.error(data.error || 'Failed to generate meal plan');
+                toast.error(data.error || 'Falha ao gerar plano alimentar');
             }
         } catch (error) {
             console.error('Generation error:', error);
-            toast.error('Failed to generate meal plan');
+            toast.error('Falha ao gerar plano alimentar');
         } finally {
             setIsGenerating(false);
         }
@@ -131,284 +186,409 @@ export default function MealPlannerPage() {
     const macroTotal = macroSplit.protein + macroSplit.carbs + macroSplit.fat;
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-6xl">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    AI Meal Planner
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Generate personalized meal plans powered by AI
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Configuration Panel */}
-                <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Configuration</CardTitle>
-                            <CardDescription>Set your meal plan parameters</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Target Calories */}
-                            <div className="space-y-2">
-                                <Label>Target Calories: {targetKcal} kcal/day</Label>
-                                <Slider
-                                    value={[targetKcal]}
-                                    onValueChange={([value]) => setTargetKcal(value)}
-                                    min={1200}
-                                    max={4000}
-                                    step={100}
-                                    className="w-full"
-                                />
-                            </div>
-
-                            {/* Macro Split */}
-                            <div className="space-y-4">
-                                <Label>Macro Split {macroTotal !== 100 && <span className="text-red-500 text-xs">(Must equal 100%)</span>}</Label>
-
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm">Protein</span>
-                                        <span className="text-sm font-medium">{macroSplit.protein}%</span>
-                                    </div>
-                                    <Slider
-                                        value={[macroSplit.protein]}
-                                        onValueChange={([value]) => handleMacroChange('protein', value)}
-                                        min={10}
-                                        max={50}
-                                        step={5}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm">Carbs</span>
-                                        <span className="text-sm font-medium">{macroSplit.carbs}%</span>
-                                    </div>
-                                    <Slider
-                                        value={[macroSplit.carbs]}
-                                        onValueChange={([value]) => handleMacroChange('carbs', value)}
-                                        min={20}
-                                        max={65}
-                                        step={5}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm">Fat</span>
-                                        <span className="text-sm font-medium">{macroSplit.fat}%</span>
-                                    </div>
-                                    <Slider
-                                        value={[macroSplit.fat]}
-                                        onValueChange={([value]) => handleMacroChange('fat', value)}
-                                        min={15}
-                                        max={45}
-                                        step={5}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Dietary Preferences */}
-                            <div className="space-y-2">
-                                <Label>Dietary Preferences</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {DIETARY_PREFERENCES.map((pref) => (
-                                        <Badge
-                                            key={pref}
-                                            variant={selectedPreferences.includes(pref) ? 'default' : 'outline'}
-                                            className="cursor-pointer"
-                                            onClick={() => togglePreference(pref)}
-                                        >
-                                            {pref}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Restrictions */}
-                            <div className="space-y-2">
-                                <Label>Restrictions</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {RESTRICTIONS.map((rest) => (
-                                        <Badge
-                                            key={rest}
-                                            variant={selectedRestrictions.includes(rest) ? 'destructive' : 'outline'}
-                                            className="cursor-pointer"
-                                            onClick={() => toggleRestriction(rest)}
-                                        >
-                                            {rest}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Duration */}
-                            <div className="space-y-2">
-                                <Label htmlFor="days">Duration (days)</Label>
-                                <Input
-                                    id="days"
-                                    type="number"
-                                    value={daysCount}
-                                    onChange={(e) => setDaysCount(parseInt(e.target.value) || 7)}
-                                    min={1}
-                                    max={30}
-                                />
-                            </div>
-
-                            {/* Generate Button */}
-                            <Button
-                                onClick={generateMealPlan}
-                                disabled={isGenerating || macroTotal !== 100}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700"
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Generating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="w-4 h-4 mr-2" />
-                                        Generate Meal Plan
-                                    </>
-                                )}
-                            </Button>
-                        </CardContent>
-                    </Card>
+        <DashboardLayout role="nutritionist">
+            <div className="space-y-6">
+                {/* Header */}
+                <div>
+                    <h1 className="text-3xl font-bold flex items-center gap-2">
+                        <Sparkles className="h-8 w-8 text-primary" />
+                        Gerador de Planos Alimentares com IA
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        Crie planos alimentares personalizados com inteligência artificial
+                    </p>
                 </div>
 
-                {/* Results Panel */}
-                <div className="lg:col-span-2 space-y-6">
-                    {!result && !isGenerating && (
-                        <Card className="border-2 border-dashed">
-                            <CardContent className="flex flex-col items-center justify-center py-16">
-                                <Sparkles className="w-16 h-16 text-gray-400 mb-4" />
-                                <p className="text-gray-600 dark:text-gray-400 text-center">
-                                    Configure your parameters and click "Generate Meal Plan" to get started
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {isGenerating && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Configuration Panel */}
+                    <div className="lg:col-span-1 space-y-6">
                         <Card>
-                            <CardContent className="flex flex-col items-center justify-center py-16">
-                                <Loader2 className="w-16 h-16 text-emerald-600 animate-spin mb-4" />
-                                <p className="text-lg font-medium">Generating your personalized meal plan...</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    This may take 10-15 seconds
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
+                            <CardHeader>
+                                <CardTitle>Configuração</CardTitle>
+                                <CardDescription>Defina os parâmetros do plano</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Target Calories */}
+                                <div className="space-y-2">
+                                    <Label>Meta Calórica: {targetKcal} kcal/dia</Label>
+                                    <Slider
+                                        value={[targetKcal]}
+                                        onValueChange={([value]) => setTargetKcal(value)}
+                                        min={1200}
+                                        max={4000}
+                                        step={100}
+                                        className="w-full"
+                                    />
+                                </div>
 
-                    {result && (
-                        <>
-                            {/* Summary Card */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Meal Plan Summary</CardTitle>
-                                    <CardDescription>AI-generated personalized plan</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-3 gap-4 mb-4">
-                                        <div className="text-center">
-                                            <Calendar className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
-                                            <p className="text-2xl font-bold">{result.days.length}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Days</p>
+                                {/* Macro Split */}
+                                <div className="space-y-4">
+                                    <Label>
+                                        Distribuição de Macros{' '}
+                                        {macroTotal !== 100 && (
+                                            <span className="text-red-500 text-xs">(Deve somar 100%)</span>
+                                        )}
+                                    </Label>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm">Proteína</span>
+                                            <span className="text-sm font-medium">{macroSplit.protein}%</span>
                                         </div>
-                                        <div className="text-center">
-                                            <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                                            <p className="text-2xl font-bold">{targetKcal}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">kcal/day</p>
-                                        </div>
-                                        <div className="text-center">
-                                            <DollarSign className="w-6 h-6 mx-auto mb-2 text-amber-600" />
-                                            <p className="text-2xl font-bold">R$ {result.estimated_cost?.toFixed(2)}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Est. Cost</p>
-                                        </div>
+                                        <Slider
+                                            value={[macroSplit.protein]}
+                                            onValueChange={([value]) => handleMacroChange('protein', value)}
+                                            min={10}
+                                            max={50}
+                                            step={5}
+                                        />
                                     </div>
 
-                                    {result.reasoning && (
-                                        <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                                            <p className="text-sm font-medium mb-1">AI Reasoning:</p>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                                                {result.reasoning}
-                                            </p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm">Carboidratos</span>
+                                            <span className="text-sm font-medium">{macroSplit.carbs}%</span>
                                         </div>
-                                    )}
+                                        <Slider
+                                            value={[macroSplit.carbs]}
+                                            onValueChange={([value]) => handleMacroChange('carbs', value)}
+                                            min={20}
+                                            max={65}
+                                            step={5}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm">Gordura</span>
+                                            <span className="text-sm font-medium">{macroSplit.fat}%</span>
+                                        </div>
+                                        <Slider
+                                            value={[macroSplit.fat]}
+                                            onValueChange={([value]) => handleMacroChange('fat', value)}
+                                            min={15}
+                                            max={45}
+                                            step={5}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Duration */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="days">Duração (dias)</Label>
+                                    <Input
+                                        id="days"
+                                        type="number"
+                                        value={daysCount}
+                                        onChange={(e) => setDaysCount(parseInt(e.target.value) || 7)}
+                                        min={1}
+                                        max={30}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Dietary Preferences */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Preferências Alimentares</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {DIETARY_PREFERENCES.map((pref) => (
+                                    <div key={pref.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={pref.id}
+                                            checked={selectedPreferences.includes(pref.id)}
+                                            onCheckedChange={() => togglePreference(pref.id)}
+                                        />
+                                        <label
+                                            htmlFor={pref.id}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            {pref.label}
+                                        </label>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                        {/* Allergies */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <AlertCircle className="h-5 w-5 text-red-500" />
+                                    Alergias e Intolerâncias
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {ALLERGIES.map((allergy) => (
+                                    <div key={allergy.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={allergy.id}
+                                            checked={selectedAllergies.includes(allergy.id)}
+                                            onCheckedChange={() => toggleAllergy(allergy.id)}
+                                        />
+                                        <label
+                                            htmlFor={allergy.id}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            {allergy.label}
+                                        </label>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                        {/* Medical Conditions */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Condições Médicas</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {MEDICAL_CONDITIONS.map((condition) => (
+                                    <div key={condition.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={condition.id}
+                                            checked={selectedConditions.includes(condition.id)}
+                                            onCheckedChange={() => toggleCondition(condition.id)}
+                                        />
+                                        <label
+                                            htmlFor={condition.id}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            {condition.label}
+                                        </label>
+                                    </div>
+                                ))}
+                                <div className="space-y-2">
+                                    <Label htmlFor="custom-condition">Outra Condição</Label>
+                                    <Textarea
+                                        id="custom-condition"
+                                        placeholder="Descreva outras condições médicas relevantes..."
+                                        value={customCondition}
+                                        onChange={(e) => setCustomCondition(e.target.value)}
+                                        rows={3}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Include Foods */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Alimentos para Incluir</CardTitle>
+                                <CardDescription>Alimentos que devem estar no plano</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Ex: Frango, Batata-doce..."
+                                        value={currentIncludeFood}
+                                        onChange={(e) => setCurrentIncludeFood(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && addIncludeFood()}
+                                    />
+                                    <Button onClick={addIncludeFood} size="icon">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {includeFoods.map((food, index) => (
+                                        <Badge key={index} variant="secondary" className="gap-1">
+                                            {food}
+                                            <X
+                                                className="h-3 w-3 cursor-pointer"
+                                                onClick={() => removeIncludeFood(food)}
+                                            />
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Exclude Foods */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Alimentos para Excluir</CardTitle>
+                                <CardDescription>Alimentos que NÃO devem estar no plano</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Ex: Cebola, Alho..."
+                                        value={currentExcludeFood}
+                                        onChange={(e) => setCurrentExcludeFood(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && addExcludeFood()}
+                                    />
+                                    <Button onClick={addExcludeFood} size="icon" variant="destructive">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {excludeFoods.map((food, index) => (
+                                        <Badge key={index} variant="destructive" className="gap-1">
+                                            {food}
+                                            <X
+                                                className="h-3 w-3 cursor-pointer"
+                                                onClick={() => removeExcludeFood(food)}
+                                            />
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Generate Button */}
+                        <Button
+                            onClick={generateMealPlan}
+                            disabled={isGenerating || macroTotal !== 100}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700"
+                            size="lg"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Gerando...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    Gerar Plano Alimentar
+                                </>
+                            )}
+                        </Button>
+                    </div>
+
+                    {/* Results Panel */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {!result && !isGenerating && (
+                            <Card className="border-2 border-dashed">
+                                <CardContent className="flex flex-col items-center justify-center py-16">
+                                    <Sparkles className="w-16 h-16 text-gray-400 mb-4" />
+                                    <p className="text-muted-foreground text-center">
+                                        Configure os parâmetros e clique em "Gerar Plano Alimentar" para começar
+                                    </p>
                                 </CardContent>
                             </Card>
+                        )}
 
-                            {/* Daily Plans */}
-                            {result.days.map((day, index) => (
-                                <Card key={index}>
+                        {isGenerating && (
+                            <Card>
+                                <CardContent className="flex flex-col items-center justify-center py-16">
+                                    <Loader2 className="w-16 h-16 text-emerald-600 animate-spin mb-4" />
+                                    <p className="text-lg font-medium">Gerando seu plano alimentar personalizado...</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Isso pode levar 10-15 segundos
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {result && (
+                            <>
+                                {/* Summary Card */}
+                                <Card>
                                     <CardHeader>
-                                        <CardTitle>{day.day}</CardTitle>
-                                        <CardDescription>
-                                            {day.total_kcal} kcal • P: {day.macros.protein}g • C: {day.macros.carbs}g • F: {day.macros.fat}g
-                                        </CardDescription>
+                                        <CardTitle>Resumo do Plano Alimentar</CardTitle>
+                                        <CardDescription>Plano personalizado gerado por IA</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* Breakfast */}
-                                            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                                <h4 className="font-semibold mb-2">🌅 Breakfast</h4>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {day.breakfast?.description || 'Oatmeal with berries'}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {day.breakfast?.kcal || 350} kcal
-                                                </p>
+                                        <div className="grid grid-cols-3 gap-4 mb-4">
+                                            <div className="text-center">
+                                                <Calendar className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
+                                                <p className="text-2xl font-bold">{result.days.length}</p>
+                                                <p className="text-sm text-muted-foreground">Dias</p>
                                             </div>
-
-                                            {/* Lunch */}
-                                            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                                <h4 className="font-semibold mb-2">☀️ Lunch</h4>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {day.lunch?.description || 'Grilled salmon with quinoa'}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {day.lunch?.kcal || 520} kcal
-                                                </p>
+                                            <div className="text-center">
+                                                <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                                                <p className="text-2xl font-bold">{targetKcal}</p>
+                                                <p className="text-sm text-muted-foreground">kcal/dia</p>
                                             </div>
-
-                                            {/* Dinner */}
-                                            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                                <h4 className="font-semibold mb-2">🌙 Dinner</h4>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {day.dinner?.description || 'Chicken stir-fry'}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {day.dinner?.kcal || 480} kcal
-                                                </p>
-                                            </div>
-
-                                            {/* Snacks */}
-                                            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                                <h4 className="font-semibold mb-2">🍎 Snacks</h4>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {day.snacks?.description || 'Greek yogurt, almonds'}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {day.snacks?.kcal || 250} kcal
-                                                </p>
+                                            <div className="text-center">
+                                                <DollarSign className="w-6 h-6 mx-auto mb-2 text-amber-600" />
+                                                <p className="text-2xl font-bold">R$ {result.estimated_cost?.toFixed(2)}</p>
+                                                <p className="text-sm text-muted-foreground">Custo Est.</p>
                                             </div>
                                         </div>
+
+                                        {result.reasoning && (
+                                            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                                <p className="text-sm font-medium mb-1">Raciocínio da IA:</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {result.reasoning}
+                                                </p>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
-                            ))}
 
-                            {/* Approve Button */}
-                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                                Approve & Send to Patient
-                            </Button>
-                        </>
-                    )}
+                                {/* Daily Plans */}
+                                {result.days.map((day, index) => (
+                                    <Card key={index}>
+                                        <CardHeader>
+                                            <CardTitle>{day.day}</CardTitle>
+                                            <CardDescription>
+                                                {day.total_kcal} kcal • P: {day.macros.protein}g • C: {day.macros.carbs}g • G: {day.macros.fat}g
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Breakfast */}
+                                                <div className="p-4 bg-muted/50 rounded-lg">
+                                                    <h4 className="font-semibold mb-2">🌅 Café da Manhã</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {day.breakfast?.description || 'Aveia com frutas vermelhas'}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {day.breakfast?.kcal || 350} kcal
+                                                    </p>
+                                                </div>
+
+                                                {/* Lunch */}
+                                                <div className="p-4 bg-muted/50 rounded-lg">
+                                                    <h4 className="font-semibold mb-2">☀️ Almoço</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {day.lunch?.description || 'Salmão grelhado com quinoa'}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {day.lunch?.kcal || 520} kcal
+                                                    </p>
+                                                </div>
+
+                                                {/* Dinner */}
+                                                <div className="p-4 bg-muted/50 rounded-lg">
+                                                    <h4 className="font-semibold mb-2">🌙 Jantar</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {day.dinner?.description || 'Frango refogado'}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {day.dinner?.kcal || 480} kcal
+                                                    </p>
+                                                </div>
+
+                                                {/* Snacks */}
+                                                <div className="p-4 bg-muted/50 rounded-lg">
+                                                    <h4 className="font-semibold mb-2">🍎 Lanches</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {day.snacks?.description || 'Iogurte grego, amêndoas'}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {day.snacks?.kcal || 250} kcal
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+
+                                {/* Approve Button */}
+                                <Button className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
+                                    Aprovar e Enviar para Paciente
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </DashboardLayout>
     );
 }
