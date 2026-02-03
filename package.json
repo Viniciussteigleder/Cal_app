@@ -13,7 +13,8 @@
     "integrity:run": "tsx scripts/integrity-check.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "populate:demo": "tsx scripts/populate-demo-data.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
