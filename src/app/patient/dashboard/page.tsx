@@ -749,10 +749,10 @@ export default function PatientDashboard() {
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" aria-hidden="true" />
                       Salvando...
                     </>
+                  ) : selectedFoods.length === 0 ? (
+                    "Selecione alimentos"
                   ) : (
-                    <>
-                      Adicionar {selectedFoods.length > 0 && `(${Math.round(selectedFoods.reduce((acc, sf) => acc + sf.food.nutrients.calories, 0))} kcal)`}
-                    </>
+                    `Registrar ${selectedFoods.length} ${selectedFoods.length === 1 ? 'alimento' : 'alimentos'}`
                   )}
                 </Button>
               </div>

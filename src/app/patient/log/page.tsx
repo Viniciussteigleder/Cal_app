@@ -64,7 +64,7 @@ const MEAL_LABELS: Record<MealType, string> = {
   dinner: "Jantar",
 };
 
-function PatientLogPageContent() {
+function PatientLogContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
   const rawMealParam = searchParams.get("meal");
@@ -631,8 +631,8 @@ function PatientLogPageContent() {
 
 export default function PatientLogPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PatientLogPageContent />
+    <Suspense fallback={<div className="flex items-center justify-center py-12">Carregando...</div>}>
+      <PatientLogContent />
     </Suspense>
   );
 }

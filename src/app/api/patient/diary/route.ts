@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         },
         include: {
           items: {
-            include: { food: true, snapshot: true },
+            include: { snapshot: { include: { food: true } } },
             orderBy: { created_at: "asc" },
           },
         },
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
           const nutrients = scaleNutrients(per100g, Number(item.grams));
           return {
             id: item.id,
-            food: { id: item.food.id, name: item.food.name },
+            food: { id: item.snapshot.food.id, name: item.snapshot.food.name },
             grams: Number(item.grams),
             nutrients,
           };
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
           grams,
           snapshot_id: snapshot.id,
         },
-        include: { food: true, snapshot: true },
+        include: { snapshot: true },
       });
 
       const nutrients =

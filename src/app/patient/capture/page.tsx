@@ -100,8 +100,10 @@ export default function CaptureMealPage() {
       return text;
     });
 
-    toast.success("Voz processada!", {
-      description: `Detectado: ${processed.foodMentions.length} alimentos`,
+    toast.success("✓ Entendi!", {
+      description: processed.foodMentions.length > 0
+        ? `Encontrei ${processed.foodMentions.length} alimento${processed.foodMentions.length > 1 ? 's' : ''}`
+        : "Descrição adicionada",
     });
   };
 
@@ -145,7 +147,7 @@ export default function CaptureMealPage() {
       setCheckin(prev => ({ ...prev, mood: 3 }));
     }
 
-    toast.success("Sentimento detectado e aplicado aos sliders");
+    toast.success("✓ Ajustei como você está se sentindo");
   };
 
   const handleSkipCheckin = () => {

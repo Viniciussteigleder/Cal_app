@@ -162,7 +162,7 @@ export default function PatientChatPage() {
       const response: Message = {
         id: `msg-${messageIdRef.current}`,
         role: "nutritionist",
-        content: "Obrigado por compartilhar! Vou analisar e te respondo em breve. Se tiver alguma urgência, pode me avisar.",
+        content: "Obrigado por compartilhar! Vou analisar e já respondo. Me avise se for urgente!",
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, response]);
@@ -342,7 +342,7 @@ export default function PatientChatPage() {
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span className="text-sm text-muted-foreground">
-                      Digitando...
+                      Escrevendo...
                     </span>
                   </div>
                 </div>
