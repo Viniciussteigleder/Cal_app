@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const supabase = await createSupabaseServerClient();
@@ -14,13 +14,14 @@ export async function PATCH(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { id } = await params;
         const body = await request.json();
         const { title, description, priority, due_date, status } = body;
 
         // Verify task belongs to user
         const existingTask = await prisma.plannerTask.findFirst({
             where: {
-                id: params.id,
+                id,
                 user_id: user.id,
             },
         });
@@ -30,7 +31,7 @@ export async function PATCH(
         }
 
         const task = await prisma.plannerTask.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 ...(title !== undefined && { title }),
                 ...(description !== undefined && { description }),
@@ -52,7 +53,7 @@ export async function PATCH(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const supabase = await createSupabaseServerClient();
@@ -62,10 +63,11 @@ export async function DELETE(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { id } = await params;
         // Verify task belongs to user
         const existingTask = await prisma.plannerTask.findFirst({
             where: {
-                id: params.id,
+                id,
                 user_id: user.id,
             },
         });
@@ -75,7 +77,7 @@ export async function DELETE(
         }
 
         await prisma.plannerTask.delete({
-            where: { id: params.id },
+            where: { id },
         });
 
         return NextResponse.json({ success: true });

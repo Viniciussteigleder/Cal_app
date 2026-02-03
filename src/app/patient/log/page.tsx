@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertCircle,
@@ -64,7 +64,7 @@ const MEAL_LABELS: Record<MealType, string> = {
   dinner: "Jantar",
 };
 
-export default function PatientLogPage() {
+function PatientLogPageContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
   const rawMealParam = searchParams.get("meal");
@@ -626,5 +626,13 @@ export default function PatientLogPage() {
         </Dialog>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function PatientLogPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PatientLogPageContent />
+    </Suspense>
   );
 }

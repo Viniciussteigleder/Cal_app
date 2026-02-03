@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const supabase = await createSupabaseServerClient();
@@ -14,6 +14,7 @@ export async function PATCH(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { id } = await params;
         const dbUser = await prisma.user.findUnique({
             where: { id: user.id },
             select: { tenant_id: true },
@@ -36,7 +37,7 @@ export async function PATCH(
         // Verify patient belongs to tenant
         const patient = await prisma.patient.findFirst({
             where: {
-                id: params.id,
+                id,
                 tenant_id: dbUser.tenant_id,
             },
         });
@@ -46,7 +47,7 @@ export async function PATCH(
         }
 
         const updatedPatient = await prisma.patient.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 enabled_modules,
             },
