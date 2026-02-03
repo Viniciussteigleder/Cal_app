@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, AlertCircle, TrendingUp, CheckCircle2, MessageCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Calendar, AlertCircle, TrendingUp, CheckCircle2, MessageCircle, Info } from "lucide-react";
 import { useState } from "react";
 
 const BRISTOL_SCALE = [
@@ -117,8 +118,9 @@ export default function PatientSymptomsPage() {
   };
 
   return (
-    <DashboardLayout role="patient">
-      <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
+    <TooltipProvider>
+      <DashboardLayout role="patient">
+        <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-none shadow-card">
@@ -131,23 +133,46 @@ export default function PatientSymptomsPage() {
             <CardContent className="space-y-8">
               {/* Bristol Scale */}
               <div className="space-y-3">
-                <label className="text-sm font-medium flex justify-between">
-                  Escala de Bristol
+                <label className="text-sm font-medium flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    Escala de Bristol
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs p-4">
+                        <p className="font-semibold mb-2">Escala de Bristol</p>
+                        <p className="text-xs">Sistema de classificação que avalia a forma e consistência das fezes. Tipos 3 e 4 são considerados ideais, indicando trânsito intestinal saudável.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
                   <span className="text-xs text-muted-foreground font-normal">Como estava suas fezes?</span>
                 </label>
                 <div className="grid grid-cols-7 gap-1">
                   {BRISTOL_SCALE.map((type) => (
-                    <button
-                      key={type.value}
-                      className={`p-2 rounded-lg border text-center hover:bg-muted transition-all active:scale-95 ${type.status === "ideal" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-border"
-                        }`}
-                      title={type.description}
-                    >
-                      <div className="font-semibold text-sm">{type.value}</div>
-                      <div className="text-[10px] text-muted-foreground hidden sm:block">
-                        {type.status === "ideal" ? "Ideal" : ""}
-                      </div>
-                    </button>
+                    <Tooltip key={type.value}>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={`p-2 rounded-lg border text-center hover:bg-muted transition-all active:scale-95 ${type.status === "ideal" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-border"
+                            }`}
+                        >
+                          <div className="font-semibold text-sm">{type.value}</div>
+                          <div className="text-[10px] text-muted-foreground hidden sm:block">
+                            {type.status === "ideal" ? "Ideal" : ""}
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-semibold">{type.label}</p>
+                        <p className="text-xs mt-1">{type.description}</p>
+                        {type.status === "warning" && (
+                          <p className="text-xs mt-2 text-amber-600 dark:text-amber-400">⚠️ Pode indicar constipação ou diarreia</p>
+                        )}
+                        {type.status === "ideal" && (
+                          <p className="text-xs mt-2 text-emerald-600 dark:text-emerald-400">✓ Ideal para saúde intestinal</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
                   ))}
                 </div>
               </div>
@@ -336,7 +361,8 @@ export default function PatientSymptomsPage() {
             </CardFooter>
           </Card>
         </div>
-      </div>
-    </DashboardLayout>
+        </div>
+      </DashboardLayout>
+    </TooltipProvider>
   );
 }
