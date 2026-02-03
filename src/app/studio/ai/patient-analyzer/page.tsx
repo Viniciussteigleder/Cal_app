@@ -35,7 +35,7 @@ export default function PatientAnalyzerPage() {
     const [patient, setPatient] = useState<PatientInfo>({
         id: 'patient-123',
         name: 'Maria Silva',
-        protocol: 'Nutritional Therapy Protocol',
+        protocol: 'Protocolo de Terapia Nutricional',
     });
     const [analysis, setAnalysis] = useState<PatientAnalysisData | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,7 +60,7 @@ export default function PatientAnalyzerPage() {
 
             if (data.success) {
                 setAnalysis(data.data);
-                toast.success('Analysis completed!');
+                toast.success('Análise concluída!');
 
                 // Generate mock adherence history for chart
                 const history = Array.from({ length: 30 }, (_, i) => ({
@@ -69,11 +69,11 @@ export default function PatientAnalyzerPage() {
                 }));
                 setAdherenceHistory(history);
             } else {
-                toast.error(data.error || 'Failed to analyze patient');
+                toast.error(data.error || 'Falha ao analisar paciente');
             }
         } catch (error) {
             console.error('Analysis error:', error);
-            toast.error('Failed to run analysis');
+            toast.error('Falha ao executar análise');
         } finally {
             setIsAnalyzing(false);
         }
@@ -108,230 +108,326 @@ export default function PatientAnalyzerPage() {
     };
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-6xl">
-            <div className="mb-8 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        Patient Analysis
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        AI-powered adherence and dropout risk analysis
-                    </p>
-                </div>
-                <Button
-                    onClick={runAnalysis}
-                    disabled={isAnalyzing}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                    {isAnalyzing ? (
-                        <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            Analyzing...
-                        </>
-                    ) : (
-                        <>
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Run Analysis
-                        </>
-                    )}
-                </Button>
-            </div>
-
-            {/* Patient Info Card */}
-            <Card className="mb-6">
-                <CardContent className="flex items-center gap-4 py-6">
-                    <Avatar className="w-16 h-16">
-                        <AvatarImage src={patient.avatar} />
-                        <AvatarFallback className="bg-emerald-600 text-white text-xl">
-                            {patient.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                    </Avatar>
+        <DashboardLayout role="nutritionist">
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-bold">{patient.name}</h2>
-                        <p className="text-gray-600 dark:text-gray-400">{patient.protocol}</p>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {!analysis && !isAnalyzing && (
-                <Card className="border-2 border-dashed">
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                        <TrendingUp className="w-16 h-16 text-gray-400 mb-4" />
-                        <p className="text-gray-600 dark:text-gray-400 text-center">
-                            Click "Run Analysis" to analyze patient adherence and predict dropout risk
+                        <h1 className="text-3xl font-bold flex items-center gap-2">
+                            <Brain className="h-8 w-8 text-primary" />
+                            Análise de Paciente com IA
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            Análise de aderência e risco de abandono com inteligência artificial
                         </p>
-                    </CardContent>
-                </Card>
-            )}
-
-            {analysis && (
-                <div className="space-y-6">
-                    {/* Metrics Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Adherence Score */}
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                    Adherence Score
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-4xl font-bold text-emerald-600">
-                                            {Math.round(analysis.adherence_score)}%
-                                        </p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                            Last 30 days
-                                        </p>
-                                    </div>
-                                    <TrendingUp className="w-12 h-12 text-emerald-600 opacity-20" />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Progress Score */}
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                    Progress Score
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-4xl font-bold text-blue-600">
-                                            {Math.round(analysis.progress_score)}%
-                                        </p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                            Overall Progress
-                                        </p>
-                                    </div>
-                                    <TrendingUp className="w-12 h-12 text-blue-600 opacity-20" />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Dropout Risk */}
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                    Dropout Risk
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Badge className={`text-lg px-4 py-2 ${getRiskColor(analysis.dropout_risk)}`}>
-                                            {analysis.dropout_risk.toUpperCase()}
-                                        </Badge>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                            Based on AI model
-                                        </p>
-                                    </div>
-                                    {getRiskIcon(analysis.dropout_risk)}
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
-
-                    {/* AI Insights */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>AI Insights</CardTitle>
-                            <CardDescription>Key observations from the analysis</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-3">
-                                {analysis.insights.map((insight, index) => (
-                                    <li key={index} className="flex items-start gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-600 mt-2 flex-shrink-0" />
-                                        <p className="text-gray-700 dark:text-gray-300">{insight}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-
-                    {/* Recommended Actions */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Recommended Actions</CardTitle>
-                            <CardDescription>AI-suggested interventions</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {analysis.recommended_actions.map((action, index) => (
-                                    <div
-                                        key={index}
-                                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-emerald-500 transition-colors"
-                                    >
-                                        <div className="flex items-start gap-3 mb-2">
-                                            {action.priority === 'high' ? (
-                                                <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                                            ) : (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                            )}
-                                            <div>
-                                                <h4 className="font-semibold">{action.action}</h4>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                    {action.description}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Adherence Trend Chart */}
-                    {adherenceHistory.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Adherence Over Last 30 Days</CardTitle>
-                                <CardDescription>Daily adherence tracking</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <LineChart data={adherenceHistory}>
-                                        <XAxis
-                                            dataKey="day"
-                                            tick={{ fontSize: 12 }}
-                                            interval={4}
-                                        />
-                                        <YAxis
-                                            domain={[0, 100]}
-                                            tick={{ fontSize: 12 }}
-                                        />
-                                        <Tooltip />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="adherence"
-                                            stroke="#10b981"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            fill="url(#colorAdherence)"
-                                        />
-                                        <defs>
-                                            <linearGradient id="colorAdherence" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Generate Report Button */}
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Generate Full Report
+                    <Button
+                        onClick={runAnalysis}
+                        disabled={isAnalyzing}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                        size="lg"
+                    >
+                        {isAnalyzing ? (
+                            <>
+                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                Analisando...
+                            </>
+                        ) : (
+                            <>
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Executar Análise
+                            </>
+                        )}
                     </Button>
                 </div>
-            )}
-        </div>
+
+                {/* Patient Info Card */}
+                <Card>
+                    <CardContent className="flex items-center gap-4 py-6">
+                        <Avatar className="w-16 h-16">
+                            <AvatarImage src={patient.avatar} />
+                            <AvatarFallback className="bg-emerald-600 text-white text-xl">
+                                {patient.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h2 className="text-2xl font-bold">{patient.name}</h2>
+                            <p className="text-muted-foreground">{patient.protocol}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {!analysis && !isAnalyzing && (
+                    <Card className="border-2 border-dashed">
+                        <CardContent className="flex flex-col items-center justify-center py-16">
+                            <Brain className="w-16 h-16 text-gray-400 mb-4" />
+                            <p className="text-muted-foreground text-center">
+                                Clique em "Executar Análise" para analisar a aderência do paciente e prever o risco de abandono
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {analysis && (
+                    <div className="space-y-6">
+                        {/* Metrics Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Adherence Score */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                        Pontuação de Aderência
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-4xl font-bold text-emerald-600">
+                                                {Math.round(analysis.adherence_score)}%
+                                            </p>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Últimos 30 dias
+                                            </p>
+                                        </div>
+                                        <TrendingUp className="w-12 h-12 text-emerald-600 opacity-20" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Progress Score */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                        Pontuação de Progresso
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-4xl font-bold text-blue-600">
+                                                {Math.round(analysis.progress_score)}%
+                                            </p>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Progresso Geral
+                                            </p>
+                                        </div>
+                                        <TrendingUp className="w-12 h-12 text-blue-600 opacity-20" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Dropout Risk */}
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                        Risco de Abandono
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Badge className={`text-lg px-4 py-2 ${getRiskColor(analysis.dropout_risk)}`}>
+                                                {analysis.dropout_risk === 'low' ? 'BAIXO' : analysis.dropout_risk === 'medium' ? 'MÉDIO' : analysis.dropout_risk === 'high' ? 'ALTO' : 'CRÍTICO'}
+                                            </Badge>
+                                            <p className="text-sm text-muted-foreground mt-2">
+                                                Baseado em modelo de IA
+                                            </p>
+                                        </div>
+                                        {getRiskIcon(analysis.dropout_risk)}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Enhanced Analysis Tabs */}
+                        <Tabs defaultValue="insights" className="w-full">
+                            <TabsList className="grid w-full grid-cols-4">
+                                <TabsTrigger value="insights">
+                                    <Brain className="w-4 h-4 mr-2" />
+                                    Insights da IA
+                                </TabsTrigger>
+                                <TabsTrigger value="clinical">
+                                    <Activity className="w-4 h-4 mr-2" />
+                                    Clínico
+                                </TabsTrigger>
+                                <TabsTrigger value="nutritional">
+                                    <Heart className="w-4 h-4 mr-2" />
+                                    Nutricional
+                                </TabsTrigger>
+                                <TabsTrigger value="behavioral">
+                                    <TrendingUp className="w-4 h-4 mr-2" />
+                                    Comportamental
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="insights" className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Insights da IA</CardTitle>
+                                        <CardDescription>Observações principais da análise</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ul className="space-y-3">
+                                            {analysis.insights.map((insight, index) => (
+                                                <li key={index} className="flex items-start gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-emerald-600 mt-2 flex-shrink-0" />
+                                                    <p className="text-muted-foreground">{insight}</p>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="clinical" className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Análise Clínica</CardTitle>
+                                        <CardDescription>Perspectiva médica</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Sinais Vitais</h4>
+                                            <p className="text-sm text-muted-foreground">Tendências de sinais vitais dentro dos parâmetros normais.</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Fatores de Risco</h4>
+                                            <p className="text-sm text-muted-foreground">Nenhum fator de risco crítico identificado.</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Comorbidades</h4>
+                                            <p className="text-sm text-muted-foreground">Avaliação de comorbidades em andamento.</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="nutritional" className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Análise Nutricional</CardTitle>
+                                        <CardDescription>Perspectiva do nutricionista</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Equilíbrio de Macros</h4>
+                                            <p className="text-sm text-muted-foreground">Distribuição de macronutrientes consistente com as metas.</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Lacunas de Micronutrientes</h4>
+                                            <p className="text-sm text-muted-foreground">Possível deficiência de vitamina D - considerar suplementação.</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Padrões de Hidratação</h4>
+                                            <p className="text-sm text-muted-foreground">Ingestão de água abaixo do ideal - aumentar para 2L/dia.</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="behavioral" className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Análise Comportamental</CardTitle>
+                                        <CardDescription>Perspectiva psicológica</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Consistência de Registro</h4>
+                                            <p className="text-sm text-muted-foreground">Alta consistência - registra {Math.round(analysis.adherence_score)}% dos dias.</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Padrões Emocionais</h4>
+                                            <p className="text-sm text-muted-foreground">Possíveis padrões de alimentação emocional nos finais de semana.</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2">Nível de Motivação</h4>
+                                            <p className="text-sm text-muted-foreground">Motivação alta - engajamento ativo com o plano.</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+
+                        {/* Recommended Actions */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Ações Recomendadas</CardTitle>
+                                <CardDescription>Intervenções sugeridas pela IA</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {analysis.recommended_actions.map((action, index) => (
+                                        <div
+                                            key={index}
+                                            className="p-4 border rounded-lg hover:border-emerald-500 transition-colors"
+                                        >
+                                            <div className="flex items-start gap-3 mb-2">
+                                                {action.priority === 'high' ? (
+                                                    <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                                                ) : (
+                                                    <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                )}
+                                                <div>
+                                                    <h4 className="font-semibold">{action.action}</h4>
+                                                    <p className="text-sm text-muted-foreground mt-1">
+                                                        {action.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Adherence Trend Chart */}
+                        {adherenceHistory.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Aderência nos Últimos 30 Dias</CardTitle>
+                                    <CardDescription>Rastreamento diário de aderência</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <LineChart data={adherenceHistory}>
+                                            <XAxis
+                                                dataKey="day"
+                                                tick={{ fontSize: 12 }}
+                                                interval={4}
+                                            />
+                                            <YAxis
+                                                domain={[0, 100]}
+                                                tick={{ fontSize: 12 }}
+                                            />
+                                            <Tooltip />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="adherence"
+                                                stroke="#10b981"
+                                                strokeWidth={2}
+                                                dot={false}
+                                                fill="url(#colorAdherence)"
+                                            />
+                                            <defs>
+                                                <linearGradient id="colorAdherence" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Generate Report Button */}
+                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
+                            <FileText className="w-4 h-4 mr-2" />
+                            Gerar Relatório Completo
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </DashboardLayout>
     );
 }
