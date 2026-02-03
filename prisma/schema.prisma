@@ -7,6 +7,530 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Tenant {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  type           TenantType
+  status         TenantStatus
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  form_templates FormTemplate[]
+  planner_tasks  PlannerTask[]
+}
+
+model User {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String        @unique
+  name          String
+  role          UserRole
+  tenant_id     String        @db.Uuid
+  status        UserStatus
+  planner_tasks PlannerTask[]
+}
+
+model Patient {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String           @db.Uuid
+  user_id          String?          @unique @db.Uuid
+  assigned_team_id String?          @db.Uuid
+  status           PatientStatus
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  enabled_modules  Json?
+  form_submissions FormSubmission[]
+}
+
+model PatientProfile {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String        @db.Uuid
+  patient_id        String        @unique @db.Uuid
+  sex               BiologicalSex
+  birth_date        DateTime      @db.Timestamptz(6)
+  height_cm         Decimal       @db.Decimal
+  current_weight_kg Decimal       @db.Decimal
+  target_weight_kg  Decimal?      @db.Decimal
+  activity_level    ActivityLevel
+  goal              Goal
+}
+
+model PatientCondition {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String        @db.Uuid
+  patient_id String        @db.Uuid
+  type       ConditionType
+  name       String
+  severity   Severity
+  notes      String?
+}
+
+model SymptomLog {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String        @db.Uuid
+  patient_id       String        @db.Uuid
+  logged_at        DateTime      @default(now()) @db.Timestamptz(6)
+  bristol_scale    BristolScale?
+  discomfort_level Int?
+  symptoms         SymptomType[]
+  notes            String?
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+
+  @@index([patient_id, logged_at])
+}
+
+model SymptomMealCorrelation {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String   @db.Uuid
+  symptom_log_id    String   @db.Uuid
+  meal_id           String   @db.Uuid
+  correlation_score Decimal? @db.Decimal
+  notes             String?
+  is_flagged        Boolean  @default(false)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([symptom_log_id, meal_id])
+}
+
+model Consultation {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  patient_id String
+  status     String
+  notes      String?
+  created_at DateTime @default(now())
+}
+
+model Protocol {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String       @db.Uuid
+  name        String
+  description String?
+  is_active   Boolean      @default(true)
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  code        String
+  is_system   Boolean      @default(false)
+  type        ProtocolType
+
+  @@unique([tenant_id, code])
+}
+
+model ProtocolPhase {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  protocol_id  String            @db.Uuid
+  phase_type   ProtocolPhaseType
+  name         String
+  description  String?
+  order        Int
+  default_days Int?
+  rules_json   Json?
+  created_at   DateTime          @default(now()) @db.Timestamptz(6)
+
+  @@unique([protocol_id, order])
+}
+
+model ProtocolFoodTag {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phase_id   String        @db.Uuid
+  food_group FoodGroup
+  tag        String
+  action     FoodTagAction
+  notes      String?
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+
+  @@unique([phase_id, food_group, tag])
+}
+
+model PatientProtocolInstance {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String    @db.Uuid
+  patient_id  String    @db.Uuid
+  protocol_id String    @db.Uuid
+  started_at  DateTime  @default(now()) @db.Timestamptz(6)
+  ended_at    DateTime? @db.Timestamptz(6)
+  is_active   Boolean   @default(true)
+  notes       String?
+  created_by  String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([patient_id, is_active])
+}
+
+model PatientProtocolPhase {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instance_id     String    @db.Uuid
+  phase_id        String    @db.Uuid
+  started_at      DateTime  @default(now()) @db.Timestamptz(6)
+  ended_at        DateTime? @db.Timestamptz(6)
+  is_current      Boolean   @default(true)
+  transition_note String?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([instance_id, is_current])
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model FoodCanonical {
+  id         String    @id @default(uuid())
+  tenant_id  String
+  name       String
+  group      FoodGroup
+  region_tag RegionTag
+  is_generic Boolean
+  created_at DateTime  @default(now())
+}
+
+model Recipe {
+  id                       String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                String         @db.Uuid
+  name                     String
+  description              String?
+  instructions             String?
+  prep_time_min            Int?
+  cook_time_min            Int?
+  servings                 Int            @default(1)
+  is_public                Boolean        @default(false)
+  is_favorite              Boolean        @default(false)
+  tags                     String[]
+  created_by               String         @db.Uuid
+  created_at               DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  is_calculated            Boolean        @default(false)
+  unit_type                RecipeUnitType @default(solid)
+  final_weight             Decimal?
+  household_measure_label  String?
+  household_measure_amount Decimal?
+  generated_description    String?
+
+  @@index([tenant_id, is_public])
+  @@index([tenant_id, is_favorite])
+}
+
+model RecipeIngredient {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipe_id  String   @db.Uuid
+  food_id    String   @db.Uuid
+  grams      Decimal  @db.Decimal
+  notes      String?
+  order      Int      @default(0)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([recipe_id, food_id])
+}
+
+model FoodSubstitution {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String           @db.Uuid
+  original_food_id   String           @db.Uuid
+  substitute_food_id String           @db.Uuid
+  substitution_type  SubstitutionType
+  ratio              Decimal          @default(1.0) @db.Decimal
+  notes              String?
+  is_verified        Boolean          @default(false)
+  created_by         String           @db.Uuid
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@unique([tenant_id, original_food_id, substitute_food_id, substitution_type])
+  @@index([tenant_id, substitution_type])
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model FoodAlias {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  food_id    String
+  alias      String
+  locale     String
+  created_at DateTime @default(now())
+}
+
+model FoodNutrient {
+  tenant_id          String
+  food_id            String
+  nutrient_key       NutrientKey
+  per_100g_value     Decimal
+  unit               String
+  source             String
+  dataset_release_id String
+  quality_flag       QualityFlag
+
+  @@id([tenant_id, food_id, nutrient_key, dataset_release_id])
+  @@index([food_id, dataset_release_id, nutrient_key], map: "idx_food_nutrient_policy")
+}
+
+model DatasetRelease {
+  id            String        @id @default(uuid())
+  tenant_id     String
+  region        Region
+  source_name   String
+  version_label String
+  published_at  DateTime?
+  status        ReleaseStatus
+  created_at    DateTime      @default(now())
+}
+
+model ImportJob {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String    @db.Uuid
+  dataset_release_id String?   @db.Uuid
+  source_label       String
+  status             String
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at       DateTime? @db.Timestamptz(6)
+}
+
+model ValidationReport {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String   @db.Uuid
+  dataset_release_id String   @db.Uuid
+  status             String
+  details_json       Json
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model PatientDataPolicy {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  patient_id      String   @db.Uuid
+  version_number  Int
+  is_active       Boolean  @default(true)
+  default_region  Region
+  allowed_sources Json
+  rules_json      Json?
+  notes           String?
+  updated_by      String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([patient_id, version_number])
+}
+
+model PatientCategoryOverride {
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policy_id        String  @db.Uuid
+  category_code    String
+  preferred_source String
+  notes            String?
+
+  @@unique([policy_id, category_code])
+}
+
+model FoodSnapshot {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String   @db.Uuid
+  patient_id         String   @db.Uuid
+  food_id            String   @db.Uuid
+  snapshot_json      Json
+  source             String
+  dataset_release_id String   @db.Uuid
+  content_hash       String?  @default(dbgenerated("md5((snapshot_json)::text)"))
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model Meal {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  patient_id  String   @db.Uuid
+  date        DateTime @db.Timestamptz(6)
+  type        MealType
+  totals_json Json?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([patient_id, date], map: "idx_patient_date")
+}
+
+model MealItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  meal_id     String   @db.Uuid
+  food_id     String   @db.Uuid
+  grams       Decimal  @db.Decimal
+  snapshot_id String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model PlanTemplate {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String       @db.Uuid
+  name        String
+  description String?
+  goal        TemplateGoal
+  target_kcal Int?
+  macro_split Json?
+  is_public   Boolean      @default(false)
+  is_system   Boolean      @default(false)
+  tags        String[]
+  created_by  String       @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([tenant_id, is_public])
+  @@index([tenant_id, goal])
+}
+
+model PlanTemplateItem {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id     String   @db.Uuid
+  meal_type       MealType
+  food_id         String?  @db.Uuid
+  placeholder     String?
+  grams           Decimal? @db.Decimal
+  percentage_kcal Decimal? @db.Decimal
+  instructions    String?
+  order           Int      @default(0)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([template_id, meal_type])
+}
+
+model Plan {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String     @db.Uuid
+  patient_id  String     @db.Uuid
+  status      PlanStatus
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+  template_id String?    @db.Uuid
+}
+
+model PlanVersion {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String        @db.Uuid
+  plan_id    String        @db.Uuid
+  version_no Int
+  status     VersionStatus
+  created_by String        @db.Uuid
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([plan_id, version_no])
+}
+
+model PlanItem {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  plan_version_id String   @db.Uuid
+  meal_type       MealType
+  food_id         String   @db.Uuid
+  grams           Decimal  @db.Decimal
+  snapshot_id     String   @db.Uuid
+  instructions    String?
+}
+
+model PlanApproval {
+  plan_version_id String   @id @db.Uuid
+  tenant_id       String   @db.Uuid
+  approved_by     String   @db.Uuid
+  approved_at     DateTime @db.Timestamptz(6)
+  approval_note   String?
+}
+
+model PlanPublication {
+  plan_version_id String   @id @db.Uuid
+  tenant_id       String   @db.Uuid
+  published_by    String   @db.Uuid
+  published_at    DateTime @db.Timestamptz(6)
+}
+
+model AuditEvent {
+  id            String      @id @default(uuid())
+  tenant_id     String
+  actor_user_id String
+  actor_role    UserRole
+  action        AuditAction
+  entity_type   String
+  entity_id     String
+  before_json   Json?
+  after_json    Json?
+  reason        String?
+  request_id    String
+  ip_hash       String?
+  user_agent    String?
+  created_at    DateTime    @default(now())
+
+  @@index([created_at], map: "idx_audit_event_created_at")
+  @@index([tenant_id, entity_type, entity_id], map: "idx_audit_event_entity")
+}
+
+model CalcAudit {
+  id                 String   @id @default(uuid())
+  tenant_id          String
+  patient_id         String?
+  calc_type          CalcType
+  inputs_json        Json
+  params_json        Json
+  output_json        Json
+  rounding_policy    String
+  units_version      String
+  dataset_release_id String?
+  created_by         String
+  created_at         DateTime @default(now())
+  override_note      String?
+
+  @@index([created_at], map: "idx_calc_audit_created_at")
+  @@index([tenant_id, patient_id], map: "idx_calc_audit_tenant_patient")
+}
+
+model IntegrityCheckRun {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String      @db.Uuid
+  run_type     String
+  started_at   DateTime    @db.Timestamptz(6)
+  finished_at  DateTime?   @db.Timestamptz(6)
+  status       CheckStatus
+  summary_json Json?
+}
+
+model IntegrityIssue {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String        @db.Uuid
+  run_id       String        @db.Uuid
+  severity     IssueSeverity
+  entity_type  String
+  entity_id    String?
+  details_json Json
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  resolved_at  DateTime?     @db.Timestamptz(6)
+}
+
+model PlannerTask {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenant_id   String       @db.Uuid
+  user_id     String       @db.Uuid
+  title       String
+  description String?
+  status      TaskStatus   @default(todo)
+  priority    TaskPriority @default(medium)
+  due_date    DateTime?
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @default(now()) @updatedAt
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  user        User         @relation(fields: [user_id], references: [id])
+
+  @@index([tenant_id, user_id])
+}
+
+model FormTemplate {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenant_id      String           @db.Uuid
+  title          String
+  type           FormType         @default(custom)
+  structure_json Json
+  is_system      Boolean          @default(false)
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @default(now()) @updatedAt
+  submissions    FormSubmission[]
+  tenant         Tenant           @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, type])
+}
+
+model FormSubmission {
+  id             String       @id @default(uuid()) @db.Uuid
+  template_id    String       @db.Uuid
+  patient_id     String       @db.Uuid
+  responses_json Json
+  submitted_at   DateTime     @default(now())
+  patient        Patient      @relation(fields: [patient_id], references: [id])
+  template       FormTemplate @relation(fields: [template_id], references: [id])
+
+  @@index([patient_id, template_id])
+}
+
 enum TenantType {
   B2C
   B2B
@@ -170,94 +694,36 @@ enum IssueSeverity {
   CRITICAL
 }
 
-model Tenant {
-  id         String   @id @default(uuid())
-  name       String
-  type       TenantType
-  status     TenantStatus
-  created_at DateTime @default(now())
-
-  users     User[]
-  patients  Patient[]
-  plans     Plan[]
-  policies  PatientDataPolicy[]
-  datasets  DatasetRelease[]
-  snapshots FoodSnapshot[]
-  meals     Meal[]
-  audits    AuditEvent[]
+enum TaskStatus {
+  todo
+  in_progress
+  done
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      UserRole
-  tenant_id String
-  status    UserStatus
-
-  tenant    Tenant   @relation(fields: [tenant_id], references: [id])
-  patient   Patient?
+enum TaskPriority {
+  low
+  medium
+  high
 }
 
-model Patient {
-  id               String        @id @default(uuid())
-  tenant_id        String
-  user_id          String?       @unique
-  assigned_team_id String?
-  status           PatientStatus
-  created_at       DateTime      @default(now())
-
-  tenant             Tenant        @relation(fields: [tenant_id], references: [id])
-  user               User?         @relation(fields: [user_id], references: [id])
-  profile            PatientProfile?
-  conditions         PatientCondition[]
-  data_policies      PatientDataPolicy[]
-  consultations      Consultation[]
-  plans              Plan[]
-  meals              Meal[]
-  symptom_logs       SymptomLog[]
-  protocol_instances PatientProtocolInstance[]
+enum RecipeUnitType {
+  solid
+  liquid
 }
 
-model PatientProfile {
-  id                String      @id @default(uuid())
-  tenant_id         String
-  patient_id        String      @unique
-  sex               BiologicalSex
-  birth_date        DateTime
-  height_cm         Decimal
-  current_weight_kg Decimal
-  target_weight_kg  Decimal?
-  activity_level    ActivityLevel
-  goal              Goal
-
-  patient Patient @relation(fields: [patient_id], references: [id])
+enum FormType {
+  system
+  custom
 }
-
-model PatientCondition {
-  id         String        @id @default(uuid())
-  tenant_id  String
-  patient_id String
-  type       ConditionType
-  name       String
-  severity   Severity
-  notes      String?
-
-  patient Patient @relation(fields: [patient_id], references: [id])
-}
-
-// ============================================================================
-// MVP2: Symptom Logging & Tracking
-// ============================================================================
 
 enum BristolScale {
-  type_1  // Hard lumps
-  type_2  // Lumpy sausage
-  type_3  // Sausage with cracks
-  type_4  // Smooth snake (ideal)
-  type_5  // Soft blobs
-  type_6  // Fluffy pieces
-  type_7  // Watery
+  type_1
+  type_2
+  type_3
+  type_4
+  type_5
+  type_6
+  type_7
 }
 
 enum SymptomType {
@@ -273,54 +739,6 @@ enum SymptomType {
   headache
   other
 }
-
-model SymptomLog {
-  id             String       @id @default(uuid())
-  tenant_id      String
-  patient_id     String
-  logged_at      DateTime     @default(now())
-  bristol_scale  BristolScale?
-  discomfort_level Int?       // 0-10 scale
-  symptoms       SymptomType[]
-  notes          String?
-  created_at     DateTime     @default(now())
-
-  patient      Patient           @relation(fields: [patient_id], references: [id])
-  correlations SymptomMealCorrelation[]
-
-  @@index([patient_id, logged_at])
-}
-
-model SymptomMealCorrelation {
-  id              String   @id @default(uuid())
-  tenant_id       String
-  symptom_log_id  String
-  meal_id         String
-  correlation_score Decimal? // 0-1 score indicating correlation strength
-  notes           String?
-  is_flagged      Boolean  @default(false) // Manual flag for review
-  created_at      DateTime @default(now())
-
-  symptom_log SymptomLog @relation(fields: [symptom_log_id], references: [id])
-  meal        Meal       @relation(fields: [meal_id], references: [id])
-
-  @@unique([symptom_log_id, meal_id])
-}
-
-model Consultation {
-  id         String   @id @default(uuid())
-  tenant_id  String
-  patient_id String
-  status     String
-  notes      String?
-  created_at DateTime @default(now())
-
-  patient Patient @relation(fields: [patient_id], references: [id])
-}
-
-// ============================================================================
-// MVP2: Protocol Engine
-// ============================================================================
 
 enum ProtocolType {
   FODMAP
@@ -345,329 +763,14 @@ enum FoodTagAction {
   caution
 }
 
-model Protocol {
-  id          String       @id @default(uuid())
-  tenant_id   String
-  code        String       // e.g., "FODMAP", "LACTOSE"
-  name        String       // Display name in pt-BR
-  type        ProtocolType
-  description String?
-  is_active   Boolean      @default(true)
-  is_system   Boolean      @default(false) // System protocols can't be deleted
-  created_at  DateTime     @default(now())
-
-  phases    ProtocolPhase[]
-  instances PatientProtocolInstance[]
-
-  @@unique([tenant_id, code])
-}
-
-model ProtocolPhase {
-  id              String           @id @default(uuid())
-  protocol_id     String
-  phase_type      ProtocolPhaseType
-  name            String           // e.g., "Eliminação", "Reintrodução"
-  description     String?
-  order           Int              // Phase order
-  default_days    Int?             // Default duration in days
-  rules_json      Json?            // Additional rules for this phase
-  created_at      DateTime         @default(now())
-
-  protocol  Protocol            @relation(fields: [protocol_id], references: [id])
-  food_tags ProtocolFoodTag[]
-  patient_phases PatientProtocolPhase[]
-
-  @@unique([protocol_id, order])
-}
-
-model ProtocolFoodTag {
-  id            String        @id @default(uuid())
-  phase_id      String
-  food_group    FoodGroup     // Which food group this applies to
-  tag           String        // e.g., "high_fodmap", "lactose_high"
-  action        FoodTagAction // allowed, avoid, caution
-  notes         String?       // Additional guidance
-  created_at    DateTime      @default(now())
-
-  phase ProtocolPhase @relation(fields: [phase_id], references: [id])
-
-  @@unique([phase_id, food_group, tag])
-}
-
-model PatientProtocolInstance {
-  id            String   @id @default(uuid())
-  tenant_id     String
-  patient_id    String
-  protocol_id   String
-  started_at    DateTime @default(now())
-  ended_at      DateTime?
-  is_active     Boolean  @default(true)
-  notes         String?
-  created_by    String   // Nutritionist who assigned
-  created_at    DateTime @default(now())
-
-  patient  Patient                @relation(fields: [patient_id], references: [id])
-  protocol Protocol               @relation(fields: [protocol_id], references: [id])
-  phases   PatientProtocolPhase[]
-
-  @@index([patient_id, is_active])
-}
-
-model PatientProtocolPhase {
-  id                  String    @id @default(uuid())
-  instance_id         String
-  phase_id            String
-  started_at          DateTime  @default(now())
-  ended_at            DateTime?
-  is_current          Boolean   @default(true)
-  transition_note     String?   // Note when transitioning phases
-  created_at          DateTime  @default(now())
-
-  instance PatientProtocolInstance @relation(fields: [instance_id], references: [id])
-  phase    ProtocolPhase           @relation(fields: [phase_id], references: [id])
-
-  @@index([instance_id, is_current])
-}
-
-model FoodCanonical {
-  id         String     @id @default(uuid())
-  tenant_id  String
-  name       String
-  group      FoodGroup
-  region_tag RegionTag
-  is_generic Boolean
-  created_at DateTime   @default(now())
-
-  nutrients     FoodNutrient[]
-  aliases       FoodAlias[]
-  snapshots     FoodSnapshot[]
-  substitutions FoodSubstitution[]  @relation("OriginalFood")
-  substitutes   FoodSubstitution[]  @relation("SubstituteFood")
-  recipe_ingredients RecipeIngredient[]
-}
-
-// ============================================================================
-// MVP2: Recipe & Substitution Library
-// ============================================================================
-
 enum SubstitutionType {
-  isocaloric      // Same calories
-  isoproteic      // Same protein
-  low_fodmap      // FODMAP-safe alternative
-  lactose_free    // Lactose-free alternative
-  gluten_free     // Gluten-free alternative
-  general         // General substitution
+  isocaloric
+  isoproteic
+  low_fodmap
+  lactose_free
+  gluten_free
+  general
 }
-
-model Recipe {
-  id              String   @id @default(uuid())
-  tenant_id       String
-  name            String
-  description     String?
-  instructions    String?  // Cooking instructions
-  prep_time_min   Int?     // Preparation time in minutes
-  cook_time_min   Int?     // Cooking time in minutes
-  servings        Int      @default(1)
-  is_public       Boolean  @default(false) // Shared across clinic
-  is_favorite     Boolean  @default(false) // Clinic favorite
-  tags            String[] // e.g., ["low_fodmap", "high_protein"]
-  created_by      String
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  ingredients RecipeIngredient[]
-
-  @@index([tenant_id, is_public])
-  @@index([tenant_id, is_favorite])
-}
-
-model RecipeIngredient {
-  id          String   @id @default(uuid())
-  recipe_id   String
-  food_id     String
-  grams       Decimal
-  notes       String?  // e.g., "diced", "cooked"
-  order       Int      @default(0)
-  created_at  DateTime @default(now())
-
-  recipe Recipe        @relation(fields: [recipe_id], references: [id])
-  food   FoodCanonical @relation(fields: [food_id], references: [id])
-
-  @@unique([recipe_id, food_id])
-}
-
-model FoodSubstitution {
-  id                  String           @id @default(uuid())
-  tenant_id           String
-  original_food_id    String
-  substitute_food_id  String
-  substitution_type   SubstitutionType
-  ratio               Decimal          @default(1.0) // grams substitute per gram original
-  notes               String?
-  is_verified         Boolean          @default(false)
-  created_by          String
-  created_at          DateTime         @default(now())
-
-  original_food   FoodCanonical @relation("OriginalFood", fields: [original_food_id], references: [id])
-  substitute_food FoodCanonical @relation("SubstituteFood", fields: [substitute_food_id], references: [id])
-
-  @@unique([tenant_id, original_food_id, substitute_food_id, substitution_type])
-  @@index([tenant_id, substitution_type])
-}
-
-model FoodAlias {
-  id        String   @id @default(uuid())
-  tenant_id String
-  food_id   String
-  alias     String
-  locale    String
-  created_at DateTime @default(now())
-
-  food FoodCanonical @relation(fields: [food_id], references: [id])
-}
-
-model FoodNutrient {
-  tenant_id          String
-  food_id            String
-  nutrient_key       NutrientKey
-  per_100g_value     Decimal
-  unit               String
-  source             String
-  dataset_release_id String
-  quality_flag       QualityFlag
-
-  food            FoodCanonical @relation(fields: [food_id], references: [id])
-  dataset_release DatasetRelease @relation(fields: [dataset_release_id], references: [id])
-
-  @@id([tenant_id, food_id, nutrient_key, dataset_release_id])
-  @@index([food_id, dataset_release_id, nutrient_key])
-}
-
-model DatasetRelease {
-  id            String        @id @default(uuid())
-  tenant_id     String
-  region        Region
-  source_name   String
-  version_label String
-  published_at  DateTime?
-  status        ReleaseStatus
-  created_at    DateTime      @default(now())
-
-  tenant       Tenant @relation(fields: [tenant_id], references: [id])
-  nutrients    FoodNutrient[]
-  snapshots    FoodSnapshot[]
-  import_jobs  ImportJob[]
-  validations  ValidationReport[]
-}
-
-model ImportJob {
-  id                String   @id @default(uuid())
-  tenant_id         String
-  dataset_release_id String?
-  source_label      String
-  status            String
-  created_at        DateTime @default(now())
-  completed_at      DateTime?
-
-  dataset_release DatasetRelease? @relation(fields: [dataset_release_id], references: [id])
-}
-
-model ValidationReport {
-  id                String   @id @default(uuid())
-  tenant_id         String
-  dataset_release_id String
-  status            String
-  details_json      Json
-  created_at        DateTime @default(now())
-
-  dataset_release DatasetRelease @relation(fields: [dataset_release_id], references: [id])
-}
-
-model PatientDataPolicy {
-  id             String   @id @default(uuid())
-  tenant_id      String
-  patient_id     String
-  version_number Int
-  is_active      Boolean  @default(true)
-  default_region Region
-  allowed_sources Json
-  rules_json     Json?
-  notes          String?
-  updated_by     String
-  created_at     DateTime @default(now())
-
-  tenant             Tenant  @relation(fields: [tenant_id], references: [id])
-  patient            Patient @relation(fields: [patient_id], references: [id])
-  category_overrides PatientCategoryOverride[]
-
-  @@unique([patient_id, version_number])
-}
-
-model PatientCategoryOverride {
-  id               String   @id @default(uuid())
-  policy_id        String
-  category_code    String
-  preferred_source String
-  notes            String?
-
-  policy PatientDataPolicy @relation(fields: [policy_id], references: [id])
-
-  @@unique([policy_id, category_code])
-}
-
-model FoodSnapshot {
-  id                 String   @id @default(uuid())
-  tenant_id          String
-  patient_id         String
-  food_id            String
-  snapshot_json      Json
-  source             String
-  dataset_release_id String
-  content_hash       String   @db.Text @default(dbgenerated("md5(snapshot_json::text)"))
-  created_at         DateTime @default(now())
-
-  tenant          Tenant        @relation(fields: [tenant_id], references: [id])
-  food            FoodCanonical @relation(fields: [food_id], references: [id])
-  dataset_release DatasetRelease @relation(fields: [dataset_release_id], references: [id])
-  meal_items      MealItem[]
-  plan_items      PlanItem[]
-
-  @@index([tenant_id, patient_id])
-}
-
-model Meal {
-  id          String   @id @default(uuid())
-  tenant_id   String
-  patient_id  String
-  date        DateTime
-  type        MealType
-  totals_json Json?
-  created_at  DateTime @default(now())
-
-  tenant       Tenant  @relation(fields: [tenant_id], references: [id])
-  patient      Patient @relation(fields: [patient_id], references: [id])
-  items        MealItem[]
-  correlations SymptomMealCorrelation[]
-
-  @@index([patient_id, date])
-}
-
-model MealItem {
-  id          String   @id @default(uuid())
-  tenant_id   String
-  meal_id     String
-  food_id     String
-  grams       Decimal
-  snapshot_id String
-  created_at  DateTime @default(now())
-
-  meal     Meal         @relation(fields: [meal_id], references: [id])
-  snapshot FoodSnapshot @relation(fields: [snapshot_id], references: [id])
-}
-
-// ============================================================================
-// MVP2: Plan Templates
-// ============================================================================
 
 enum TemplateGoal {
   loss
@@ -677,173 +780,4 @@ enum TemplateGoal {
   protocol_lactose
   protocol_gluten
   custom
-}
-
-model PlanTemplate {
-  id            String       @id @default(uuid())
-  tenant_id     String
-  name          String
-  description   String?
-  goal          TemplateGoal
-  target_kcal   Int?         // Target calories (can be null for percentage-based)
-  macro_split   Json?        // e.g., { protein: 30, carbs: 40, fat: 30 }
-  is_public     Boolean      @default(false)
-  is_system     Boolean      @default(false) // System templates can't be deleted
-  tags          String[]
-  created_by    String
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
-
-  items PlanTemplateItem[]
-
-  @@index([tenant_id, is_public])
-  @@index([tenant_id, goal])
-}
-
-model PlanTemplateItem {
-  id              String   @id @default(uuid())
-  template_id     String
-  meal_type       MealType
-  food_id         String?  // Optional - can be placeholder
-  placeholder     String?  // e.g., "Proteína magra", "Carboidrato complexo"
-  grams           Decimal?
-  percentage_kcal Decimal? // Percentage of daily calories
-  instructions    String?
-  order           Int      @default(0)
-  created_at      DateTime @default(now())
-
-  template PlanTemplate @relation(fields: [template_id], references: [id])
-
-  @@index([template_id, meal_type])
-}
-
-model Plan {
-  id           String     @id @default(uuid())
-  tenant_id    String
-  patient_id   String
-  template_id  String?    // Optional template used as base
-  status       PlanStatus
-  created_at   DateTime   @default(now())
-
-  tenant   Tenant       @relation(fields: [tenant_id], references: [id])
-  patient  Patient      @relation(fields: [patient_id], references: [id])
-  versions PlanVersion[]
-}
-
-model PlanVersion {
-  id         String        @id @default(uuid())
-  tenant_id  String
-  plan_id    String
-  version_no Int
-  status     VersionStatus
-  created_by String
-  created_at DateTime      @default(now())
-  updated_at DateTime      @updatedAt
-
-  plan         Plan           @relation(fields: [plan_id], references: [id])
-  items        PlanItem[]
-  approval     PlanApproval?
-  publication  PlanPublication?
-
-  @@unique([plan_id, version_no])
-}
-
-model PlanItem {
-  id              String   @id @default(uuid())
-  tenant_id       String
-  plan_version_id String
-  meal_type       MealType
-  food_id         String
-  grams           Decimal
-  snapshot_id     String
-  instructions    String?
-
-  plan_version PlanVersion @relation(fields: [plan_version_id], references: [id])
-  snapshot     FoodSnapshot @relation(fields: [snapshot_id], references: [id])
-}
-
-model PlanApproval {
-  plan_version_id String   @id
-  tenant_id       String
-  approved_by     String
-  approved_at     DateTime
-  approval_note   String?
-
-  plan_version PlanVersion @relation(fields: [plan_version_id], references: [id])
-}
-
-model PlanPublication {
-  plan_version_id String   @id
-  tenant_id       String
-  published_by    String
-  published_at    DateTime
-
-  plan_version PlanVersion @relation(fields: [plan_version_id], references: [id])
-}
-
-model AuditEvent {
-  id            String      @id @default(uuid())
-  tenant_id     String
-  actor_user_id String
-  actor_role    UserRole
-  action        AuditAction
-  entity_type   String
-  entity_id     String
-  before_json   Json?
-  after_json    Json?
-  reason        String?
-  request_id    String
-  ip_hash       String?
-  user_agent    String?
-  created_at    DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
-
-  @@index([tenant_id, entity_type, entity_id])
-  @@index([created_at])
-}
-
-model CalcAudit {
-  id                 String   @id @default(uuid())
-  tenant_id          String
-  patient_id         String?
-  calc_type          CalcType
-  inputs_json        Json
-  params_json        Json
-  output_json        Json
-  rounding_policy    String
-  units_version      String
-  dataset_release_id String?
-  created_by         String
-  created_at         DateTime @default(now())
-  override_note      String?
-
-  @@index([tenant_id, patient_id])
-  @@index([created_at])
-}
-
-model IntegrityCheckRun {
-  id           String   @id @default(uuid())
-  tenant_id    String
-  run_type     String
-  started_at   DateTime
-  finished_at  DateTime?
-  status       CheckStatus
-  summary_json Json?
-
-  issues IntegrityIssue[]
-}
-
-model IntegrityIssue {
-  id          String        @id @default(uuid())
-  tenant_id   String
-  run_id      String
-  severity    IssueSeverity
-  entity_type String
-  entity_id   String?
-  details_json Json
-  created_at  DateTime @default(now())
-  resolved_at DateTime?
-
-  run IntegrityCheckRun @relation(fields: [run_id], references: [id])
 }

@@ -1,0 +1,547 @@
+// ============================================================================
+// PHASE 1 SCHEMA ADDITIONS - AI Infrastructure & Multi-Tenancy
+// ============================================================================
+// This file contains ONLY the new models and enums for Phase 1
+// Append this to your existing schema.prisma file
+
+// ============================================================================
+// ENHANCED TENANT MODEL (Add these fields to existing Tenant model)
+// ============================================================================
+/*
+Add to existing Tenant model:
+
+  // Multi-tenancy enhancements
+  subdomain         String?              @unique
+  custom_domain     String?              @unique
+  logo_url          String?
+  primary_color     String?              @default("#10b981")
+  subscription_tier SubscriptionTier     @default(free)
+  subscription_ends DateTime?            @db.Timestamptz(6)
+  max_patients      Int                  @default(10)
+  max_team_members  Int                  @default(1)
+  features_enabled  Json?
+  settings          Json?
+  
+  // AI configuration
+  ai_enabled        Boolean              @default(false)
+  ai_credits        Int                  @default(0)
+  ai_usage_limit    Int?
+  
+  // New relations
+  teams             Team[]
+  billing_events    BillingEvent[]
+  api_keys          APIKey[]
+  ai_executions     AIExecution[]
+  food_recognitions FoodRecognition[]
+  ai_meal_plans     AIMealPlan[]
+  patient_analyses  PatientAnalysis[]
+  webhooks          Webhook[]
+  integrations      Integration[]
+  water_intakes     WaterIntake[]
+  exercises         Exercise[]
+*/
+
+// ============================================================================
+// MULTI-TENANCY MODELS
+// ============================================================================
+
+model Team {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenant_id   String       @db.Uuid
+  name        String
+  description String?
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  
+  @@index([tenant_id])
+}
+
+model TeamMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  team_id   String   @db.Uuid
+  user_id   String   @db.Uuid
+  role      TeamRole
+  joined_at DateTime @default(now()) @db.Timestamptz(6)
+  
+  team Team @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@unique([team_id, user_id])
+}
+
+model BillingEvent {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenant_id      String           @db.Uuid
+  event_type     BillingEventType
+  amount         Decimal          @db.Decimal(10, 2)
+  currency       String           @default("BRL")
+  description    String?
+  invoice_url    String?
+  payment_method String?
+  status         PaymentStatus
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  
+  @@index([tenant_id, created_at])
+}
+
+model APIKey {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenant_id    String    @db.Uuid
+  name         String
+  key_hash     String    @unique
+  permissions  Json
+  last_used_at DateTime? @db.Timestamptz(6)
+  expires_at   DateTime? @db.Timestamptz(6)
+  is_active    Boolean   @default(true)
+  created_by   String    @db.Uuid
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  
+  tenant  Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [created_by], references: [id])
+  
+  @@index([tenant_id])
+}
+
+// ============================================================================
+// AI INFRASTRUCTURE MODELS
+// ============================================================================
+
+model AIModel {
+  id                   String        @id @default(uuid()) @db.Uuid
+  name                 String
+  version              String
+  model_type           AIModelType
+  provider             AIProvider
+  endpoint_url         String?
+  is_active            Boolean       @default(true)
+  performance_metrics  Json?
+  created_at           DateTime      @default(now()) @db.Timestamptz(6)
+  
+  executions AIExecution[]
+  
+  @@unique([name, version])
+}
+
+model AIExecution {
+  id                String          @id @default(uuid()) @db.Uuid
+  tenant_id         String          @db.Uuid
+  model_id          String          @db.Uuid
+  agent_type        AIAgentType
+  input_data        Json
+  output_data       Json?
+  tokens_used       Int?
+  execution_time_ms Int?
+  cost              Decimal?        @db.Decimal(10, 4)
+  status            ExecutionStatus
+  error_message     String?
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  
+  tenant   Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  model    AIModel      @relation(fields: [model_id], references: [id])
+  feedback AIFeedback[]
+  
+  @@index([tenant_id, created_at])
+  @@index([agent_type, created_at])
+}
+
+model AIFeedback {
+  id            String   @id @default(uuid()) @db.Uuid
+  execution_id  String   @db.Uuid
+  user_id       String   @db.Uuid
+  rating        Int      // 1-5
+  feedback_text String?
+  was_helpful   Boolean
+  corrections   Json?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  
+  execution AIExecution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [user_id], references: [id])
+  
+  @@index([execution_id])
+}
+
+model AITrainingData {
+  id              String   @id @default(uuid()) @db.Uuid
+  agent_type      AIAgentType
+  input_sample    Json
+  expected_output Json
+  source          TrainingSource
+  quality_score   Decimal? @db.Decimal(3, 2)
+  is_validated    Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  
+  @@index([agent_type, is_validated])
+}
+
+// ============================================================================
+// AI AGENT MODELS - Food Recognition
+// ============================================================================
+
+model FoodRecognition {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenant_id         String   @db.Uuid
+  patient_id        String   @db.Uuid
+  image_url         String
+  recognized_foods  Json     // [{food_id, food_name, confidence, portion_grams}]
+  ai_model_version  String
+  confidence_score  Decimal  @db.Decimal(3, 2)
+  user_confirmed    Boolean  @default(false)
+  corrections       Json?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  
+  @@index([patient_id, created_at])
+}
+
+// ============================================================================
+// AI AGENT MODELS - Meal Planner
+// ============================================================================
+
+model AIMealPlan {
+  id                   String   @id @default(uuid()) @db.Uuid
+  tenant_id            String   @db.Uuid
+  patient_id           String   @db.Uuid
+  plan_id              String?  @db.Uuid
+  generation_params    Json     // {target_kcal, macro_split, preferences, restrictions}
+  generated_meals      Json     // Full week structure
+  macro_distribution   Json     // {protein, carbs, fat}
+  estimated_cost       Decimal? @db.Decimal(10, 2)
+  ai_reasoning         String?
+  approved_by          String?  @db.Uuid
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  
+  tenant   Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  patient  Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  plan     Plan?   @relation(fields: [plan_id], references: [id])
+  approver User?   @relation(fields: [approved_by], references: [id])
+  
+  @@index([patient_id, created_at])
+}
+
+// ============================================================================
+// AI AGENT MODELS - Patient Analyzer
+// ============================================================================
+
+model PatientAnalysis {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenant_id            String    @db.Uuid
+  patient_id           String    @db.Uuid
+  analysis_date        DateTime  @default(now()) @db.Timestamptz(6)
+  adherence_score      Decimal?  @db.Decimal(5, 2) // 0-100
+  progress_score       Decimal?  @db.Decimal(5, 2) // 0-100
+  dropout_risk         RiskLevel
+  intervention_needed  Boolean   @default(false)
+  ai_insights          Json?
+  recommended_actions  Json?
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  
+  @@index([patient_id, analysis_date])
+}
+
+// ============================================================================
+// WEBHOOK & INTEGRATION MODELS
+// ============================================================================
+
+model Webhook {
+  id           String            @id @default(uuid()) @db.Uuid
+  tenant_id    String            @db.Uuid
+  name         String
+  url          String
+  events       WebhookEvent[]
+  secret       String
+  is_active    Boolean           @default(true)
+  retry_policy Json?
+  created_at   DateTime          @default(now()) @db.Timestamptz(6)
+  
+  tenant     Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+  
+  @@index([tenant_id])
+}
+
+model WebhookDelivery {
+  id              String    @id @default(uuid()) @db.Uuid
+  webhook_id      String    @db.Uuid
+  event_type      WebhookEvent
+  payload         Json
+  response_status Int?
+  response_body   String?
+  attempt_count   Int       @default(1)
+  delivered_at    DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  
+  webhook Webhook @relation(fields: [webhook_id], references: [id], onDelete: Cascade)
+  
+  @@index([webhook_id, created_at])
+}
+
+model Integration {
+  id           String                @id @default(uuid()) @db.Uuid
+  tenant_id    String                @db.Uuid
+  provider     IntegrationProvider
+  config       Json                  // Encrypted API keys, tokens
+  is_active    Boolean               @default(true)
+  last_sync_at DateTime?             @db.Timestamptz(6)
+  created_at   DateTime              @default(now()) @db.Timestamptz(6)
+  
+  tenant    Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  sync_logs IntegrationSyncLog[]
+  
+  @@unique([tenant_id, provider])
+}
+
+model IntegrationSyncLog {
+  id             String      @id @default(uuid()) @db.Uuid
+  integration_id String      @db.Uuid
+  sync_type      String
+  status         SyncStatus
+  records_synced Int         @default(0)
+  errors         Json?
+  started_at     DateTime    @default(now()) @db.Timestamptz(6)
+  completed_at   DateTime?   @db.Timestamptz(6)
+  
+  integration Integration @relation(fields: [integration_id], references: [id], onDelete: Cascade)
+  
+  @@index([integration_id, started_at])
+}
+
+// ============================================================================
+// COMPETITIVE FEATURES
+// ============================================================================
+
+model WaterIntake {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenant_id  String   @db.Uuid
+  patient_id String   @db.Uuid
+  date       DateTime @db.Date
+  amount_ml  Int
+  logged_at  DateTime @default(now()) @db.Timestamptz(6)
+  
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  
+  @@index([patient_id, date])
+}
+
+model Exercise {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenant_id        String   @db.Uuid
+  patient_id       String   @db.Uuid
+  exercise_type    String
+  duration_minutes Int
+  intensity        ExerciseIntensity
+  calories_burned  Int?
+  notes            String?
+  logged_at        DateTime @default(now()) @db.Timestamptz(6)
+  
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  
+  @@index([patient_id, logged_at])
+}
+
+model MealReaction {
+  id            String        @id @default(uuid()) @db.Uuid
+  meal_id       String        @db.Uuid
+  patient_id    String        @db.Uuid
+  reaction_type ReactionType
+  timing        ReactionTiming
+  comment       String?
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  
+  meal    Meal    @relation(fields: [meal_id], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  
+  @@index([meal_id])
+}
+
+// ============================================================================
+// ENHANCED USER MODEL (Add these relations to existing User model)
+// ============================================================================
+/*
+Add to existing User model:
+
+  team_memberships TeamMember[]
+  api_keys_created APIKey[]
+  ai_feedbacks     AIFeedback[]
+  meal_plans_approved AIMealPlan[]
+*/
+
+// ============================================================================
+// ENHANCED PATIENT MODEL (Add these relations to existing Patient model)
+// ============================================================================
+/*
+Add to existing Patient model:
+
+  food_recognitions FoodRecognition[]
+  ai_meal_plans     AIMealPlan[]
+  patient_analyses  PatientAnalysis[]
+  water_intakes     WaterIntake[]
+  exercises         Exercise[]
+  meal_reactions    MealReaction[]
+*/
+
+// ============================================================================
+// ENHANCED MEAL MODEL (Add this relation to existing Meal model)
+// ============================================================================
+/*
+Add to existing Meal model:
+
+  reactions MealReaction[]
+*/
+
+// ============================================================================
+// ENHANCED PLAN MODEL (Add this relation to existing Plan model)
+// ============================================================================
+/*
+Add to existing Plan model:
+
+  ai_meal_plans AIMealPlan[]
+*/
+
+// ============================================================================
+// NEW ENUMS
+// ============================================================================
+
+enum SubscriptionTier {
+  free
+  starter
+  professional
+  enterprise
+  custom
+}
+
+enum TeamRole {
+  admin
+  nutritionist
+  assistant
+  viewer
+}
+
+enum BillingEventType {
+  subscription_charge
+  ai_credits_purchase
+  overage_charge
+  refund
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
+enum AIModelType {
+  llm
+  vision
+  speech_to_text
+  text_to_speech
+  embedding
+}
+
+enum AIProvider {
+  openai
+  anthropic
+  google
+  azure
+  custom
+}
+
+enum AIAgentType {
+  food_recognition
+  meal_planner
+  patient_analyzer
+  exam_analyzer
+  medical_record_creator
+  protocol_generator
+  symptom_correlator
+  recipe_creator
+  nutrition_coach
+  supplement_advisor
+  shopping_list_generator
+  macro_balancer
+  report_generator
+  appointment_scheduler
+  content_educator
+}
+
+enum ExecutionStatus {
+  pending
+  running
+  completed
+  failed
+  timeout
+}
+
+enum TrainingSource {
+  user_feedback
+  expert_annotation
+  synthetic
+  imported
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum WebhookEvent {
+  patient_created
+  patient_updated
+  meal_logged
+  plan_published
+  appointment_scheduled
+  exam_uploaded
+  ai_analysis_completed
+}
+
+enum IntegrationProvider {
+  google_calendar
+  whatsapp_business
+  stripe
+  mailchimp
+  zapier
+  fitbit
+  apple_health
+  google_fit
+  my_fitness_pal
+}
+
+enum SyncStatus {
+  running
+  completed
+  failed
+  partial
+}
+
+enum ExerciseIntensity {
+  light
+  moderate
+  vigorous
+  very_vigorous
+}
+
+enum ReactionType {
+  very_satisfied
+  satisfied
+  neutral
+  unsatisfied
+  very_unsatisfied
+}
+
+enum ReactionTiming {
+  before_meal
+  after_meal
+}

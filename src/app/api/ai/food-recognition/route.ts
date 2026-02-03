@@ -1,0 +1,139 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { aiService } from '@/lib/ai/ai-service';
+
+/**
+ * POST /api/ai/food-recognition
+ * 
+ * Recognize foods from an uploaded image
+ */
+export async function POST(request: NextRequest) {
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        // Get current user
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // Parse request body
+        const body = await request.json();
+        const { imageUrl, patientId, tenantId } = body;
+
+        if (!imageUrl || !patientId || !tenantId) {
+            return NextResponse.json(
+                { error: 'Missing required fields: imageUrl, patientId, tenantId' },
+                { status: 400 }
+            );
+        }
+
+        // Execute AI agent
+        const result = await aiService.execute({
+            tenantId,
+            agentType: 'food_recognition',
+            inputData: {
+                imageUrl,
+                patientId,
+            },
+            userId: user.id,
+        });
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error },
+                { status: 500 }
+            );
+        }
+
+        // Save recognition result to database
+        const { data: recognitionRecord, error: dbError } = await supabase
+            .from('FoodRecognition')
+            .insert({
+                tenant_id: tenantId,
+                patient_id: patientId,
+                image_url: imageUrl,
+                recognized_foods: result.data.recognized_foods,
+                ai_model_version: 'gpt-4-vision-preview',
+                confidence_score: result.data.confidence_score,
+                user_confirmed: false,
+            })
+            .select()
+            .single();
+
+        if (dbError) {
+            console.error('Error saving recognition result:', dbError);
+        }
+
+        return NextResponse.json({
+            success: true,
+            data: result.data,
+            executionId: result.executionId,
+            tokensUsed: result.tokensUsed,
+            cost: result.cost,
+            recognitionId: recognitionRecord?.id,
+        });
+    } catch (error) {
+        console.error('Food recognition error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
+    }
+}
+
+/**
+ * PATCH /api/ai/food-recognition/[id]
+ * 
+ * Confirm or correct a food recognition result
+ */
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const body = await request.json();
+        const { confirmed, corrections } = body;
+
+        // Update recognition record
+        const { data, error } = await supabase
+            .from('FoodRecognition')
+            .update({
+                user_confirmed: confirmed,
+                corrections: corrections,
+            })
+            .eq('id', params.id)
+            .select()
+            .single();
+
+        if (error) {
+            return NextResponse.json(
+                { error: error.message },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true, data });
+    } catch (error) {
+        console.error('Update recognition error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
+    }
+}

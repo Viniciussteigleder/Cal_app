@@ -1,0 +1,303 @@
+'use client';
+
+import { useState } from 'react';
+import { Camera, Upload, CheckCircle, Edit, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
+
+interface RecognizedFood {
+    food_name: string;
+    food_id?: string;
+    confidence: number;
+    portion_grams: number;
+    notes?: string;
+}
+
+interface RecognitionResult {
+    recognized_foods: RecognizedFood[];
+    confidence_score: number;
+}
+
+export default function FoodRecognitionPage() {
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [result, setResult] = useState<RecognitionResult | null>(null);
+    const [recognitionId, setRecognitionId] = useState<string | null>(null);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setSelectedImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to storage and get URL
+        // For now, we'll use the data URL directly
+        // In production, upload to Supabase Storage first
+
+        setIsAnalyzing(true);
+        setResult(null);
+
+        try {
+            const response = await fetch('/api/ai/food-recognition', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageUrl: reader.result, // In production, use uploaded URL
+                    patientId: 'current-patient-id', // Get from context
+                    tenantId: 'current-tenant-id', // Get from context
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setResult(data.data);
+                setRecognitionId(data.recognitionId);
+                toast.success('Foods recognized successfully!');
+            } else {
+                toast.error(data.error || 'Failed to recognize foods');
+            }
+        } catch (error) {
+            console.error('Recognition error:', error);
+            toast.error('Failed to analyze image');
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleConfirm = async () => {
+        if (!recognitionId) return;
+
+        try {
+            const response = await fetch(`/api/ai/food-recognition/${recognitionId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    confirmed: true,
+                }),
+            });
+
+            if (response.ok) {
+                toast.success('Foods logged to meal diary!');
+                // Navigate to meal diary or reset
+                setSelectedImage(null);
+                setResult(null);
+                setRecognitionId(null);
+            }
+        } catch (error) {
+            toast.error('Failed to confirm');
+        }
+    };
+
+    const calculateTotalMacros = () => {
+        if (!result) return { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+
+        // This is a simplified calculation
+        // In production, fetch actual nutritional data for each food
+        const totalGrams = result.recognized_foods.reduce((sum, food) => sum + food.portion_grams, 0);
+
+        return {
+            kcal: Math.round(totalGrams * 1.5), // Rough estimate
+            protein: Math.round(totalGrams * 0.15),
+            carbs: Math.round(totalGrams * 0.35),
+            fat: Math.round(totalGrams * 0.08),
+        };
+    };
+
+    const macros = calculateTotalMacros();
+
+    return (
+        <div className="container mx-auto py-8 px-4 max-w-4xl">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    AI Food Recognition
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                    Take a photo of your meal and let AI identify the foods and estimate portions
+                </p>
+            </div>
+
+            {/* Upload Area */}
+            {!selectedImage && (
+                <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 transition-colors">
+                    <CardContent className="flex flex-col items-center justify-center py-16">
+                        <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
+                            <Camera className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">Take Photo or Upload</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
+                            Upload a clear photo of your meal. Make sure all foods are visible.
+                        </p>
+                        <div className="flex gap-4">
+                            <Button
+                                onClick={() => document.getElementById('file-upload')?.click()}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Upload Image
+                            </Button>
+                            <input
+                                id="file-upload"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Image Preview & Results */}
+            {selectedImage && (
+                <div className="space-y-6">
+                    {/* Image */}
+                    <Card>
+                        <CardContent className="p-6">
+                            <img
+                                src={selectedImage}
+                                alt="Meal"
+                                className="w-full h-64 object-cover rounded-lg"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Loading State */}
+                    {isAnalyzing && (
+                        <Card>
+                            <CardContent className="flex flex-col items-center justify-center py-12">
+                                <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
+                                <p className="text-lg font-medium">Analyzing your meal...</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    This may take a few seconds
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Results */}
+                    {result && !isAnalyzing && (
+                        <>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Recognized Foods</CardTitle>
+                                    <CardDescription>
+                                        AI confidence: {Math.round(result.confidence_score * 100)}%
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {result.recognized_foods.map((food, index) => (
+                                        <div key={index} className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="font-medium">{food.food_name}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {food.portion_grams}g
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-medium text-emerald-600">
+                                                        {Math.round(food.confidence * 100)}%
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Progress
+                                                value={food.confidence * 100}
+                                                className="h-2"
+                                            />
+                                            {food.notes && (
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {food.notes}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+
+                            {/* Nutritional Summary */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Nutritional Summary</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-4 gap-4 text-center">
+                                        <div>
+                                            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                                                {macros.kcal}
+                                            </p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">kcal</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-3xl font-bold text-emerald-600">
+                                                {macros.protein}g
+                                            </p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">protein</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-3xl font-bold text-blue-600">
+                                                {macros.carbs}g
+                                            </p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">carbs</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-3xl font-bold text-amber-600">
+                                                {macros.fat}g
+                                            </p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">fat</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Actions */}
+                            <div className="flex gap-4">
+                                <Button
+                                    onClick={handleConfirm}
+                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Confirm & Log
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() => {
+                                        // Open edit modal
+                                        toast.info('Edit functionality coming soon');
+                                    }}
+                                >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit Portions
+                                </Button>
+                            </div>
+
+                            <Button
+                                variant="ghost"
+                                onClick={() => {
+                                    setSelectedImage(null);
+                                    setResult(null);
+                                    setRecognitionId(null);
+                                }}
+                                className="w-full"
+                            >
+                                Try Another Photo
+                            </Button>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}

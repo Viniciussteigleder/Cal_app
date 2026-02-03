@@ -21,7 +21,10 @@ import {
     Database,
     ShieldCheck,
     MessageSquare,
-    Brain
+    Brain,
+    Sparkles,
+    Droplet,
+    Dumbbell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +46,8 @@ export function Sidebar({ role }: SidebarProps) {
         { href: "/patient/capture", label: "Registrar", icon: Utensils },
         { href: "/patient/plan", label: "Meu Plano", icon: Calendar },
         { href: "/patient/progress", label: "Progresso", icon: TrendingUp },
+        { href: "/patient/water", label: "Hidratação", icon: Droplet },
+        { href: "/patient/exercise", label: "Exercícios", icon: Dumbbell },
         { href: "/patient/symptoms", label: "Sintomas", icon: Activity },
         { href: "/patient/chat", label: "Chat", icon: MessageSquare },
     ];
@@ -50,6 +55,8 @@ export function Sidebar({ role }: SidebarProps) {
     const nutritionistLinks = [
         { href: "/studio/dashboard", label: "Dashboard", icon: Home },
         { href: "/studio/patients", label: "Pacientes", icon: Users },
+        { href: "/studio/ai", label: "IA Features", icon: Sparkles },
+        { href: "/studio/ai-workflows", label: "AI Workflows", icon: Brain },
         { href: "/studio/chat", label: "Chat IA", icon: MessageSquare },
         { href: "/studio/protocols", label: "Protocolos", icon: FileText },
         { href: "/studio/recipes", label: "Receitas", icon: BookOpen },
@@ -187,7 +194,7 @@ export function Sidebar({ role }: SidebarProps) {
                             <p className="truncate text-sm font-medium">{user?.name || "Usuário"}</p>
                             <p className="truncate text-xs text-muted-foreground">
                                 {user?.role === "PATIENT" ? "Paciente" :
-                                 user?.role === "OWNER" ? "Administrador" : "Nutricionista"}
+                                    user?.role === "OWNER" ? "Administrador" : "Nutricionista"}
                             </p>
                         </div>
                     )}

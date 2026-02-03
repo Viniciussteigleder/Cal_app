@@ -12,7 +12,8 @@ import {
     Clock,
     Zap,
     TrendingUp,
-    Filter
+    Filter,
+    BarChart3
 } from "lucide-react";
 import {
     Tooltip,
@@ -31,7 +32,6 @@ const CLINICAL_ALERTS = [
         message: "SOS: Dor Nível 8 (Inchaço), Taquicardia.",
         trigger: "Almoço de Negócios (Restaurante)",
         timestamp: "14:30 (Há 15min)",
-        actionRequired: "Contactar paciente",
     },
     {
         id: 2,
@@ -41,7 +41,6 @@ const CLINICAL_ALERTS = [
         message: "Registrou 'Sobras de Frango' + Enxaqueca.",
         trigger: "Jantar (Ontem)",
         timestamp: "09:00",
-        actionRequired: "Revisar protocolo",
     },
     {
         id: 3,
@@ -51,7 +50,6 @@ const CLINICAL_ALERTS = [
         message: "Nevoeiro Mental persistente (3 dias).",
         trigger: "Kombucha (Fermentado)",
         timestamp: "10:15",
-        actionRequired: "Monitorar",
     },
 ];
 
@@ -62,10 +60,64 @@ const HISTAMINE_BUCKET_STATUS = [
     { patient: "Dona Elza", load: 20, trend: "down", status: "Great" },
 ];
 
+// Mock Data for History Chart
+const CONSULTATION_HISTORY = [
+    { month: "Jan", count: 42 },
+    { month: "Fev", count: 45 },
+    { month: "Mar", count: 48 },
+    { month: "Abr", count: 51 },
+    { month: "Mai", count: 49 },
+    { month: "Jun", count: 53 },
+    { month: "Jul", count: 58 },
+    { month: "Ago", count: 62 },
+    { month: "Set", count: 65 },
+    { month: "Out", count: 61 },
+    { month: "Nov", count: 68 },
+    { month: "Dez", count: 72 },
+];
+// Average of last 12 months mock
+const AVERAGE_COUNT = 56;
+
+function ConsultationHistoryChart() {
+    const maxVal = Math.max(...CONSULTATION_HISTORY.map(d => d.count)) * 1.2;
+
+    return (
+        <div className="w-full h-48 flex items-end justify-between gap-2 pt-6 relative">
+            {/* Average Line */}
+            <div
+                className="absolute w-full border-t-2 border-slate-700 dark:border-slate-400 border-dashed flex items-center"
+                style={{ bottom: `${(AVERAGE_COUNT / maxVal) * 100}%` }}
+            >
+                <span className="text-[10px] bg-card px-1 absolute -right-0 -top-2.5 text-muted-foreground font-medium border rounded shadow-sm">
+                    Média 12m: {AVERAGE_COUNT}
+                </span>
+            </div>
+
+            {CONSULTATION_HISTORY.map((item, idx) => {
+                const heightPct = (item.count / maxVal) * 100;
+                return (
+                    <div key={idx} className="flex flex-col items-center gap-2 flex-1 group relative">
+                        <div
+                            className="w-full bg-emerald-200 dark:bg-emerald-900/40 rounded-t-sm group-hover:bg-emerald-400 dark:group-hover:bg-emerald-600 transition-colors relative"
+                            style={{ height: `${heightPct}%` }}
+                        >
+                            {/* Value Tooltip */}
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap font-bold">
+                                {item.count} pacientes
+                            </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-medium uppercase">{item.month}</span>
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
 export default function StudioDashboard() {
     return (
         <DashboardLayout role="nutritionist">
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-8 animate-in fade-in duration-500 pb-10">
 
                 {/* Header: Clinical Command Center */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -74,20 +126,50 @@ export default function StudioDashboard() {
                             <Zap className="h-5 w-5 text-amber-500 fill-amber-500" />
                             <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">Painel Clínico</span>
                         </div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Centro de Controle (Disbiose)</h1>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Centro de Controle</h1>
                         <p className="text-muted-foreground max-w-xl text-sm mt-1">
                             Monitoramento em tempo real de carga histamínica e integridade da barreira intestinal.
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" className="border-border">
-                            <Filter className="w-4 h-4 mr-2" />
-                            Filtros
-                        </Button>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200">
-                            + Nova Consulta
-                        </Button>
-                    </div>
+                </div>
+
+                {/* SECTION: Business Overview (Chart) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Card className="col-span-1 lg:col-span-2 shadow-sm border-none bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950/50">
+                        <CardHeader className="pb-0">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle className="text-lg">Histórico de Consultas</CardTitle>
+                                    <CardDescription>Crescimento mensal de pacientes atendidos.</CardDescription>
+                                </div>
+                                <Badge variant="outline" className="bg-background">Jan - Dez 2025</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <ConsultationHistoryChart />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="col-span-1 flex flex-col justify-center bg-emerald-600 text-white border-none shadow-xl shadow-emerald-900/20">
+                        <CardContent className="pt-6 flex flex-col items-center text-center space-y-4">
+                            <div className="p-3 bg-white/20 rounded-full">
+                                <BarChart3 className="h-8 w-8 text-white" />
+                            </div>
+                            <div>
+                                <div className="text-5xl font-bold tracking-tighter">72</div>
+                                <div className="text-emerald-100 text-sm font-medium uppercase tracking-wide mt-1">Pacientes este mês</div>
+                            </div>
+                            <div className="w-full h-px bg-emerald-500/50 my-2" />
+                            <div className="flex justify-between w-full px-4 text-sm text-emerald-50">
+                                <span>Média 12m:</span>
+                                <span className="font-bold">56</span>
+                            </div>
+                            <div className="flex justify-between w-full px-4 text-sm text-emerald-50">
+                                <span>Crescimento:</span>
+                                <span className="font-bold">+12%</span>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* TOP ROW: Vital Signals Triage */}
@@ -101,7 +183,7 @@ export default function StudioDashboard() {
                         {/* CARD 1: SOS ALERTS (The "Emergency" Bucket) */}
                         <Card className="border-l-4 border-l-red-500 shadow-sm md:col-span-2">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-red-900 flex justify-between items-center text-base">
+                                <CardTitle className="text-red-900 dark:text-red-400 flex justify-between items-center text-base">
                                     <span>🚨 Alertas Prioritários (Ação Imediata)</span>
                                     <Badge variant="destructive" className="animate-pulse">3 Novos</Badge>
                                 </CardTitle>
@@ -133,9 +215,6 @@ export default function StudioDashboard() {
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 bg-muted text-muted-foreground hover:bg-slate-200">
-                                                <ArrowRight className="h-4 w-4" />
-                                            </Button>
                                         </div>
                                     </div>
                                 ))}
@@ -171,7 +250,7 @@ export default function StudioDashboard() {
                                     </div>
                                 ))}
                                 <Button variant="link" className="text-xs text-slate-400 w-full mt-2 hover:text-white">
-                                    Ver análise completa da coorte
+                                    Ver análise completa
                                 </Button>
                             </CardContent>
                         </Card>
@@ -185,7 +264,7 @@ export default function StudioDashboard() {
                         Correlações Descobertas (IA)
                     </h2>
                     <Card className="border-border shadow-sm">
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             <div className="p-4 flex items-start gap-4 hover:bg-muted/30/50 transition-colors cursor-pointer">
                                 <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
                                     <Zap className="h-5 w-5 text-purple-600" />
@@ -201,7 +280,7 @@ export default function StudioDashboard() {
                                     </p>
                                     <div className="flex gap-2 mt-3">
                                         <Button size="sm" variant="outline" className="text-xs h-7">Ver Logs Originais</Button>
-                                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-xs h-7">Sugerir Protocolo &quot;Low Histamine&quot;</Button>
+                                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-xs h-7 text-white">Sugerir Protocolo &quot;Low Histamine&quot;</Button>
                                     </div>
                                 </div>
                             </div>
