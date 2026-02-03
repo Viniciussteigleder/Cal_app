@@ -25,23 +25,48 @@ export async function GET(request: Request) {
           tenant_id: claims.tenant_id,
           date: { gte: start, lte: end },
         },
-        include: {
-          items: {
-            include: { snapshot: { include: { food: true } } },
-            orderBy: { created_at: "asc" },
-          },
-        },
         orderBy: { date: "asc" },
       });
 
+      // Get all meal items for these meals
+      const mealIds = meals.map(m => m.id);
+      const allItems = await tx.mealItem.findMany({
+        where: { meal_id: { in: mealIds } },
+        orderBy: { created_at: "asc" },
+      });
+
+      // Get snapshots for all items
+      const snapshotIds = allItems.map(item => item.snapshot_id);
+      const snapshots = await tx.foodSnapshot.findMany({
+        where: { id: { in: snapshotIds } },
+      });
+      const snapshotMap = new Map(snapshots.map(s => [s.id, s]));
+
+      // Get all foods
+      const foodIds = snapshots.map(s => s.food_id);
+      const foods = await tx.foodCanonical.findMany({
+        where: { id: { in: foodIds } },
+      });
+      const foodMap = new Map(foods.map(f => [f.id, f]));
+
       const mealPayload = meals.map((meal) => {
-        const items = meal.items.map((item) => {
-          const per100g = (item.snapshot.snapshot_json as { nutrients?: Record<string, number> })
-            .nutrients ?? {};
+        const mealItems = allItems.filter(item => item.meal_id === meal.id);
+
+        const items = mealItems.map((item) => {
+          const snapshot = snapshotMap.get(item.snapshot_id);
+          const food = snapshot ? foodMap.get(snapshot.food_id) : null;
+
+          const per100g = snapshot
+            ? (snapshot.snapshot_json as { nutrients?: Record<string, number> }).nutrients ?? {}
+            : {};
           const nutrients = scaleNutrients(per100g, Number(item.grams));
+
           return {
             id: item.id,
-            food: { id: item.snapshot.food.id, name: item.snapshot.food.name },
+            food: {
+              id: food?.id ?? item.food_id,
+              name: food?.name ?? "Alimento"
+            },
             grams: Number(item.grams),
             nutrients,
           };
@@ -67,6 +92,7 @@ export async function GET(request: Request) {
       totals: payload.totals,
     });
   } catch (error) {
+    console.error("Error in GET /api/patient/diary:", error);
     const message = error instanceof Error ? error.message : "Erro inesperado.";
     const status = (error as { status?: number })?.status ?? 500;
     return NextResponse.json({ error: message }, { status });
@@ -145,12 +171,16 @@ export async function POST(request: Request) {
           grams,
           snapshot_id: snapshot.id,
         },
-        include: { snapshot: true },
       });
 
-      const nutrients =
-        (mealItem.snapshot.snapshot_json as { nutrients?: Record<string, number> }).nutrients ??
-        {};
+      // Get the snapshot to get nutrients
+      const createdSnapshot = await tx.foodSnapshot.findUnique({
+        where: { id: mealItem.snapshot_id },
+      });
+
+      const nutrients = createdSnapshot
+        ? (createdSnapshot.snapshot_json as { nutrients?: Record<string, number> }).nutrients ?? {}
+        : {};
       const itemTotals = scaleNutrients(nutrients, Number(mealItem.grams));
 
       return {
@@ -164,6 +194,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
+    console.error("Error in POST /api/patient/diary:", error);
     const message = error instanceof Error ? error.message : "Erro inesperado.";
     const status = (error as { status?: number })?.status ?? 500;
     return NextResponse.json({ error: message }, { status });
