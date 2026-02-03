@@ -80,13 +80,22 @@ async function checkDatasetSanity(client: TransactionClient | typeof prisma = pr
     });
   });
 
-  const foods = await client.foodCanonical.findMany({
-    include: { nutrients: true },
+  const foods = await client.foodCanonical.findMany({});
+
+  // Get all nutrients for validation
+  const allNutrients = await client.foodNutrient.findMany({});
+  const nutrientsByFoodId = new Map<string, typeof allNutrients>();
+  allNutrients.forEach((nutrient) => {
+    if (!nutrientsByFoodId.has(nutrient.food_id)) {
+      nutrientsByFoodId.set(nutrient.food_id, []);
+    }
+    nutrientsByFoodId.get(nutrient.food_id)!.push(nutrient);
   });
 
   foods.forEach((food) => {
+    const nutrients = nutrientsByFoodId.get(food.id) ?? [];
     const nutrientMap = new Map(
-      food.nutrients.map((nutrient) => [nutrient.nutrient_key, Number(nutrient.per_100g_value)])
+      nutrients.map((nutrient) => [nutrient.nutrient_key, Number(nutrient.per_100g_value)])
     );
     const kcal = nutrientMap.get("energy_kcal") ?? 0;
     const protein = nutrientMap.get("protein_g") ?? 0;
@@ -116,12 +125,15 @@ async function checkDatasetSanity(client: TransactionClient | typeof prisma = pr
 
 async function checkSnapshotIntegrity(client: TransactionClient | typeof prisma = prisma): Promise<Issue[]> {
   const issues: Issue[] = [];
-  const mealItems = await client.mealItem.findMany({
-    include: { snapshot: true },
-  });
+  const mealItems = await client.mealItem.findMany({});
+
+  // Get all snapshots
+  const allSnapshots = await client.foodSnapshot.findMany({});
+  const snapshotsById = new Map(allSnapshots.map((s) => [s.id, s]));
 
   for (const item of mealItems) {
-    if (!item.snapshot) {
+    const snapshot = snapshotsById.get(item.snapshot_id);
+    if (!snapshot) {
       issues.push({
         severity: "CRITICAL",
         entity_type: "meal_item",
@@ -133,15 +145,15 @@ async function checkSnapshotIntegrity(client: TransactionClient | typeof prisma 
     const result = await client.$queryRaw<{ md5_text: string }[]>`
       SELECT md5(snapshot_json::text) AS md5_text
       FROM "FoodSnapshot"
-      WHERE id = ${item.snapshot.id}::uuid
+      WHERE id = ${snapshot.id}::uuid
     `;
     const actualHash = result[0]?.md5_text ?? "";
-    if (actualHash !== item.snapshot.content_hash) {
+    if (actualHash !== snapshot.content_hash) {
       issues.push({
         severity: "CRITICAL",
         entity_type: "food_snapshot",
-        entity_id: item.snapshot.id,
-        details: { issue: "hash_mismatch", expected: item.snapshot.content_hash, actual: actualHash },
+        entity_id: snapshot.id,
+        details: { issue: "hash_mismatch", expected: snapshot.content_hash, actual: actualHash },
       });
     }
   }
@@ -154,18 +166,22 @@ async function checkImmutability(client: TransactionClient | typeof prisma = pri
 
   const publishedVersions = await client.planVersion.findMany({
     where: { status: "published" },
-    include: { publication: true },
   });
 
+  // Get all publications
+  const allPublications = await client.planPublication.findMany({});
+  const publicationsById = new Map(allPublications.map((p) => [p.plan_version_id, p]));
+
   for (const version of publishedVersions) {
-    if (version.publication && version.updated_at > version.publication.published_at) {
+    const publication = publicationsById.get(version.id);
+    if (publication && version.updated_at > publication.published_at) {
       issues.push({
         severity: "CRITICAL",
         entity_type: "plan_version",
         entity_id: version.id,
         details: {
           issue: "published_plan_modified",
-          published_at: version.publication.published_at.toISOString(),
+          published_at: publication.published_at.toISOString(),
           updated_at: version.updated_at.toISOString(),
         },
       });

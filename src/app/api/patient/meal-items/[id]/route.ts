@@ -5,16 +5,17 @@ import { can } from "@/lib/rbac";
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const claims = await requireClaims();
+    const { id } = await params;
     await withSession(claims, async (tx) => {
       if (claims.role !== "PATIENT" && !can(claims.role, "update", "patient")) {
         throw new ApiError("Acesso negado.", 403);
       }
       const item = await tx.mealItem.findFirst({
-        where: { id: params.id, tenant_id: claims.tenant_id },
+        where: { id, tenant_id: claims.tenant_id },
         include: { meal: true },
       });
 

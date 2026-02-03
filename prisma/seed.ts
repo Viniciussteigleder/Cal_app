@@ -281,18 +281,25 @@ async function main() {
             user_id: user.id,
             assigned_team_id: user.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
             status: "active",
-            profile: {
-              create: {
-                tenant_id: user.tenant_id,
-                sex: index % 2 === 0 ? "female" : "male",
-                birth_date: new Date("1990-05-15"),
-                height_cm: new Prisma.Decimal(165 + index),
-                current_weight_kg: new Prisma.Decimal(68 + index),
-                target_weight_kg: new Prisma.Decimal(63 + index),
-                activity_level: "moderate",
-                goal: "loss",
-              },
-            },
+          },
+        })
+      )
+    );
+
+    // Create patient profiles separately
+    await Promise.all(
+      patients.map((patient, index) =>
+        tx.patientProfile.create({
+          data: {
+            tenant_id: patient.tenant_id,
+            patient_id: patient.id,
+            sex: index % 2 === 0 ? "female" : "male",
+            birth_date: new Date("1990-05-15"),
+            height_cm: new Prisma.Decimal(165 + index),
+            current_weight_kg: new Prisma.Decimal(68 + index),
+            target_weight_kg: new Prisma.Decimal(63 + index),
+            activity_level: "moderate",
+            goal: "loss",
           },
         })
       )
