@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface NutrientGap {
     nutrient: string;
@@ -238,6 +239,9 @@ export default function SupplementAdvisorPage() {
                         Análise de deficiências nutricionais e recomendações personalizadas
                     </p>
                 </div>
+
+                {/* Medical Disclaimer */}
+                <MedicalDisclaimer variant="supplement" />
 
                 {/* Patient Selection */}
                 <Card>

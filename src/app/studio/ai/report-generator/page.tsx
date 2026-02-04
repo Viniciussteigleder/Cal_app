@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface ProgressMetric {
     name: string;
@@ -141,6 +142,8 @@ export default function ReportGeneratorPage() {
                         Relatórios completos de progresso com visualizações e narrativas
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Configuration */}
                 <Card>

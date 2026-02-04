@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, AlertCircle, TrendingUp, CheckCircle2, MessageCircle, Info } from "lucide-react";
 import { useState } from "react";
+import { MedicalDisclaimer } from "@/components/ui/medical-disclaimer";
 
 const BRISTOL_SCALE = [
   { value: 1, label: "Tipo 1", description: "Fezes em bolinhas duras e separadas", status: "warning" },
@@ -120,6 +121,10 @@ export default function PatientSymptomsPage() {
   return (
     <TooltipProvider>
       <DashboardLayout role="patient">
+        <div className="space-y-6">
+          {/* Emergency Warning */}
+          <MedicalDisclaimer variant="emergency" />
+        </div>
         <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
@@ -183,19 +188,21 @@ export default function PatientSymptomsPage() {
                   Nível de Desconforto Geral
                   <span className="text-xs text-muted-foreground font-normal">0 = Bem, 10 = Emergência</span>
                 </label>
-                <div className="flex gap-1 overflow-x-auto pb-2">
-                  {Array.from({ length: 11 }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedDiscomfort(i)}
-                      className={`flex-1 min-w-[32px] p-2 rounded border text-sm hover:bg-muted transition-all ${selectedDiscomfort === i
-                        ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-200" : i < 7 ? "bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-200" : "bg-red-500 text-white border-red-600 shadow-md shadow-red-200")
-                        : "border-border hover:border-emerald-200 hover:bg-emerald-50/50"
-                        }`}
-                    >
-                      {i}
-                    </button>
-                  ))}
+                <div className="overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1">
+                  <div className="flex gap-1 snap-x snap-mandatory min-w-min">
+                    {Array.from({ length: 11 }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedDiscomfort(i)}
+                        className={`snap-start snap-always flex-shrink-0 w-12 h-12 p-2 rounded border text-sm font-medium hover:bg-muted transition-all ${selectedDiscomfort === i
+                          ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-200" : i < 7 ? "bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-200" : "bg-red-500 text-white border-red-600 shadow-md shadow-red-200")
+                          : "border-border hover:border-emerald-200 hover:bg-emerald-50/50"
+                          }`}
+                      >
+                        {i}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

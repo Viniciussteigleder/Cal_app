@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface ShoppingItem {
     id: string;
@@ -170,6 +171,8 @@ export default function ShoppingListGeneratorPage() {
                         Extraia automaticamente ingredientes do plano alimentar
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Configuration */}
                 <Card>

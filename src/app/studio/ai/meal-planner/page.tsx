@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { ptBR } from '@/i18n/pt-BR';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface MealPlanDay {
     day: string;
@@ -198,6 +199,8 @@ export default function MealPlannerPage() {
                         Crie planos alimentares personalizados com inteligência artificial
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Configuration Panel */}

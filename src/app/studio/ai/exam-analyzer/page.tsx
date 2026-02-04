@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface Biomarker {
     name: string;
@@ -160,6 +161,8 @@ export default function ExamAnalyzerPage() {
                         Faça upload de exames laboratoriais e receba análise automática com IA
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
