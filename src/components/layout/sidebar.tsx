@@ -26,7 +26,9 @@ import {
     Sparkles,
     Droplet,
     Dumbbell,
-    Stethoscope
+    Stethoscope,
+    ScrollText,
+    Wand2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,6 +54,7 @@ export function Sidebar({ role }: SidebarProps) {
         { href: "/patient/water", label: "Hidratação", icon: Droplet },
         { href: "/patient/exercise", label: "Exercícios", icon: Dumbbell },
         { href: "/patient/symptoms", label: "Sintomas", icon: Activity },
+        { href: "/patient/log", label: "Diário (Novo)", icon: ScrollText },
         { href: "/patient/chat", label: "Chat", icon: MessageSquare },
     ];
 
@@ -61,6 +64,8 @@ export function Sidebar({ role }: SidebarProps) {
         { href: "/studio/ai", label: "IA Features", icon: Sparkles },
         { href: "/studio/ai-workflows", label: "AI Workflows", icon: Brain },
         { href: "/studio/ai/clinical-mdt", label: "MDT Clínico", icon: Stethoscope },
+        { href: "/studio/ai/protocol-generator", label: "IA Protocolos", icon: Wand2 },
+        { href: "/studio/ai/symptom-correlator", label: "IA Sintomas", icon: Activity },
         { href: "/studio/chat", label: "Chat IA", icon: MessageSquare },
         { href: "/studio/protocols", label: "Protocolos", icon: FileText },
         { href: "/studio/recipes", label: "Receitas", icon: BookOpen },
@@ -70,7 +75,7 @@ export function Sidebar({ role }: SidebarProps) {
     const adminLinks = [
         { href: "/owner/tenants", label: "Clínicas", icon: Building2 },
         { href: "/owner/users", label: "Usuários", icon: Users },
-        { href: "/owner/ai", label: "Gestão IA", icon: Brain },
+        { href: "/owner/ai-config", label: "Configuração IA", icon: Brain },
         { href: "/owner/datasets", label: "Datasets", icon: Database },
         { href: "/owner/integrity", label: "Integridade", icon: ShieldCheck },
     ];

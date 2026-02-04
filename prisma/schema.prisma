@@ -108,6 +108,13 @@ model Protocol {
   is_system   Boolean      @default(false)
   type        ProtocolType
 
+  // Phase 3 Enhancements
+  expert_review_score Int?
+  expert_reviewer     String?
+  scientific_basis    Json?
+  contraindications   String[]
+  warnings            String[]
+
   @@unique([tenant_id, code])
 }
 
@@ -198,8 +205,52 @@ model Recipe {
   household_measure_amount Decimal?
   generated_description    String?
 
+  // Phase 3 Enhancements
+  ingredients_text  String? 
+  nutrition_preview Json?
+
   @@index([tenant_id, is_public])
   @@index([tenant_id, is_favorite])
+}
+
+// Phase 4: Patient Daily Log
+model DailyLogEntry {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String   @db.Uuid
+  patient_id     String   @db.Uuid
+  entry_type     String   // 'meal', 'symptom', 'exam', 'measurement', 'note', 'water', 'exercise'
+  timestamp      DateTime @db.Timestamptz(6)
+  
+  content        Json     // Flexible data
+  media_urls     String[]
+  
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([patient_id, timestamp])
+  @@index([tenant_id, entry_type])
+}
+
+// Phase 5: AI Agent Config
+model AiAgentConfig {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  agent_id        String   // unique slug e.g. 'protocol_generator'
+  
+  // Model Settings
+  model_provider  String   @default("openai")
+  model_name      String   @default("gpt-4")
+  temperature     Decimal  @default(0.7) @db.Decimal(3, 2)
+  max_tokens      Int      @default(2000)
+  
+  // Prompt Engineering
+  system_prompt   String   @db.Text
+  user_template   String?  @db.Text
+  
+  is_active       Boolean  @default(true)
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([tenant_id, agent_id])
 }
 
 model RecipeIngredient {
@@ -957,4 +1008,22 @@ model AnthropometryRecord {
 
   @@index([patient_id, measured_at(sort: Desc)])
   @@index([tenant_id, patient_id])
+}
+
+// Phase 2: AI Credit Management
+model AiCreditTransaction {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  nutritionist_id String?  @db.Uuid
+  patient_id      String?  @db.Uuid
+  agent_type      String   // 'food_recognition', 'meal_planner', 'patient_analyzer', etc.
+  credits_used    Decimal  @db.Decimal(10,4)
+  cost_usd        Decimal  @db.Decimal(10,4)
+  cost_brl        Decimal  @db.Decimal(10,2)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  metadata        Json?
+
+  @@index([tenant_id, created_at])
+  @@index([patient_id, created_at])
+  @@index([nutritionist_id, created_at])
 }

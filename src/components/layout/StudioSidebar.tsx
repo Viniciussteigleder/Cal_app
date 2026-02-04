@@ -13,6 +13,7 @@ import {
     FileEdit,
     MoreHorizontal,
     ChevronLeft,
+    ScrollText,
 } from 'lucide-react';
 
 interface Module {
@@ -46,6 +47,14 @@ export function StudioSidebar({ patientId, currentPhase = 1 }: StudioSidebarProp
             icon: TestTube,
             href: `/studio/patients/${patientId}/exames`,
             phase: 1,
+        },
+        {
+            id: 'log',
+            label: 'Diário',
+            icon: ScrollText,
+            href: `/studio/patients/${patientId}/log`,
+            phase: 1,
+            badge: 'Novo',
         },
         {
             id: 'antropometria',
