@@ -19,7 +19,7 @@ import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Mic, Loader2, Plus, X } from 'lucide-react';
 
-export function ProntuarioActions() {
+export function ProntuarioActions({ templates = [] }: { templates?: any[] }) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [audioProcessing, setAudioProcessing] = useState(false);
@@ -145,8 +145,33 @@ export function ProntuarioActions() {
                                 </div>
                                 <p className="text-xs text-muted-foreground">O áudio será transcrito e resumido automaticamente.</p>
                             </div>
+
                         )}
                     </div>
+
+                    {templates.length > 0 && (
+                        <div className="space-y-2">
+                            <Label>Carregar Template</Label>
+                            <Select onValueChange={(tId) => {
+                                const tmpl = templates.find(t => t.id === tId);
+                                if (tmpl) {
+                                    const fields = tmpl.structure_json?.fields || [];
+                                    const text = fields.map((f: any) => `**${f.label || f.name}:** `).join('\n\n');
+                                    setFormData(prev => ({ ...prev, text: prev.text + '\n' + text }));
+                                    toast.success("Template aplicado!");
+                                }
+                            }}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Escolher modelo..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {templates.map(t => (
+                                        <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         <Label htmlFor="text">Conteúdo</Label>
@@ -207,6 +232,6 @@ export function ProntuarioActions() {
                     </DialogFooter>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

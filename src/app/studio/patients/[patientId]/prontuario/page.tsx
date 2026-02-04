@@ -1,5 +1,6 @@
 import React from 'react';
 import { getProntuarioEntries, EntryType } from './actions';
+import { getTemplates } from '@/app/studio/templates/actions';
 import { TimelineView } from './TimelineView';
 import { ProntuarioActions } from './ProntuarioActions';
 import { ProntuarioFilters } from './ProntuarioFilters';
@@ -29,6 +30,7 @@ export default async function ProntuarioPage({
 
     // Fetch data
     const { data: entries } = await getProntuarioEntries(patientId, { search, types });
+    const { data: templates } = await getTemplates();
 
     return (
         <div className="space-y-6">
@@ -39,7 +41,7 @@ export default async function ProntuarioPage({
                         Histórico clínico e anotações do paciente.
                     </p>
                 </div>
-                <ProntuarioActions />
+                <ProntuarioActions templates={templates || []} />
             </div>
 
             {/* Filters */}
