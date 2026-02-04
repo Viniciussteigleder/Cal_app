@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface SOAPNote {
     subjective: string;
@@ -173,6 +174,8 @@ Estado geral: Bom, paciente alerta e cooperativa`,
                         Grave consultas e gere prontuários SOAP automaticamente com Whisper AI
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Configuration */}
                 <Card>

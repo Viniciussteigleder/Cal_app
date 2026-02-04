@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface FoodSymptomCorrelation {
     food: string;
@@ -173,6 +174,8 @@ export default function SymptomCorrelatorPage() {
                         Identifique padrões e correlações entre alimentos e sintomas automaticamente
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Analysis Controls */}
                 <Card>
