@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface MedicalDisclaimerProps {
   variant?: "default" | "supplement" | "emergency"
@@ -31,12 +31,16 @@ export function MedicalDisclaimer({ variant = "default", className }: MedicalDis
                     "text-yellow-600"
 
   return (
-    <Alert className={`${bgColor} ${className}`}>
-      <AlertTriangle className={`h-5 w-5 ${iconColor}`} />
-      <AlertTitle className="font-bold text-base">{content.title}</AlertTitle>
-      <AlertDescription className="mt-2 text-sm leading-relaxed">
-        {content.description}
-      </AlertDescription>
-    </Alert>
+    <Card className={`${bgColor} ${className}`}>
+      <CardContent className="pt-6 flex gap-3">
+        <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${iconColor}`} />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base mb-2">{content.title}</h3>
+          <p className="text-sm leading-relaxed overflow-hidden">
+            {content.description}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
