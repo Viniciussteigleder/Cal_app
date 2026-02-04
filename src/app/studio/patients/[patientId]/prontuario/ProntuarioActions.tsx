@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createProntuarioEntry, EntryType, processConsultationAudio } from './actions';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Mic, Loader2 } from 'lucide-react';
+import { Mic, Loader2, Plus, X } from 'lucide-react';
 
 export function ProntuarioActions() {
     const [open, setOpen] = useState(false);
@@ -30,6 +30,9 @@ export function ProntuarioActions() {
         type: 'note' as EntryType,
         text: '',
     });
+
+    const [tasks, setTasks] = useState<{ text: string; done: boolean }[]>([]);
+    const [newTaskText, setNewTaskText] = useState('');
 
     const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -54,8 +57,17 @@ export function ProntuarioActions() {
             toast.error("Erro ao enviar áudio");
         } finally {
             setAudioProcessing(false);
-            // Reset input if needed, but simple re-render might suffice or use key logic
         }
+    };
+
+    const handleAddTask = () => {
+        if (!newTaskText.trim()) return;
+        setTasks([...tasks, { text: newTaskText, done: false }]);
+        setNewTaskText('');
+    };
+
+    const handleRemoveTask = (index: number) => {
+        setTasks(tasks.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -65,17 +77,17 @@ export function ProntuarioActions() {
         try {
             const result = await createProntuarioEntry(patientId, {
                 entryType: formData.type,
-                // If type is consultation, we might want to structure content differently, 
-                // but for now simple text object is fine as per schema flexible Json
                 content: {
                     text: formData.text,
-                    isAiGenerated: formData.type === 'consultation' && formData.text.includes('Transcrição Original')
+                    isAiGenerated: formData.type === 'consultation' && formData.text.includes('Transcrição Original'),
+                    tasks: tasks
                 },
             });
 
             if (result.success) {
                 setOpen(false);
                 setFormData({ type: 'note', text: '' });
+                setTasks([]);
                 toast.success("Entrada criada com sucesso!");
             } else {
                 toast.error("Erro ao criar entrada");
@@ -141,11 +153,48 @@ export function ProntuarioActions() {
                         <Textarea
                             id="text"
                             placeholder="Digite suas anotações aqui..."
-                            className="h-64 resize-none"
+                            className="h-48 resize-none"
                             value={formData.text}
                             onChange={(e) => setFormData({ ...formData, text: e.target.value })}
                             required
                         />
+                    </div>
+
+                    {/* Tasks Section */}
+                    <div className="space-y-2 border-t pt-2">
+                        <Label>Tarefas e Checklist</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Nova tarefa (ex: Solicitar Exame TSH)"
+                                value={newTaskText}
+                                onChange={(e) => setNewTaskText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddTask();
+                                    }
+                                }}
+                            />
+                            <Button type="button" size="icon" onClick={handleAddTask} variant="secondary">
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        <ul className="space-y-2 mt-2">
+                            {tasks.map((task, idx) => (
+                                <li key={idx} className="flex items-center justify-between bg-muted/50 p-2 rounded-md text-sm">
+                                    <span>{task.text}</span>
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        onClick={() => handleRemoveTask(idx)}
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
 
                     <DialogFooter>

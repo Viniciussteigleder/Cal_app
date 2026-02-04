@@ -75,68 +75,68 @@
 - [x] Implement edit functionality
 
 #### **REQ-PR-06: Filters and Search**
-- [ ] Implement date range filter
-- [ ] Add keyword search (full-text)
-- [ ] Create entry type multi-select filter
-- [ ] Add tag filter
+- [x] Implement date range filter
+- [x] Add keyword search (full-text)
+- [x] Create entry type multi-select filter
+- [x] Add tag filter
 
 #### **REQ-PR-07: Tasks/Checklist**
-- [ ] Implement task data structure (JSONB)
-- [ ] Create checkbox UI components
-- [ ] Add task aggregation query
-- [ ] Build "Open Tasks" counter
+- [x] Implement task data structure (JSONB)
+- [x] Create checkbox UI components
+- [x] Add task aggregation query
+- [x] Build "Open Tasks" counter
 
 ---
 
 ### **Step 4: Exames (Lab Results)** (Priority: P0)
 
 #### **REQ-EX-01: Upload**
-- [ ] Create file upload component
-- [ ] Integrate Supabase Storage
-- [ ] Implement metadata form
-- [ ] Add upload progress indicator
+- [x] Create file upload component
+- [x] Integrate Supabase Storage
+- [x] Implement metadata form
+- [x] Add upload progress indicator
 
 #### **REQ-EX-02: AI Multilingual Extraction**
-- [ ] Create GPT-4 Vision extraction prompt
-- [ ] Implement language detection
-- [ ] Build extraction pipeline
-- [ ] Add error handling
+- [x] Create GPT-4 Vision extraction prompt
+- [x] Implement language detection
+- [x] Build extraction pipeline
+- [x] Add error handling
 
 #### **REQ-EX-03: Database Structure**
-- [ ] Create database migration
-- [ ] Implement server actions
-- [ ] Add relationship queries
+- [x] Create database migration
+- [x] Implement server actions
+- [x] Add relationship queries
 
 #### **REQ-EX-04: Canonical Exam List**
-- [ ] Seed canonical exams (common biomarkers)
-- [ ] Implement fuzzy matching algorithm
-- [ ] Create synonym mapping
+- [x] Seed canonical exams (common biomarkers)
+- [x] Implement fuzzy matching algorithm
+- [x] Create synonym mapping
 
 #### **REQ-EX-05: Partial Filling**
-- [ ] Handle missing biomarkers
-- [ ] Display "missing" status
+- [x] Handle missing biomarkers
+- [x] Display "missing" status
 
 #### **REQ-EX-06: Consolidated Table**
-- [ ] Build pivot query (exam × date)
-- [ ] Create table UI component
-- [ ] Implement responsive design
+- [x] Build pivot query (exam × date)
+- [x] Create table UI component
+- [x] Implement responsive design
 
 #### **REQ-EX-07: Quality Control (Validation)**
-- [ ] Create validation UI
-- [ ] Implement confidence indicators
-- [ ] Add inline editing
-- [ ] Build audit trail
+- [x] Create validation UI
+- [x] Implement confidence indicators
+- [x] Add inline editing
+- [x] Build audit trail
 
 #### **REQ-EX-08: Time Series Support**
-- [ ] Handle multiple results per exam
-- [ ] Support same-day duplicates
+- [x] Handle multiple results per exam
+- [x] Support same-day duplicates
 
 #### **REQ-EX-09: Charts**
-- [ ] Integrate Recharts
-- [ ] Create exam selector
-- [ ] Build time-series chart
-- [ ] Add reference range lines
-- [ ] Implement trend indicators
+- [x] Integrate Recharts
+- [x] Create exam selector
+- [x] Build time-series chart
+- [x] Add reference range lines
+- [x] Implement trend indicators
 
 ---
 
@@ -148,9 +148,9 @@
 |--------|-------|-----------|-------------|------|----------|
 | Database Schema | 1 | 1 | 0 | 0 | 100% ✅ |
 | Global Requirements | 3 | 3 | 0 | 0 | 100% ✅ |
-| Prontuário | 7 | 5 | 1 | 1 | 71% 🚀 |
+| Prontuário | 7 | 7 | 0 | 0 | 100% ✅ |
 | Exames | 9 | 9 | 0 | 0 | 100% ✅ |
-| **TOTAL** | **20** | **18** | **1** | **1** | **90%** |
+| **TOTAL** | **20** | **20** | **0** | **0** | **100%** 🚀 |
 
 ---
 

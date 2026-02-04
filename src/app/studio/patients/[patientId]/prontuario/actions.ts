@@ -116,6 +116,33 @@ export async function deleteProntuarioEntry(id: string, patientId: string) {
     }
 }
 
+export async function toggleProntuarioTask(entryId: string, patientId: string, taskIndex: number, done: boolean) {
+    try {
+        const entry = await prisma.patientLogEntry.findUnique({ where: { id: entryId } });
+        if (!entry) return { success: false, error: 'Entry not found' };
+
+        const content = entry.content as any;
+        if (!content.tasks || !Array.isArray(content.tasks)) {
+            return { success: false, error: 'No tasks found' };
+        }
+
+        if (content.tasks[taskIndex]) {
+            content.tasks[taskIndex].done = done;
+        }
+
+        await prisma.patientLogEntry.update({
+            where: { id: entryId },
+            data: { content }
+        });
+
+        revalidatePath(`/studio/patients/${patientId}/prontuario`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error toggling task:', error);
+        return { success: false, error: 'Failed' };
+    }
+}
+
 export async function processConsultationAudio(formData: FormData) {
     try {
         const file = formData.get('file') as File;
