@@ -366,7 +366,7 @@ export default function DocumentTemplatesPage() {
                                                 <CardContent className="pt-4">
                                                     <div className="flex items-center justify-between">
                                                         <div>
-                                                            <p className="font-medium">{{ field.name }}</p>
+                                                            <p className="font-medium">{field.name}</p>
                                                             <p className="text-sm text-muted-foreground">
                                                                 Tipo: {field.type} {field.required && '• Obrigatório'}
                                                             </p>

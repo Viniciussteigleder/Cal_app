@@ -1,111 +1,62 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// Routes that require authentication
-const protectedRoutes = ["/patient", "/studio", "/owner"];
-
-// Routes that should redirect to dashboard if already logged in
-const authRoutes = ["/login"];
+// Rate limiting storage (in production, use Redis)
+const rateLimit = new Map<string, { count: number; resetTime: number }>();
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const sessionCookie = request.cookies.get("np_session");
-
-  // Check if route is protected
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
-
-  // If trying to access protected route without session, redirect to login
-  if (isProtectedRoute && !sessionCookie?.value) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // If trying to access auth route with session, redirect to appropriate dashboard
-  if (isAuthRoute && sessionCookie?.value) {
-    try {
-      const session = JSON.parse(sessionCookie.value);
-      let redirectPath = "/patient/dashboard";
-
-      if (session.role === "OWNER") {
-        redirectPath = "/owner/tenants";
-      } else if (session.role === "TENANT_ADMIN" || session.role === "TEAM") {
-        redirectPath = "/studio/dashboard";
-      }
-
-      return NextResponse.redirect(new URL(redirectPath, request.url));
-    } catch {
-      // Invalid session, continue to login
-    }
-  }
-
-  // Role-based access control
-  if (sessionCookie?.value) {
-    try {
-      const session = JSON.parse(sessionCookie.value);
-
-      // Patient can only access /patient routes
-      if (pathname.startsWith("/patient") && session.role !== "PATIENT") {
-        return NextResponse.redirect(
-          new URL(
-            session.role === "OWNER" ? "/owner/tenants" : "/studio/dashboard",
-            request.url
-          )
-        );
-      }
-
-      // Studio routes require TENANT_ADMIN or TEAM role
-      if (
-        pathname.startsWith("/studio") &&
-        session.role !== "TENANT_ADMIN" &&
-        session.role !== "TEAM"
-      ) {
-        return NextResponse.redirect(
-          new URL(
-            session.role === "OWNER" ? "/owner/tenants" : "/patient/dashboard",
-            request.url
-          )
-        );
-      }
-
-      // Owner routes require OWNER role
-      if (pathname.startsWith("/owner") && session.role !== "OWNER") {
-        return NextResponse.redirect(
-          new URL(
-            session.role === "PATIENT" ? "/patient/dashboard" : "/studio/dashboard",
-            request.url
-          )
-        );
-      }
-    } catch {
-      // Invalid session, redirect to login
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-  }
-
   const response = NextResponse.next();
 
-  // Add owner mode header for owner routes
-  if (pathname.startsWith("/owner")) {
-    response.headers.set("x-owner-mode", "true");
+  // Apply security headers
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  response.headers.set(
+    'Strict-Transport-Security',
+    'max-age=63072000; includeSubDomains; preload'
+  );
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=()'
+  );
+
+  // Rate limiting for API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+
+    // Get or create rate limit entry
+    let limit = rateLimit.get(ip);
+    if (!limit || now > limit.resetTime) {
+      limit = { count: 0, resetTime: now + 60000 }; // 1 minute window
+      rateLimit.set(ip, limit);
+    }
+
+    // Check limit (100 requests per minute for API)
+    if (limit.count > 100) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': '60',
+          },
+        }
+      );
+    }
+
+    limit.count++;
   }
 
-  if (process.env.DEV_AUTOLOGIN === "true" && process.env.NODE_ENV !== "production") {
-    const hasSession =
-      request.cookies.get("np_user_id") &&
-      request.cookies.get("np_tenant_id") &&
-      request.cookies.get("np_role");
-    if (!hasSession) {
-      const userId = process.env.DEV_USER_ID ?? "";
-      const tenantId = process.env.DEV_TENANT_ID ?? "";
-      const role = process.env.DEV_ROLE ?? "";
-      if (userId && tenantId && role) {
-        response.cookies.set("np_user_id", userId);
-        response.cookies.set("np_tenant_id", tenantId);
-        response.cookies.set("np_role", role);
+  // Clean up old rate limit entries periodically
+  if (Math.random() < 0.01) { // 1% chance to clean up
+    const now = Date.now();
+    for (const [key, value] of rateLimit.entries()) {
+      if (now > value.resetTime) {
+        rateLimit.delete(key);
       }
     }
   }
@@ -115,9 +66,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/patient/:path*",
-    "/studio/:path*",
-    "/owner/:path*",
-    "/login",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
