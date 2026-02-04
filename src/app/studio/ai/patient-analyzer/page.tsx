@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface PatientAnalysisData {
     adherence_score: number;
@@ -139,6 +140,8 @@ export default function PatientAnalyzerPage() {
                         )}
                     </Button>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Patient Info Card */}
                 <Card>

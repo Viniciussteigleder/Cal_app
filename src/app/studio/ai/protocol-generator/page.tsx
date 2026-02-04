@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface ProtocolPhase {
     name: string;
@@ -176,6 +177,8 @@ export default function ProtocolGeneratorPage() {
                         Crie protocolos nutricionais personalizados automaticamente com inteligência artificial
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

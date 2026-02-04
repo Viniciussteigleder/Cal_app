@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput, processMultilingualText } from "@/components/voice-input";
+import { MedicalDisclaimer } from "@/components/ui/medical-disclaimer";
 
 interface Message {
   id: string;
@@ -261,6 +262,10 @@ export default function PatientChatPage() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="mb-4">
+          <MedicalDisclaimer />
+        </div>
 
         {/* Messages */}
         <Card className="flex-1 flex flex-col overflow-hidden">

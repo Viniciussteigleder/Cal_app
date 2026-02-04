@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
 
 interface RecognizedFood {
     food_name: string;
@@ -130,6 +131,8 @@ export default function FoodRecognitionPage() {
                         Tire uma foto da refeição e deixe a IA identificar os alimentos e estimar as porções
                     </p>
                 </div>
+
+                <MedicalDisclaimer />
 
                 {/* Upload Area */}
                 {!selectedImage && (

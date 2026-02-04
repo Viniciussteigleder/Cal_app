@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, AlertCircle, TrendingUp, CheckCircle2, MessageCircle, Info } from "lucide-react";
 import { useState } from "react";
+import { MedicalDisclaimer } from "@/components/ui/medical-disclaimer";
 
 const BRISTOL_SCALE = [
   { value: 1, label: "Tipo 1", description: "Fezes em bolinhas duras e separadas", status: "warning" },
@@ -120,6 +121,10 @@ export default function PatientSymptomsPage() {
   return (
     <TooltipProvider>
       <DashboardLayout role="patient">
+        <div className="space-y-6">
+          {/* Emergency Warning */}
+          <MedicalDisclaimer variant="emergency" />
+        </div>
         <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
