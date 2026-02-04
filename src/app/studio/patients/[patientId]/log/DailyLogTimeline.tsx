@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createDailyLog } from './actions';
 import {
-    Utensils, Activity, FileText, Plus, Clock, Droplets, Dumbbell,
-    Smile, Frown, Meh, AlertCircle
+    Utensils, Activity, FileText, Plus, Clock, Droplets, Dumbbell
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -22,7 +22,13 @@ interface LogEntry {
     content: any;
 }
 
-export function DailyLogTimeline({ initialLogs, patientId }: { initialLogs: LogEntry[], patientId: string }) {
+interface Recipe {
+    id: string;
+    name: string;
+    description: string | null;
+}
+
+export function DailyLogTimeline({ initialLogs, patientId, recipes = [] }: { initialLogs: LogEntry[], patientId: string, recipes?: Recipe[] }) {
     const [logs, setLogs] = useState(initialLogs);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,6 +54,13 @@ export function DailyLogTimeline({ initialLogs, patientId }: { initialLogs: LogE
             setMealContent('');
         } else {
             toast.error("Erro ao registrar");
+        }
+    };
+
+    const handleRecipeSelect = (recipeId: string) => {
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (recipe) {
+            setMealContent(`${recipe.name} - ${recipe.description?.substring(0, 50) || ''}...`);
         }
     };
 
@@ -108,6 +121,18 @@ export function DailyLogTimeline({ initialLogs, patientId }: { initialLogs: LogE
                                     onChange={e => setMealType(e.target.value)}
                                     placeholder="Tipo (ex: Almoço)"
                                 />
+                                {recipes.length > 0 && (
+                                    <Select onValueChange={handleRecipeSelect}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecionar Receita Salva (Opcional)" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {recipes.map(r => (
+                                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                                 <Textarea
                                     placeholder="O que o paciente comeu?"
                                     value={mealContent}

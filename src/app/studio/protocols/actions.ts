@@ -16,6 +16,17 @@ export async function getProtocols() {
     return { success: true, data: protocols };
 }
 
+export async function getProtocol(id: string) {
+    const claims = await getSupabaseClaims();
+    if (!claims) return { success: false, error: 'Unauthorized' };
+
+    const protocol = await prisma.protocol.findUnique({
+        where: { id },
+    });
+
+    return { success: true, data: protocol };
+}
+
 export async function createProtocol(data: any) {
     const claims = await getSupabaseClaims();
     if (!claims) return { success: false, error: 'Unauthorized' };
