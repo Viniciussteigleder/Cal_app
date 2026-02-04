@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { useUser } from "@/components/user-provider";
 
@@ -75,6 +76,7 @@ export function Sidebar({ role }: SidebarProps) {
     const links = role === "patient" ? patientLinks : role === "admin" ? adminLinks : nutritionistLinks;
 
     return (
+        <TooltipProvider>
         <aside
             className={cn(
                 "hidden border-r border-border bg-card transition-all duration-300 md:flex md:flex-col sticky top-0 h-screen overflow-y-auto",
@@ -211,21 +213,35 @@ export function Sidebar({ role }: SidebarProps) {
                     {!collapsed && <span>Sair</span>}
                 </button>
 
-                <div className={cn("mt-4 flex items-center gap-3 px-1", collapsed && "justify-center")}>
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                        {user?.name?.charAt(0) || "U"}
-                    </div>
-                    {!collapsed && (
-                        <div className="overflow-hidden">
-                            <p className="truncate text-sm font-medium">{user?.name || "Usuário"}</p>
-                            <p className="truncate text-xs text-muted-foreground">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className={cn("mt-4 flex items-center gap-3 px-1 cursor-help", collapsed && "justify-center")}>
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                {user?.name?.charAt(0) || "U"}
+                            </div>
+                            {!collapsed && (
+                                <div className="overflow-hidden flex-1">
+                                    <p className="truncate text-sm font-medium">{user?.name || "Usuário"}</p>
+                                    <p className="truncate text-xs text-muted-foreground">
+                                        {user?.role === "PATIENT" ? "Paciente" :
+                                            user?.role === "OWNER" ? "Administrador" : "Nutricionista"}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                        <div className="text-xs">
+                            <p className="font-semibold">{user?.name || "Usuário"}</p>
+                            <p className="text-muted-foreground">
                                 {user?.role === "PATIENT" ? "Paciente" :
                                     user?.role === "OWNER" ? "Administrador" : "Nutricionista"}
                             </p>
                         </div>
-                    )}
-                </div>
+                    </TooltipContent>
+                </Tooltip>
             </div>
         </aside>
+        </TooltipProvider>
     );
 }

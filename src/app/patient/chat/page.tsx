@@ -290,21 +290,21 @@ export default function PatientChatPage() {
                       {message.attachments.map((att, i) => (
                         <div
                           key={i}
-                          className={`p-2 rounded-lg ${
+                          className={`p-2 rounded-lg overflow-hidden ${
                             message.role === "patient"
                               ? "bg-primary-foreground/10"
                               : "bg-background"
                           }`}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             {att.type === "meal" ? (
-                              <Utensils className="h-4 w-4" />
+                              <Utensils className="h-4 w-4 flex-shrink-0" />
                             ) : (
-                              <Activity className="h-4 w-4" />
+                              <Activity className="h-4 w-4 flex-shrink-0" />
                             )}
-                            <div>
-                              <p className="text-xs font-medium">{att.title}</p>
-                              <p className="text-xs opacity-70">{att.subtitle}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate">{att.title}</p>
+                              <p className="text-xs opacity-70 truncate">{att.subtitle}</p>
                             </div>
                           </div>
                         </div>
