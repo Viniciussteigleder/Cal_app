@@ -105,42 +105,40 @@ export async function analyzeImage(
     }
 ) {
     try {
-        // Mock implementation - replace with real GPT-4 Vision call
-        console.log('Mock GPT-4 Vision Analysis:', { prompt, options });
+        if (!process.env.OPENAI_API_KEY) {
+            console.warn('OPENAI_API_KEY is not set. Returning mock vision analysis.');
+            return {
+                content: 'Mock vision analysis - OPENAI_API_KEY missing',
+                usage: {
+                    prompt_tokens: 0,
+                    completion_tokens: 0,
+                    total_tokens: 0,
+                },
+            };
+        }
 
-        // Real implementation (uncomment when ready):
-        // const response = await openai.chat.completions.create({
-        //   model: options?.model || 'gpt-4-vision-preview',
-        //   messages: [
-        //     {
-        //       role: 'user',
-        //       content: [
-        //         { type: 'text', text: prompt },
-        //         {
-        //           type: 'image_url',
-        //           image_url: {
-        //             url: imageData,
-        //           },
-        //         },
-        //       ],
-        //     },
-        //   ],
-        //   max_tokens: options?.maxTokens || 1000,
-        // });
-        // 
-        // return {
-        //   content: response.choices[0].message.content,
-        //   usage: response.usage,
-        // };
+        const response = await openai.chat.completions.create({
+            model: options?.model || 'gpt-4o', // Using gpt-4o as it's better/faster for vision now
+            messages: [
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        {
+                            type: 'image_url',
+                            image_url: {
+                                url: imageData,
+                            },
+                        },
+                    ],
+                },
+            ],
+            max_tokens: options?.maxTokens || 4000,
+        });
 
-        // Mock response
         return {
-            content: 'Mock vision analysis - replace with real GPT-4 Vision integration',
-            usage: {
-                prompt_tokens: 200,
-                completion_tokens: 100,
-                total_tokens: 300,
-            },
+            content: response.choices[0].message.content,
+            usage: response.usage,
         };
     } catch (error) {
         console.error('Error in GPT-4 Vision analysis:', error);

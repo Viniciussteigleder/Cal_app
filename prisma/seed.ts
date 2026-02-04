@@ -196,6 +196,65 @@ async function seedTenantData(tx: Prisma.TransactionClient, tenantId: string) {
   return { tacoRelease, blsRelease, foods };
 }
 
+async function seedCanonicalExams(tx: Prisma.TransactionClient) {
+  const exams = [
+    {
+      common_name: "Glicose",
+      synonyms_pt: ["Glicemia", "Glicose em Jejum", "Glicose Sérica"],
+      synonyms_en: ["Glucose", "Fasting Glucose"],
+      category: "Metabolismo",
+    },
+    {
+      common_name: "Colesterol Total",
+      synonyms_pt: ["Colesterol", "Colesterol Sérico"],
+      synonyms_en: ["Total Cholesterol"],
+      category: "Lipidograma",
+    },
+    {
+      common_name: "HDL",
+      synonyms_pt: ["Colesterol HDL", "HDL Colesterol"],
+      synonyms_en: ["HDL Cholesterol"],
+      category: "Lipidograma",
+    },
+    {
+      common_name: "LDL",
+      synonyms_pt: ["Colesterol LDL", "LDL Colesterol"],
+      synonyms_en: ["LDL Cholesterol"],
+      category: "Lipidograma",
+    },
+    {
+      common_name: "Triglicerídeos",
+      synonyms_pt: ["Triglicérides"],
+      synonyms_en: ["Triglycerides"],
+      category: "Lipidograma",
+    },
+    {
+      common_name: "TSH",
+      synonyms_pt: ["Hormônio Tireoestimulante", "Tireotropina"],
+      synonyms_en: ["TSH", "Thyroid Stimulating Hormone"],
+      category: "Tireoide",
+    },
+    {
+      common_name: "Hemoglobina Glicada",
+      synonyms_pt: ["HbA1c", "A1C", "Hemoglobina A1c"],
+      synonyms_en: ["HbA1c", "Hemoglobin A1c"],
+      category: "Metabolismo",
+    },
+  ];
+
+  for (const exam of exams) {
+    await tx.examCanonical.create({
+      data: {
+        common_name: exam.common_name,
+        synonyms_pt: exam.synonyms_pt,
+        synonyms_en: exam.synonyms_en,
+        synonyms_de: [],
+        category: exam.category,
+      }
+    });
+  }
+}
+
 async function main() {
   console.log("Seeding database...");
 
@@ -321,10 +380,10 @@ async function main() {
           allowed_sources: isJourneyBR
             ? ["TACO", "TBCA"]
             : isJourneyDE
-            ? ["BLS"]
-            : patient.tenant_id === tenantA.id
-            ? ["TACO"]
-            : ["BLS"],
+              ? ["BLS"]
+              : patient.tenant_id === tenantA.id
+                ? ["TACO"]
+                : ["BLS"],
           updated_by: patient.assigned_team_id ?? owner.id,
         },
       });
@@ -364,16 +423,16 @@ async function main() {
     );
 
     for (const [index, plan] of plans.entries()) {
-    const planVersion = await tx.planVersion.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_id: plan.id,
-        version_no: 1,
-        status: "published",
-        created_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-      },
-    });
-    const publishedAt = new Date();
+      const planVersion = await tx.planVersion.create({
+        data: {
+          tenant_id: plan.tenant_id,
+          plan_id: plan.id,
+          version_no: 1,
+          status: "published",
+          created_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+        },
+      });
+      const publishedAt = new Date();
 
       const foodPool = plan.tenant_id === tenantA.id ? tenantAData.foods : tenantBData.foods;
       const food = foodPool[index % foodPool.length];
@@ -410,23 +469,23 @@ async function main() {
         },
       });
 
-    await tx.planApproval.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_version_id: planVersion.id,
-        approved_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-        approved_at: publishedAt,
-      },
-    });
+      await tx.planApproval.create({
+        data: {
+          tenant_id: plan.tenant_id,
+          plan_version_id: planVersion.id,
+          approved_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+          approved_at: publishedAt,
+        },
+      });
 
-    await tx.planPublication.create({
-      data: {
-        tenant_id: plan.tenant_id,
-        plan_version_id: planVersion.id,
-        published_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
-        published_at: publishedAt,
-      },
-    });
+      await tx.planPublication.create({
+        data: {
+          tenant_id: plan.tenant_id,
+          plan_version_id: planVersion.id,
+          published_by: plan.tenant_id === tenantA.id ? nutriA.id : nutriB.id,
+          published_at: publishedAt,
+        },
+      });
 
       for (let day = 0; day < 5; day += 1) {
         const date = new Date();
@@ -452,6 +511,8 @@ async function main() {
         });
       }
     }
+
+    await seedCanonicalExams(tx);
   });
 
   console.log("Seed completed successfully.");
