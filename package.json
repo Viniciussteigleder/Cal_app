@@ -14,11 +14,13 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
-    "populate:demo": "tsx scripts/populate-demo-data.ts"
+    "populate:demo": "tsx scripts/populate-demo-data.ts",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
-    "@prisma/client": "^5.19.1",
+    "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -75,7 +77,7 @@
     "eslint-config-next": "16.1.6",
     "playwright": "1.58.1",
     "postcss": "8.4.38",
-    "prisma": "^5.19.1",
+    "prisma": "^5.22.0",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "4.19.2",
