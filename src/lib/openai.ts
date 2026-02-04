@@ -11,12 +11,11 @@
  * OPENAI_API_KEY=your_openai_api_key
  */
 
-// Uncomment when ready to use real OpenAI
-// import OpenAI from 'openai';
+import OpenAI from 'openai';
 
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 /**
  * Generate chat completion using GPT-4
@@ -31,33 +30,31 @@ export async function generateChatCompletion(
     }
 ) {
     try {
-        // Mock implementation - replace with real OpenAI call
-        console.log('Mock OpenAI Chat Completion:', { systemPrompt, userPrompt, options });
+        if (!process.env.OPENAI_API_KEY) {
+            console.warn('OPENAI_API_KEY is not set. Returning mock response.');
+            return {
+                content: 'Mock AI response - OPENAI_API_KEY missing',
+                usage: {
+                    prompt_tokens: 0,
+                    completion_tokens: 0,
+                    total_tokens: 0,
+                },
+            };
+        }
 
-        // Real implementation (uncomment when ready):
-        // const completion = await openai.chat.completions.create({
-        //   model: options?.model || 'gpt-4-turbo-preview',
-        //   messages: [
-        //     { role: 'system', content: systemPrompt },
-        //     { role: 'user', content: userPrompt },
-        //   ],
-        //   temperature: options?.temperature || 0.7,
-        //   max_tokens: options?.maxTokens || 2000,
-        // });
-        // 
-        // return {
-        //   content: completion.choices[0].message.content,
-        //   usage: completion.usage,
-        // };
+        const completion = await openai.chat.completions.create({
+            model: options?.model || 'gpt-4-turbo-preview',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+            ],
+            temperature: options?.temperature || 0.7,
+            max_tokens: options?.maxTokens || 2000,
+        });
 
-        // Mock response
         return {
-            content: 'Mock AI response - replace with real OpenAI integration',
-            usage: {
-                prompt_tokens: 100,
-                completion_tokens: 50,
-                total_tokens: 150,
-            },
+            content: completion.choices[0].message.content,
+            usage: completion.usage,
         };
     } catch (error) {
         console.error('Error in OpenAI chat completion:', error);
@@ -70,23 +67,25 @@ export async function generateChatCompletion(
  */
 export async function transcribeAudio(audioFile: File) {
     try {
-        // Mock implementation - replace with real Whisper call
-        console.log('Mock Whisper Transcription:', { filename: audioFile.name });
+        if (!process.env.OPENAI_API_KEY) {
+            console.warn('OPENAI_API_KEY is not set. Returning mock transcription.');
+            return { text: 'Mock transcription - OPENAI_API_KEY missing' };
+        }
 
-        // Real implementation (uncomment when ready):
-        // const transcription = await openai.audio.transcriptions.create({
-        //   file: audioFile,
-        //   model: 'whisper-1',
-        //   language: 'pt', // Portuguese
-        // });
-        // 
-        // return {
-        //   text: transcription.text,
-        // };
+        // OpenAI SDK expects a specific format for file uploads in Node environment
+        // standard File object might need conversion to ReadStream or similar if on Node server
+        // But since we are likely using Next.js Server Actions, FormData File is usually compatible or we pass it directly
+        // However, OpenAI SDK often prefers `fs.createReadStream` or a Blob with name.
 
-        // Mock response
+        // Handling File from FormData (which is often a Blob with name)
+        const transcription = await openai.audio.transcriptions.create({
+            file: audioFile,
+            model: 'whisper-1',
+            language: 'pt', // Portuguese
+        });
+
         return {
-            text: 'Mock transcription - replace with real Whisper integration',
+            text: transcription.text,
         };
     } catch (error) {
         console.error('Error in Whisper transcription:', error);
