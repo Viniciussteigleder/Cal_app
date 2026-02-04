@@ -249,6 +249,34 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                 </p>
               </div>
 
+              {/* LGPD Consent Checkboxes */}
+              <div className="space-y-3 border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50">
+                <p className="text-sm font-medium mb-2">Consentimento para Tratamento de Dados</p>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" required className="mt-1 min-w-[16px] h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-slate-600 dark:text-slate-300">
+                      Eu concordo com o armazenamento e processamento dos meus dados de saúde (peso, altura, alimentação, sintomas) para fins de acompanhamento nutricional, conforme a <a href="#" className="underline text-emerald-600">Política de Privacidade</a> e a LGPD (Lei 13.709/2018).
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" required className="mt-1 min-w-[16px] h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-slate-600 dark:text-slate-300">
+                      Eu concordo com o compartilhamento dos meus dados de saúde com o(a) nutricionista que me atender, exclusivamente para fins de tratamento nutricional.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" className="mt-1 min-w-[16px] h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-slate-600 dark:text-slate-300">
+                      (Opcional) Eu concordo em receber comunicações sobre meu plano alimentar e lembretes por email e notificações.
+                    </span>
+                  </label>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+                  Você pode revogar estes consentimentos a qualquer momento nas configurações da sua conta.
+                </p>
+              </div>
+
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
                   <AlertCircle className="w-4 h-4" />
