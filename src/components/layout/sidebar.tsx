@@ -80,14 +80,15 @@ export function Sidebar({ role }: SidebarProps) {
                 "hidden border-r border-border bg-card transition-all duration-300 md:flex md:flex-col sticky top-0 h-screen overflow-y-auto",
                 collapsed ? "w-[72px]" : "w-[280px]"
             )}
+            aria-label="Main navigation"
         >
             <div className="flex h-16 items-center px-4 border-b border-sidebar-border">
-                <div className={cn("flex items-center gap-2 font-bold text-xl text-primary transition-opacity", collapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
+                <div className={cn("flex items-center gap-2 font-bold text-xl text-primary transition-opacity", collapsed ? "opacity-0 w-0 hidden" : "opacity-100")} aria-label="NutriPlan home">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">NP</div>
                     <span>NutriPlan</span>
                 </div>
                 {collapsed && (
-                    <div className="mx-auto h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">N</div>
+                    <div className="mx-auto h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold" aria-label="NutriPlan">N</div>
                 )}
                 {/* Collapse button - shows when expanded */}
                 {!collapsed && (
@@ -97,6 +98,7 @@ export function Sidebar({ role }: SidebarProps) {
                         className="ml-auto"
                         onClick={() => setCollapsed(true)}
                         title="Recolher menu"
+                        aria-label="Collapse navigation sidebar"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -109,6 +111,7 @@ export function Sidebar({ role }: SidebarProps) {
                         className="ml-auto"
                         onClick={() => setCollapsed(false)}
                         title="Expandir menu"
+                        aria-label="Expand navigation sidebar"
                     >
                         <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -130,6 +133,8 @@ export function Sidebar({ role }: SidebarProps) {
                                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                                 collapsed && "justify-center px-2"
                             )}
+                            aria-label={link.label}
+                            aria-current={isActive ? "page" : undefined}
                         >
                             <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-muted-foreground")} />
                             {!collapsed && <span>{link.label}</span>}
@@ -149,12 +154,13 @@ export function Sidebar({ role }: SidebarProps) {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Activity className={cn("h-4 w-4 text-muted-foreground", !collapsed && "mr-0")} />
-                            {!collapsed && <span className="text-xs font-medium text-foreground">Modo Simples</span>}
+                            {!collapsed && <label htmlFor="simple-mode" className="text-xs font-medium text-foreground">Modo Simples</label>}
                         </div>
                         {!collapsed && (
                             <Switch
                                 id="simple-mode"
                                 className="scale-75"
+                                aria-label="Toggle simple mode"
                                 onCheckedChange={(checked) => {
                                     localStorage.setItem('simple-mode', checked ? 'true' : 'false');
                                     window.dispatchEvent(new Event('storage'));
@@ -166,12 +172,13 @@ export function Sidebar({ role }: SidebarProps) {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Snowflake className={cn("h-4 w-4 text-muted-foreground", !collapsed && "mr-0")} />
-                            {!collapsed && <span className="text-xs font-medium text-foreground">Modo Escuro</span>}
+                            {!collapsed && <label htmlFor="dark-mode" className="text-xs font-medium text-foreground">Modo Escuro</label>}
                         </div>
                         {!collapsed && (
                             <Switch
                                 id="dark-mode"
                                 className="scale-75"
+                                aria-label="Toggle dark mode"
                                 onCheckedChange={(checked) => {
                                     document.documentElement.classList.toggle('dark', checked);
                                     localStorage.setItem('dark-mode', checked ? 'true' : 'false');
@@ -187,6 +194,7 @@ export function Sidebar({ role }: SidebarProps) {
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all",
                         collapsed && "justify-center px-2"
                     )}
+                    aria-label="Settings"
                 >
                     <Settings className="h-5 w-5 text-muted-foreground" />
                     {!collapsed && <span>Configurações</span>}
@@ -197,6 +205,7 @@ export function Sidebar({ role }: SidebarProps) {
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-destructive transition-all w-full",
                         collapsed && "justify-center px-2"
                     )}
+                    aria-label="Logout"
                 >
                     <LogOut className="h-5 w-5 text-muted-foreground hover:text-destructive" />
                     {!collapsed && <span>Sair</span>}

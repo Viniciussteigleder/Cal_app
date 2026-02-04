@@ -21,10 +21,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline shadow-none",
       },
       size: {
-        default: "h-10 px-8 py-2", /* Larger padding for pill shape */
-        sm: "h-9 px-4",
-        lg: "h-12 px-10 text-base", /* Larger touch target */
-        icon: "h-10 w-10 px-0",
+        default: "h-11 px-8 py-2 min-h-[44px]", /* WCAG 2.1 AA: 44px minimum touch target */
+        sm: "h-11 px-4 min-h-[44px]", /* WCAG 2.1 AA: 44px minimum touch target */
+        lg: "h-12 px-10 text-base min-h-[48px]", /* Larger touch target */
+        icon: "h-11 w-11 px-0 min-h-[44px] min-w-[44px]", /* WCAG 2.1 AA: 44x44px minimum */
       },
     },
     defaultVariants: {
