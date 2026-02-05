@@ -2,6 +2,8 @@ import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { ProtocolGeneratorClient } from './ProtocolGeneratorClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProtocolGeneratorPage() {
     // Fetch patients and map names
     const patients = await prisma.patient.findMany({

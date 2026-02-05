@@ -2,6 +2,8 @@ import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { SymptomCorrelatorClient } from './SymptomCorrelatorClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SymptomCorrelatorPage() {
     // Fetch patients and map names manually since relation might be incomplete in client types
     const patients = await prisma.patient.findMany({

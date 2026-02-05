@@ -3,11 +3,6 @@
   "regions": [
     "iad1"
   ],
-  "build": {
-    "env": {
-      "DATABASE_URL": "postgresql://placeholder:placeholder@localhost:5432/nutriplan?sslmode=require"
-    }
-  },
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://nutriplan-app.vercel.app"
   }

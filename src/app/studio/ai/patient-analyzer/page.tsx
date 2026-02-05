@@ -3,6 +3,8 @@ import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { PatientAnalyzerClient } from './PatientAnalyzerClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function PatientAnalyzerPage() {
     // Reuse the same logic as SymptomCorrelator to fetch patients
     const patients = await prisma.patient.findMany({
