@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { compare } from "bcryptjs";
 
-// Allowed admin emails - hardcoded for security
+// Allowed admin emails - keeping this as an extra layer of security if desired, 
+// but primarily we should rely on User Role in DB.
 const ALLOWED_ADMINS = ["vinicius.steigleder@gmail.com"];
 
 export async function POST(request: NextRequest) {
@@ -17,27 +19,17 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = email.toLowerCase();
 
-    // Check if email is in allowed admins list
+    // 1. Optional: Check allowlist
     if (!ALLOWED_ADMINS.includes(normalizedEmail)) {
-      console.log(`Unauthorized admin login attempt: ${normalizedEmail}`);
+      console.log(`Unauthorized admin login attempt (email not in allowlist): ${normalizedEmail}`);
+      // We can return 403 or just 401 to hide existence
       return NextResponse.json(
         { error: "Acesso não autorizado" },
         { status: 403 }
       );
     }
 
-    // For production, you'd verify against a real auth system
-    // For now, accept the demo password or a specific admin password
-    const adminPassword = process.env.ADMIN_PASSWORD || process.env.DEMO_PASSWORD || "admin123";
-
-    if (password !== adminPassword) {
-      return NextResponse.json(
-        { error: "Senha incorreta" },
-        { status: 401 }
-      );
-    }
-
-    // Try to find existing admin user in database
+    // 2. Verify against Database
     try {
       const { prisma } = await import("@/lib/prisma");
 
@@ -45,74 +37,72 @@ export async function POST(request: NextRequest) {
         where: { email: normalizedEmail },
       });
 
-      if (user) {
-        // Set session cookie with existing user
-        const sessionData = {
-          userId: user.id,
+      if (!user) {
+        return NextResponse.json(
+          { error: "Usuário não encontrado" },
+          { status: 401 }
+        );
+      }
+
+      // Check Password
+      let isValid = false;
+      if (user.password_hash) {
+        isValid = await compare(password, user.password_hash);
+      }
+
+      if (!isValid) {
+        return NextResponse.json(
+          { error: "Senha incorreta" },
+          { status: 401 }
+        );
+      }
+
+      // Check Role
+      if (user.role !== "OWNER") {
+        return NextResponse.json(
+          { error: "Acesso não autorizado: permissões insuficientes" },
+          { status: 403 }
+        );
+      }
+
+      // Create Session
+      const sessionData = {
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: "OWNER",
+        tenantId: user.tenant_id,
+        patientId: null,
+        isAdmin: true,
+      };
+
+      const cookieStore = await cookies();
+      cookieStore.set("np_session", JSON.stringify(sessionData), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: "/",
+      });
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: user.id,
           email: user.email,
           name: user.name,
           role: "OWNER",
-          tenantId: user.tenant_id,
-          patientId: null,
-          isAdmin: true,
-        };
+        },
+        redirect: "/owner/tenants",
+      });
 
-        const cookieStore = await cookies();
-        cookieStore.set("np_session", JSON.stringify(sessionData), {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-          path: "/",
-        });
-
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: "OWNER",
-          },
-          redirect: "/owner/tenants",
-        });
-      }
     } catch (dbError) {
-      console.log("Database not available for admin lookup");
+      console.error("Database error during admin login:", dbError);
+      return NextResponse.json(
+        { error: "Erro no servidor de autenticação" },
+        { status: 500 }
+      );
     }
-
-    // Use mock admin session if database unavailable or user not found
-    console.log("Using mock admin session for:", normalizedEmail);
-
-    const sessionData = {
-      userId: "admin-001",
-      email: normalizedEmail,
-      name: "Admin",
-      role: "OWNER",
-      tenantId: "admin-tenant",
-      patientId: null,
-      isAdmin: true,
-    };
-
-    const cookieStore = await cookies();
-    cookieStore.set("np_session", JSON.stringify(sessionData), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
-
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: "admin-001",
-        email: normalizedEmail,
-        name: "Admin",
-        role: "OWNER",
-      },
-      redirect: "/owner/tenants",
-    });
   } catch (error) {
     console.error("Admin login error:", error);
     return NextResponse.json(

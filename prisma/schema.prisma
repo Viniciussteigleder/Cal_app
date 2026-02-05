@@ -22,6 +22,7 @@ model User {
   email         String        @unique
   name          String
   role          UserRole
+  password_hash String?
   tenant_id     String        @db.Uuid
   status        UserStatus
   planner_tasks PlannerTask[]
