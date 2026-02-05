@@ -69,3 +69,24 @@ export async function createDailyLog(patientId: string, rawData: any) {
         return { success: false, error: "Failed to create entry" };
     }
 }
+
+export async function deleteDailyLog(logId: string, patientId: string) {
+    const claims = await getSupabaseClaims();
+    if (!claims) return { success: false, error: 'Unauthorized' };
+
+    try {
+        await prisma.dailyLogEntry.delete({
+            where: {
+                id: logId,
+                tenant_id: claims.tenant_id,
+                // Ensure it belongs to this patient approx (extra safety) or just ID
+            }
+        });
+
+        revalidatePath(`/studio/patients/${patientId}/log`);
+        return { success: true };
+    } catch (error) {
+        console.error("Delete Log Error:", error);
+        return { success: false, error: "Failed to delete entry" };
+    }
+}

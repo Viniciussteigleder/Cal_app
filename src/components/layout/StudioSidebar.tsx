@@ -178,9 +178,16 @@ export function StudioSidebar({ patientId, currentPhase = 3 }: StudioSidebarProp
             {/* Phase Indicator */}
             <div className="border-t p-4">
                 <div className="rounded-lg bg-muted p-3 text-xs">
-                    <div className="font-semibold">Fase Atual: MVP (Fase 1)</div>
+                    <div className="font-semibold text-primary">
+                        Fase Atual: {currentPhase === 1 ? 'MVP (Fase 1)' :
+                            currentPhase === 2 ? 'Clinical AI (Fase 2)' :
+                                currentPhase === 3 ? 'Protocol Engine (Fase 3)' :
+                                    'NutriPlan Pro'}
+                    </div>
                     <div className="mt-1 text-muted-foreground">
-                        Prontuário e Exames disponíveis
+                        {currentPhase === 1 ? 'Prontuário e Exames disponíveis' :
+                            currentPhase === 2 ? 'Deep Clinical Intelligence Ativa' :
+                                'Protocolos e Automação Ativos'}
                     </div>
                 </div>
             </div>

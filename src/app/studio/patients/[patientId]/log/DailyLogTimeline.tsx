@@ -9,10 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { createDailyLog } from './actions';
+import { createDailyLog, deleteDailyLog } from './actions';
 import {
     Utensils, Activity, FileText, Plus, Clock, Droplets, Dumbbell,
-    AlertCircle, CheckCircle2, X
+    AlertCircle, CheckCircle2, X, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -331,10 +331,30 @@ export function DailyLogTimeline({ initialLogs, patientId, recipes = [] }: { ini
                                     {/* Dot */}
                                     <div className={`absolute left-[10px] top-4 w-4 h-4 rounded-full border-2 border-background z-10 ${getColor(log.entry_type).split(' ')[0]}`} />
 
-                                    <Card className={`border shadow-sm transition-all hover:shadow-md ${getColor(log.entry_type).split(' ')[2]}`}>
+                                    <Card className={`border shadow-sm transition-all hover:shadow-md ${getColor(log.entry_type).split(' ')[2]} group/card relative pr-8`}>
+                                        {/* Delete Button (Visible on Hover) */}
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (confirm('Tem certeza que deseja excluir este registro?')) {
+                                                    const res = await deleteDailyLog(log.id, patientId);
+                                                    if (res.success) {
+                                                        setLogs(current => current.filter(l => l.id !== log.id));
+                                                        toast.success("Registro excluído");
+                                                    } else {
+                                                        toast.error("Erro ao excluir");
+                                                    }
+                                                }
+                                            }}
+                                            className="absolute top-2 right-2 p-1.5 rounded-full text-muted-foreground/40 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover/card:opacity-100 transition-all"
+                                            title="Excluir registro"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+
                                         <CardContent className="p-4">
                                             <div className="flex items-start justify-between">
-                                                <div className="space-y-1">
+                                                <div className="space-y-1 w-full">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Badge variant="secondary" className={`${getColor(log.entry_type).split(' ').slice(0, 2).join(' ')} border-none`}>
                                                             {getIcon(log.entry_type)}
