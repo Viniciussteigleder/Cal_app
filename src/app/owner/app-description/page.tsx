@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, CheckCircle2, ShieldAlert, Settings, Users, FileText, Brain, Activity, ArrowRight, LayoutDashboard, UserCog, Database, Lock, Search, Building2, ShieldCheck, Sparkles, BookOpen, ClipboardList } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldAlert, Settings, Users, FileText, Brain, Activity, ArrowRight, LayoutDashboard, UserCog, Database, Lock, Search, Building2, ShieldCheck, Sparkles, BookOpen, ClipboardList, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function AppDescriptionPage() {
@@ -64,8 +64,8 @@ export default function AppDescriptionPage() {
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
                 className={`group flex items-center gap-3 w-full px-3 py-2 text-sm font-medium rounded-md transition-all ${activeSection === item.id
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
               >
                 <item.icon className={`h-4 w-4 ${activeSection === item.id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
