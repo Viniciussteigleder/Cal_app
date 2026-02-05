@@ -1,4 +1,4 @@
-'use client'; // Keeping client because of interactive navigation if needed, but for MVP I can make it Server Component + Client Nav.
+
 // Actually, sticking to Server Component for data fetching is better in Next.js 13+.
 // But original file was "use client". I'll switch to Server Component to fetch data, and a Client Component for the "Week Navigation" if kept.
 // Simplification: Fetch data in page (server) and pass to a PlanView (client).

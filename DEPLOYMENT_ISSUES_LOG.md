@@ -15,3 +15,9 @@
 ## Issue 3: Duplicate Package Manager Configuration (Potential)
 **Observation:** Vercel was confused by the presence of multiple lockfiles.
 **Prevention:** See `DEPLOYMENT_PREVENTION.md` for the strategy to avoid this in the future.
+
+## Issue 4: Server Functions in Client Component
+**Error:** `Error: Server Functions cannot be called during initial render.` in `/patient/plan`
+**Date:** 2026-02-05
+**Cause:** `src/app/patient/plan/page.tsx` was marked as `'use client'` but defined as an `async` component and called Server Actions (`getCurrentPatientId`) directly in its body. This is invalid for Client Components.
+**Fix:** Removed `'use client'` from `src/app/patient/plan/page.tsx` to convert it into a Server Component. This allows it to fetch data asynchronously on the server and pass it as props to the client-side `PlanView`.

@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { createDailyLog } from './actions';
 import {
     Utensils, Activity, FileText, Plus, Clock, Droplets, Dumbbell,
-    Camera, AlertCircle, CheckCircle2, X
+    AlertCircle, CheckCircle2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -60,6 +60,7 @@ export function DailyLogTimeline({ initialLogs, patientId, recipes = [] }: { ini
     // Exercise
     const [exerciseType, setExerciseType] = useState('');
     const [exerciseDuration, setExerciseDuration] = useState('');
+    const groupedLogs = groupLogsByDate(logs);
 
     const handleAddEntry = async (type: string, content: any) => {
         setIsSubmitting(true);
@@ -311,57 +312,80 @@ export function DailyLogTimeline({ initialLogs, patientId, recipes = [] }: { ini
             </div>
 
             {/* Timeline Column */}
-            <div className="lg:col-span-2 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Clock className="h-5 w-5 opacity-70" /> Linha do Tempo
-                    </h3>
-                    <Badge variant="outline" className="text-xs font-normal">Hoje</Badge>
-                </div>
-
-                <div className="space-y-6 relative ml-2">
-                    {/* Vertical Line */}
-                    <div className="absolute left-4 top-2 bottom-4 w-0.5 bg-border -z-10" />
-
-                    {logs.map((log) => (
-                        <div key={log.id} className="relative pl-10 group animate-in slide-in-from-bottom-2 duration-300">
-                            {/* Dot */}
-                            <div className={`absolute left-[10px] top-4 w-4 h-4 rounded-full border-2 border-background z-10 ${getColor(log.entry_type).split(' ')[0]}`} />
-
-                            <Card className={`border shadow-sm transition-all hover:shadow-md ${getColor(log.entry_type).split(' ')[2]}`}>
-                                <CardContent className="p-4">
-                                    <div className="flex items-start justify-between">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="secondary" className={`${getColor(log.entry_type).split(' ').slice(0, 2).join(' ')} border-none`}>
-                                                    {getIcon(log.entry_type)}
-                                                    <span className="ml-1 uppercase text-xs tracking-wider">{log.entry_type}</span>
-                                                </Badge>
-                                                <span className="text-xs text-muted-foreground font-mono">
-                                                    {format(new Date(log.timestamp), "HH:mm")}
-                                                </span>
-                                            </div>
-
-                                            <div className="text-sm">
-                                                {renderLogContent(log)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+            <div className="lg:col-span-2 space-y-8">
+                {Object.entries(groupedLogs).map(([dateLabel, dateLogs]) => (
+                    <div key={dateLabel} className="relative">
+                        <div className="flex items-center gap-4 mb-4">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground bg-background z-10 pr-2">
+                                {dateLabel}
+                            </h3>
+                            <div className="h-px bg-border flex-1" />
                         </div>
-                    ))}
 
-                    {logs.length === 0 && (
-                        <div className="text-center py-16 text-muted-foreground bg-muted/30 rounded-lg border border-dashed ml-8">
-                            <Clock className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                            <p>O dia está começando. Faça seu primeiro registro!</p>
+                        <div className="space-y-6 relative ml-2">
+                            {/* Vertical Line */}
+                            <div className="absolute left-4 top-2 bottom-4 w-0.5 bg-border -z-10" />
+
+                            {dateLogs.map((log) => (
+                                <div key={log.id} className="relative pl-10 group animate-in slide-in-from-bottom-2 duration-300">
+                                    {/* Dot */}
+                                    <div className={`absolute left-[10px] top-4 w-4 h-4 rounded-full border-2 border-background z-10 ${getColor(log.entry_type).split(' ')[0]}`} />
+
+                                    <Card className={`border shadow-sm transition-all hover:shadow-md ${getColor(log.entry_type).split(' ')[2]}`}>
+                                        <CardContent className="p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge variant="secondary" className={`${getColor(log.entry_type).split(' ').slice(0, 2).join(' ')} border-none`}>
+                                                            {getIcon(log.entry_type)}
+                                                            <span className="ml-1 uppercase text-xs tracking-wider">{log.entry_type}</span>
+                                                        </Badge>
+                                                        <span className="text-xs text-muted-foreground font-mono">
+                                                            {format(new Date(log.timestamp), "HH:mm")}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="text-sm">
+                                                        {renderLogContent(log)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            ))}
                         </div>
-                    )}
-                </div>
+                    </div>
+                ))}
+
+                {logs.length === 0 && (
+                    <div className="text-center py-16 text-muted-foreground bg-muted/30 rounded-lg border border-dashed">
+                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                        <p>O dia está começando. Faça seu primeiro registro!</p>
+                    </div>
+                )}
             </div>
         </div>
     );
+}
+
+// Helper to group logs
+function groupLogsByDate(logs: LogEntry[]) {
+    const groups: Record<string, LogEntry[]> = {};
+
+    logs.forEach(log => {
+        let dateLabel = format(new Date(log.timestamp), "d 'de' MMMM", { locale: ptBR });
+        const today = format(new Date(), "d 'de' MMMM", { locale: ptBR });
+        const yesterday = format(new Date(Date.now() - 86400000), "d 'de' MMMM", { locale: ptBR });
+
+        if (dateLabel === today) dateLabel = "Hoje";
+        if (dateLabel === yesterday) dateLabel = "Ontem";
+
+        if (!groups[dateLabel]) groups[dateLabel] = [];
+        groups[dateLabel].push(log);
+    });
+
+    return groups;
 }
 
 function renderLogContent(log: LogEntry) {

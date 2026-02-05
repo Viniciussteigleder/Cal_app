@@ -14,6 +14,9 @@ const AnalysisSchema = z.object({
     progress_score: z.number().describe("0-100 score of goal progress"),
     dropout_risk: z.enum(['low', 'medium', 'high', 'critical']),
     intervention_needed: z.boolean(),
+    suspected_deficiencies: z.array(z.string()).describe("Potential micronutrient deficiencies based on logs"),
+    dietary_patterns: z.string().describe("Summary of observed eating habits and timing"),
+    clinical_reasoning: z.string().describe("Deep clinical analysis of causal relationships between intake and symptoms"),
     insights: z.array(z.string()).describe("Key observations about patient behavior"),
     recommended_actions: z.array(z.object({
         action: z.string(),
@@ -34,7 +37,8 @@ export async function analyzePatientAction(patientId: string) {
                 patient_id: patientId,
                 timestamp: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
             },
-            take: 100
+            take: 100,
+            orderBy: { timestamp: 'desc' }
         });
 
         // Config
@@ -45,10 +49,15 @@ export async function analyzePatientAction(patientId: string) {
             model: openai(config.model),
             schema: AnalysisSchema,
             temperature: config.temperature,
-            system: config.systemPrompt || "You are a clinical adherence expert.",
+            system: config.systemPrompt || "You are a senior clinical nutritionist acting as a 'Clinical Copilot'.",
             messages: [{
                 role: 'user',
-                content: `Analyze these patient logs for adherence and dropout risk.
+                content: `Analyze these patient logs for:
+                1. Adherence to unknown plan (infer from consistency)
+                2. Potential micronutrient deficiencies based on food choices
+                3. Correlation between food intake and reported symptoms (if any)
+                4. Behavioral patterns (binge eating, skipping meals, etc.)
+
                 Logs: ${JSON.stringify(logs.map((l: any) => ({ type: l.entry_type, date: l.timestamp, content: l.content })))}
                 `
             }]

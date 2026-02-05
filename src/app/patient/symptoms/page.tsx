@@ -6,44 +6,47 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, AlertCircle, TrendingUp, CheckCircle2, MessageCircle, Info } from "lucide-react";
+import { Calendar, AlertCircle, TrendingUp, CheckCircle2, MessageCircle, Info, Activity, ArrowRight, Zap, CloudFog, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 import { MedicalDisclaimer } from "@/components/ui/medical-disclaimer";
+import { cn } from "@/lib/utils";
 
 const BRISTOL_SCALE = [
-  { value: 1, label: "Tipo 1", description: "Fezes em bolinhas duras e separadas", status: "warning" },
-  { value: 2, label: "Tipo 2", description: "Fezes em formato de salsicha com grumos", status: "warning" },
-  { value: 3, label: "Tipo 3", description: "Fezes em formato de salsicha com fissuras", status: "normal" },
-  { value: 4, label: "Tipo 4", description: "Fezes macias e lisas em formato de salsicha", status: "ideal" },
-  { value: 5, label: "Tipo 5", description: "Fezes em pedaços macios com bordas definidas", status: "normal" },
-  { value: 6, label: "Tipo 6", description: "Fezes com consistência pastosa", status: "warning" },
-  { value: 7, label: "Tipo 7", description: "Fezes aquosas sem pedaços sólidos", status: "warning" },
+  { value: 1, label: "Tipo 1", description: "Bolinhas duras", status: "warning", emoji: "🟤" },
+  { value: 2, label: "Tipo 2", description: "Formato de salsicha, grumosa", status: "warning", emoji: "🍢" }, // Abstract
+  { value: 3, label: "Tipo 3", description: "Salsicha com fissuras", status: "normal", emoji: "🥒" }, // Abstract
+  { value: 4, label: "Tipo 4", description: "Lisa e macia (Ideal)", status: "ideal", emoji: "🍌" },
+  { value: 5, label: "Tipo 5", description: "Pedaços macios", status: "normal", emoji: "🍪" },
+  { value: 6, label: "Tipo 6", description: "Pastosa", status: "warning", emoji: "🥣" },
+  { value: 7, label: "Tipo 7", description: "Aquosa", status: "warning", emoji: "💧" },
 ];
 
 const SYMPTOM_CATEGORIES = {
   gastrointestinal: {
-    label: "Gastrointestinal",
+    label: "Intestino & Digestão",
+    icon: <Activity className="w-4 h-4 text-emerald-500" />,
     options: [
       { id: "gas", label: "Gases" },
-      { id: "bloating", label: "Inchaço/Distensão" },
-      { id: "abdominal_pain", label: "Dor Abdominal" },
-      { id: "reflux", label: "Refluxo/Azia" },
+      { id: "bloating", label: "Inchaço" },
+      { id: "abdominal_pain", label: "Dor Abd." },
+      { id: "reflux", label: "Refluxo" },
       { id: "nausea", label: "Náusea" },
       { id: "diarrhea", label: "Diarreia" },
       { id: "constipation", label: "Constipação" },
     ]
   },
   histamine_systemic: { // Critical for Histamine Intolerance
-    label: "Sistêmico / Histamínico",
+    label: "Reações (Histamina)",
+    icon: <Zap className="w-4 h-4 text-orange-500" />,
     options: [
-      { id: "flushing", label: "Vermelhidão (Flushing)" },
-      { id: "itching", label: "Coceira/Prurido" },
+      { id: "flushing", label: "Vermelhidão" },
+      { id: "itching", label: "Coceira" },
       { id: "hives", label: "Urticária" },
-      { id: "rhinitis", label: "Coriza/Espirros" },
-      { id: "tachycardia", label: "Taquicardia/Palpitações" },
+      { id: "rhinitis", label: "Coriza" },
+      { id: "tachycardia", label: "Taquicardia" },
       { id: "migraine", label: "Enxaqueca" },
-      { id: "brain_fog", label: "Nevoeiro Mental" },
-      { id: "fatigue", label: "Fadiga Súbita" },
+      { id: "brain_fog", label: "Nevoeiro" },
+      { id: "fatigue", label: "Fadiga" },
     ]
   }
 };
@@ -65,30 +68,17 @@ const RECENT_LOGS = [
     symptoms: [],
     notes: "",
   },
-  {
-    id: "3",
-    date: "30/01, 19:00",
-    bristol: 5,
-    discomfort: 8,
-    symptoms: ["bloating", "migraine", "tachycardia"],
-    notes: "Crise forte após jantar (sobras de ontem)",
-  },
 ];
 
 const CORRELATION_INSIGHTS = [
   {
     type: "warning",
-    message: "Alta correlação: Taquicardia aparece 45min após ingerir sobras/reaquecidos.",
+    message: "Alta correlação: Taquicardia x Sobras de comida.",
     confidence: 85,
   },
   {
-    type: "warning",
-    message: "Gases frequentes associados ao consumo de feijão.",
-    confidence: 75,
-  },
-  {
     type: "info",
-    message: "Padrão Bristol melhorou nos últimos 3 dias.",
+    message: "Seu padrão intestinal melhorou nos últimos 3 dias.",
     confidence: 90,
   },
 ];
@@ -96,6 +86,7 @@ const CORRELATION_INSIGHTS = [
 export default function PatientSymptomsPage() {
   const [selectedDiscomfort, setSelectedDiscomfort] = useState(0);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [selectedBristol, setSelectedBristol] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
   const toggleSymptom = (id: string) => {
@@ -121,253 +112,223 @@ export default function PatientSymptomsPage() {
   return (
     <TooltipProvider>
       <DashboardLayout role="patient">
-        <div className="space-y-6">
-          {/* Emergency Warning */}
-          <MedicalDisclaimer variant="emergency" />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
-        {/* Main Form */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="border-none shadow-card">
-            <CardHeader>
-              <CardTitle>Novo Registro de Sintomas</CardTitle>
-              <CardDescription>
-                Monitore reações gastrointestinais e sistêmicas (histamínicas).
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              {/* Bristol Scale */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    Escala de Bristol
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs p-4">
-                        <p className="font-semibold mb-2">Escala de Bristol</p>
-                        <p className="text-xs">Sistema de classificação que avalia a forma e consistência das fezes. Tipos 3 e 4 são considerados ideais, indicando trânsito intestinal saudável.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </span>
-                  <span className="text-xs text-muted-foreground font-normal">Como estava suas fezes?</span>
-                </label>
-                <div className="grid grid-cols-7 gap-1">
-                  {BRISTOL_SCALE.map((type) => (
-                    <Tooltip key={type.value}>
-                      <TooltipTrigger asChild>
+        <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-20 animate-in fade-in duration-500">
+
+          {/* Header */}
+          <div className="space-y-1 px-1">
+            <h1 className="text-3xl font-black text-foreground tracking-tight">Diário de Sintomas</h1>
+            <p className="text-muted-foreground font-medium">Monitore suas reações para descobrirmos a causa.</p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+
+            {/* Left Column: Logger Form */}
+            <div className="lg:col-span-2 space-y-6">
+
+              {/* 1. Feeling / Discomfort */}
+              <section className="space-y-3">
+                <h2 className="text-sm font-bold uppercase text-muted-foreground tracking-wider ml-1">Como você se sente?</h2>
+                <Card className="p-6 border-0 shadow-lg shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900 rounded-[2rem]">
+                  <div className="flex flex-col gap-6">
+                    <div className="flex items-center justify-between text-sm font-medium px-2">
+                      <span className={cn("text-emerald-600 transition-all", selectedDiscomfort <= 3 && "font-bold scale-110")}>Super Bem</span>
+                      <span className={cn("text-amber-600 transition-all", selectedDiscomfort > 3 && selectedDiscomfort < 7 && "font-bold scale-110")}>Incômodo</span>
+                      <span className={cn("text-red-600 transition-all", selectedDiscomfort >= 7 && "font-bold scale-110")}>Emergência</span>
+                    </div>
+
+                    {/* Custom Slider UI */}
+                    <div className="relative h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center px-2 cursor-pointer touch-none">
+                      {/* Background Track Gradient */}
+                      <div className="absolute inset-x-2 h-2 rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 opacity-30" />
+
+                      {Array.from({ length: 11 }, (_, i) => (
                         <button
-                          className={`p-2 rounded-lg border text-center hover:bg-muted transition-all active:scale-95 ${type.status === "ideal" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-border"
-                            }`}
+                          key={i}
+                          onClick={() => setSelectedDiscomfort(i)}
+                          className={cn(
+                            "flex-1 h-full relative z-10 flex items-center justify-center text-sm font-bold transition-all rounded-xl",
+                            selectedDiscomfort === i
+                              ? "bg-white dark:bg-slate-700 shadow-md scale-110 text-foreground ring-2 ring-primary/20"
+                              : "text-muted-foreground hover:bg-white/50"
+                          )}
                         >
-                          <div className="font-semibold text-sm">{type.value}</div>
-                          <div className="text-[10px] text-muted-foreground hidden sm:block">
-                            {type.status === "ideal" ? "Ideal" : ""}
-                          </div>
+                          {i}
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-semibold">{type.label}</p>
-                        <p className="text-xs mt-1">{type.description}</p>
-                        {type.status === "warning" && (
-                          <p className="text-xs mt-2 text-amber-600 dark:text-amber-400">⚠️ Pode indicar constipação ou diarreia</p>
-                        )}
-                        {type.status === "ideal" && (
-                          <p className="text-xs mt-2 text-emerald-600 dark:text-emerald-400">✓ Ideal para saúde intestinal</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
-              </div>
-
-              {/* Discomfort Level */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium flex justify-between">
-                  Nível de Desconforto Geral
-                  <span className="text-xs text-muted-foreground font-normal">0 = Bem, 10 = Emergência</span>
-                </label>
-                <div className="overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1">
-                  <div className="flex gap-1 snap-x snap-mandatory min-w-min">
-                    {Array.from({ length: 11 }, (_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedDiscomfort(i)}
-                        className={`snap-start snap-always flex-shrink-0 w-12 h-12 p-2 rounded border text-sm font-medium hover:bg-muted transition-all ${selectedDiscomfort === i
-                          ? (i < 4 ? "bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-200" : i < 7 ? "bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-200" : "bg-red-500 text-white border-red-600 shadow-md shadow-red-200")
-                          : "border-border hover:border-emerald-200 hover:bg-emerald-50/50"
-                          }`}
-                      >
-                        {i}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Symptoms by Category */}
-              <div className="space-y-5">
-                {Object.entries(SYMPTOM_CATEGORIES).map(([key, category]) => (
-                  <div key={key} className="space-y-3">
-                    <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                      {key === 'histamine_systemic' && <AlertCircle className="w-3 h-3 text-red-500" />}
-                      {category.label}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {category.options.map((symptom) => {
-                        const isSelected = selectedSymptoms.includes(symptom.id);
-                        return (
-                          <Badge
-                            key={symptom.id}
-                            variant={isSelected ? "default" : "outline"}
-                            className={`cursor-pointer transition-all py-1.5 px-3 select-none ${isSelected
-                              ? (key === 'histamine_systemic' ? "bg-red-100 dark:bg-red-950/20 text-red-700 hover:bg-red-200 border-red-200" : "bg-emerald-100 dark:bg-emerald-950/20 text-emerald-800 hover:bg-emerald-200 border-emerald-200 dark:border-emerald-900/30")
-                              : "hover:bg-muted border-border text-muted-foreground"
-                              }`}
-                            onClick={() => toggleSymptom(symptom.id)}
-                          >
-                            {symptom.label}
-                          </Badge>
-                        );
-                      })}
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                </Card>
+              </section>
 
-              {/* Notes */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Observações</label>
+              {/* 2. Bristol Scale (Visual) */}
+              <section className="space-y-3">
+                <div className="flex justify-between items-center ml-1">
+                  <h2 className="text-sm font-bold uppercase text-muted-foreground tracking-wider">Escala de Bristol</h2>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="w-4 h-4 text-muted-foreground/50" /></TooltipTrigger>
+                    <TooltipContent>Classificação visual das fezes para saúde intestinal.</TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {BRISTOL_SCALE.map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => setSelectedBristol(type.value)}
+                      className={cn(
+                        "relative p-4 rounded-2xl border text-left transition-all active:scale-[0.98] hover:shadow-md",
+                        selectedBristol === type.value
+                          ? "bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500 dark:bg-emerald-950/30"
+                          : "bg-card border-border hover:border-emerald-200"
+                      )}
+                    >
+                      <div className="text-2xl mb-2">{type.emoji}</div>
+                      <div className="font-bold text-sm text-foreground">{type.label}</div>
+                      <div className="text-xs text-muted-foreground leading-tight mt-0.5">{type.description}</div>
+                      {selectedBristol === type.value && (
+                        <div className="absolute top-3 right-3 text-emerald-600">
+                          <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* 3. Symptoms Tags */}
+              <section className="space-y-3">
+                <h2 className="text-sm font-bold uppercase text-muted-foreground tracking-wider ml-1">Sintomas Específicos</h2>
+                <Card className="p-6 border-0 shadow-lg shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900 rounded-[2rem]">
+                  <div className="space-y-6">
+                    {Object.entries(SYMPTOM_CATEGORIES).map(([key, category]) => (
+                      <div key={key}>
+                        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-foreground">
+                          {category.icon}
+                          {category.label}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {category.options.map((symptom) => {
+                            const isSelected = selectedSymptoms.includes(symptom.id);
+                            return (
+                              <button
+                                key={symptom.id}
+                                onClick={() => toggleSymptom(symptom.id)}
+                                className={cn(
+                                  "px-4 py-2 rounded-xl text-sm font-medium transition-all select-none border",
+                                  isSelected
+                                    ? (key === 'histamine_systemic'
+                                      ? "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950/30 dark:border-orange-900"
+                                      : "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900")
+                                    : "bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-400"
+                                )}
+                              >
+                                {symptom.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </section>
+
+              {/* 4. Notes & Submit */}
+              <section className="space-y-3">
+                <h2 className="text-sm font-bold uppercase text-muted-foreground tracking-wider ml-1">Observações</h2>
                 <Textarea
+                  placeholder="O que você comeu antes? Algum evento estressante?"
+                  className="rounded-2xl border-slate-200 dark:border-slate-800 resize-none min-h-[100px] text-base p-4 shadow-sm"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Ex: Começou 20min depois de comer salada de atum..."
-                  rows={3}
-                  className="resize-none"
                 />
-              </div>
+              </section>
 
-              {/* Link to meal */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Gatilho Suspeito (Refeição)</label>
-                <select className="w-full p-2 border border-border rounded-md text-sm bg-card h-10">
-                  <option value="">Selecione uma refeição recente...</option>
-                  <option value="1">Hoje - Almoço (12:30) - Arroz, Feijão...</option>
-                  <option value="2">Hoje - Café da Manhã (07:30) - Ovos, Mamão</option>
-                  <option value="3">Ontem - Jantar (19:00) - Sopa de Legumes</option>
-                </select>
-              </div>
-
-              <div className="pt-2 flex gap-3">
-                <Button className="flex-1 bg-slate-900 hover:bg-slate-800">
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Salvar Registro
+              <div className="pt-4 flex flex-col md:flex-row gap-4">
+                <Button
+                  size="lg"
+                  className="flex-1 h-14 rounded-2xl text-lg font-bold bg-slate-900 text-white shadow-xl shadow-slate-900/20 hover:bg-slate-800 active:scale-[0.98]"
+                >
+                  Registrar Diário
                 </Button>
-
                 {selectedDiscomfort >= 7 && (
                   <Button
                     variant="destructive"
-                    className="animate-pulse shadow-lg shadow-red-200"
                     onClick={handleSOS}
+                    className="h-14 rounded-2xl px-8 font-bold animate-pulse"
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" />
+                    <MessageCircle className="w-5 h-5 mr-2" />
                     SOS Nutri
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                O SOS Nutri é um canal de contato com sua nutricionista e não substitui atendimento médico.
-              </p>
-            </CardContent>
-          </Card>
+              <MedicalDisclaimer variant="minimal" className="mt-4" />
 
-          {/* Recent Logs (Simplified for Demo) */}
-          <Card className="border-none shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                Histórico Recente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {RECENT_LOGS.map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-3 rounded-lg border border-slate-100 flex items-start justify-between bg-muted/40/50"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">{log.date}</span>
-                        {log.discomfort >= 7 && <Badge variant="destructive" className="text-[10px] h-5 px-1">Crise</Badge>}
+            </div>
+
+            {/* Right Column: Insights & Hints */}
+            <div className="space-y-6">
+              {/* AI Insights Card */}
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-slate-950 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                    <Zap className="w-5 h-5 fill-indigo-500 text-indigo-500" />
+                    Insights do NutriPlan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 relative z-10">
+                  {CORRELATION_INSIGHTS.map((insight, idx) => (
+                    <div key={idx} className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{insight.message}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${insight.confidence}%` }}></div>
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">{insight.confidence}% conf.</span>
                       </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-                      <div className="flex flex-wrap gap-1 text-xs">
-                        <Badge variant="secondary" className="bg-card border text-muted-foreground">Bristol {log.bristol}</Badge>
-                        <Badge variant="secondary" className="bg-card border text-muted-foreground">Dor: {log.discomfort}</Badge>
-                        {log.symptoms.map((s) => {
-                          // Quick lookup for label
-                          const label = Object.values(SYMPTOM_CATEGORIES).flatMap(c => c.options).find(o => o.id === s)?.label;
-                          return label ? <Badge key={s} variant="outline" className="bg-card">{label}</Badge> : null;
-                        })}
+              {/* Recent Logs Quick View */}
+              <Card className="border-0 shadow-sm bg-slate-50 dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base text-muted-foreground uppercase tracking-wider">Últimos Registros</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {RECENT_LOGS.map(log => (
+                    <div key={log.id} className="flex items-start gap-4 p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
+                      <div className={cn(
+                        "w-2 h-12 rounded-full",
+                        log.discomfort < 4 ? "bg-emerald-500" : log.discomfort < 7 ? "bg-amber-500" : "bg-red-500"
+                      )} />
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{log.date}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Bristol {log.bristol} • Dor {log.discomfort}/10
+                        </p>
+                        {log.symptoms.length > 0 && (
+                          <div className="flex gap-1 mt-2">
+                            {log.symptoms.map(s => (
+                              <Badge key={s} variant="secondary" className="text-[10px] h-5 px-1.5 font-normal">
+                                {SYMPTOM_CATEGORIES.gastrointestinal.options.find(o => o.id === s)?.label || s}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      {log.notes && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">&quot;{log.notes}&quot;</p>
-                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  ))}
+                  <Button variant="link" className="w-full text-muted-foreground text-xs h-auto p-0 pt-2">
+                    Ver histórico completo <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Insights */}
-          <Card className="border-none shadow-card bg-slate-900 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <TrendingUp className="h-5 w-5 text-emerald-400" />
-                Análise de Padrões
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                O que o NutriPlan aprendeu sobre você:
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {CORRELATION_INSIGHTS.map((insight, idx) => (
-                <div
-                  key={idx}
-                  className={`p-4 rounded-xl border transition-all ${insight.type === "warning"
-                    ? "bg-gradient-to-br from-white to-amber-50 border-amber-100 shadow-sm"
-                    : "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-sm"
-                    }`}
-                >
-                  <div className="flex gap-3">
-                    {insight.type === "warning" ? (
-                      <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                    ) : (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <p className="text-sm border-slate-700 font-medium text-slate-700 leading-relaxed">{insight.message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">
-                        Confiança: {insight.confidence}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-            <CardFooter className="border-t border-slate-800 pt-4">
-              <Button variant="ghost" className="w-full text-slate-400 hover:text-white hover:bg-slate-800 text-xs">
-                Ver relatório completo
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+          </div>
         </div>
       </DashboardLayout>
     </TooltipProvider>

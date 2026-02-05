@@ -2,7 +2,7 @@ import { AlertTriangle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface MedicalDisclaimerProps {
-  variant?: "default" | "supplement" | "emergency"
+  variant?: "default" | "supplement" | "emergency" | "minimal"
   className?: string
 }
 
@@ -19,24 +19,32 @@ export function MedicalDisclaimer({ variant = "default", className }: MedicalDis
     emergency: {
       title: "🚨 Quando Buscar Atendimento Médico IMEDIATO",
       description: "Se você ou seu paciente apresentar: dor abdominal intensa, vômitos persistentes com sangue, diarreia com sangue ou preta, febre alta (>39°C), sinais de desidratação severa, perda de consciência, dificuldade para respirar, ou qualquer sintoma súbito e grave - PARE de usar este aplicativo e PROCURE IMEDIATAMENTE o pronto-socorro ou ligue 192 (SAMU). Este aplicativo NÃO deve ser usado para emergências médicas."
+    },
+    minimal: {
+      title: "Informação de Saúde",
+      description: "Os registros de sintomas servem para monitoramento clínico e não substituem diagnóstico médico."
     }
   }
 
   const content = disclaimers[variant]
   const bgColor = variant === "emergency" ? "bg-red-50 border-red-200" :
-                  variant === "supplement" ? "bg-orange-50 border-orange-200" :
-                  "bg-yellow-50 border-yellow-200"
+    variant === "supplement" ? "bg-orange-50 border-orange-200" :
+      variant === "minimal" ? "bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800" :
+        "bg-yellow-50 border-yellow-200"
+
   const iconColor = variant === "emergency" ? "text-red-600" :
-                    variant === "supplement" ? "text-orange-600" :
-                    "text-yellow-600"
+    variant === "supplement" ? "text-orange-600" :
+      variant === "minimal" ? "text-slate-400" :
+        "text-yellow-600"
 
   return (
     <Card className={`${bgColor} ${className}`}>
       <CardContent className="pt-6 flex gap-3">
-        <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${iconColor}`} />
+        {variant !== "minimal" && <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${iconColor}`} />}
+        {variant === "minimal" && <AlertTriangle className={`h-4 w-4 flex-shrink-0 mt-0.5 ${iconColor}`} />}
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-base mb-2">{content.title}</h3>
-          <p className="text-sm leading-relaxed overflow-hidden">
+          <h3 className={`font-bold ${variant === "minimal" ? "text-sm" : "text-base mb-2"}`}>{content.title}</h3>
+          <p className="text-sm leading-relaxed overflow-hidden text-muted-foreground">
             {content.description}
           </p>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Save, RotateCcw, Sparkles, Settings2 } from 'lucide-react';
+import { Brain, Save, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getAgentConfigs, saveAgentConfig } from './actions';
 
 interface AIAgentConfig {
     id: string;
@@ -119,9 +120,61 @@ export default function AIAgentsConfigPage() {
     const [agents, setAgents] = useState<AIAgentConfig[]>(DEFAULT_AGENTS);
     const [selectedAgent, setSelectedAgent] = useState<string>(DEFAULT_AGENTS[0].id);
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [hasChanges, setHasChanges] = useState(false);
 
     const currentAgent = agents.find((a) => a.id === selectedAgent);
+
+    useEffect(() => {
+        async function loadConfigs() {
+            try {
+                const res = await getAgentConfigs();
+                if (res.success && res.data) {
+                    const dbConfigs = res.data;
+
+                    // Create a Map with defaults first
+                    const agentMap = new Map<string, AIAgentConfig>();
+                    DEFAULT_AGENTS.forEach(a => agentMap.set(a.id, a));
+
+                    // Merge DB configs, overwriting or adding new
+                    dbConfigs.forEach((dbAgent: any) => {
+                        // If it exists in defaults, we merge fields. If new, we might need to map DB fields to UI shape carefully.
+                        // For simplicity in this 'fix', we assume DB mirrors the UI structure or we map it.
+                        // Note: If DB has an agent NOT in defaults, its 'type/description' might be missing if those aren't in DB.
+                        // Assuming DB stores enough info or we accept 'Unknown Agent' as fallback.
+
+                        const existing = agentMap.get(dbAgent.agent_id);
+                        const merged: AIAgentConfig = {
+                            id: dbAgent.agent_id,
+                            name: existing?.name || dbAgent.agent_id, // Fallback name
+                            type: existing?.type || 'custom',
+                            description: existing?.description || 'Custom Agent',
+                            provider: dbAgent.model_provider as any,
+                            model: dbAgent.model_name,
+                            systemPrompt: dbAgent.system_prompt,
+                            userPromptTemplate: dbAgent.user_template || '',
+                            temperature: Number(dbAgent.temperature),
+                            maxTokens: Number(dbAgent.max_tokens),
+                            isActive: dbAgent.is_active
+                        };
+                        agentMap.set(dbAgent.agent_id, merged);
+                    });
+
+                    setAgents(Array.from(agentMap.values()));
+
+                    // If selected agent is no longer in list (unlikely), reset selection
+                    if (!agentMap.has(selectedAgent)) {
+                        setSelectedAgent(Array.from(agentMap.keys())[0]);
+                    }
+                }
+            } catch (error) {
+                toast.error("Erro ao carregar configurações");
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        loadConfigs();
+    }, []);
 
     const updateAgent = (id: string, updates: Partial<AIAgentConfig>) => {
         setAgents(agents.map((a) => (a.id === id ? { ...a, ...updates } : a)));
@@ -133,16 +186,16 @@ export default function AIAgentsConfigPage() {
         if (defaultAgent) {
             setAgents(agents.map((a) => (a.id === id ? { ...defaultAgent } : a)));
             setHasChanges(true);
-            toast.success('Configuração resetada para padrão');
+            toast.success('Configuração resetada para padrão (não salvo)');
         }
     };
 
     const saveAgents = async () => {
         setIsSaving(true);
         try {
-            // TODO: Call API to save agent configurations
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            toast.success('Configurações salvas!');
+            const promises = agents.map(agent => saveAgentConfig(agent));
+            await Promise.all(promises);
+            toast.success('Todas as configurações foram salvas!');
             setHasChanges(false);
         } catch (error) {
             toast.error('Erro ao salvar configurações');
@@ -151,6 +204,7 @@ export default function AIAgentsConfigPage() {
         }
     };
 
+    if (isLoading) return <div className="p-8 text-center text-muted-foreground">Carregando configurações...</div>;
     if (!currentAgent) return null;
 
     return (
@@ -171,7 +225,7 @@ export default function AIAgentsConfigPage() {
                         className="bg-emerald-600 hover:bg-emerald-700"
                     >
                         <Save className="w-4 h-4 mr-2" />
-                        Salvar Alterações
+                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                     </Button>
                 )}
             </div>
@@ -183,8 +237,8 @@ export default function AIAgentsConfigPage() {
                         <Card
                             key={agent.id}
                             className={`cursor-pointer transition-colors ${selectedAgent === agent.id
-                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10'
-                                    : 'hover:border-gray-400'
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10'
+                                : 'hover:border-gray-400'
                                 }`}
                             onClick={() => setSelectedAgent(agent.id)}
                         >

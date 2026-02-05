@@ -8,6 +8,7 @@ import { Plus, BookOpen, Calendar, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ProtocolTimeline } from '@/components/studio/protocol-timeline';
 
 // This is the new page to list protocols assigned to a patient
 export default async function PatientProtocolsPage({
@@ -55,46 +56,23 @@ export default async function PatientProtocolsPage({
             ) : (
                 <div className="grid grid-cols-1 gap-6">
                     {data.map((instance) => (
-                        <Card key={instance.id} className="overflow-hidden">
-                            <CardHeader className="bg-muted/30 pb-4">
+                        <Card key={instance.id} className="overflow-hidden border-indigo-100 dark:border-indigo-900/50">
+                            <CardHeader className="bg-indigo-50/30 dark:bg-indigo-950/20 pb-4">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <CardTitle className="text-lg">{instance.protocol.name}</CardTitle>
+                                        <CardTitle className="text-lg text-indigo-950 dark:text-indigo-100">{instance.protocol.name}</CardTitle>
                                         <CardDescription className="line-clamp-1 mt-1">
-                                            {instance.protocol.description || 'Sem descrição'}
+                                            {instance.protocol.description || 'Protocolo Clínico Personalizado'}
                                         </CardDescription>
                                     </div>
-                                    <Badge variant={instance.is_active ? 'default' : 'secondary'}>
+                                    <Badge variant={instance.is_active ? 'default' : 'secondary'} className={instance.is_active ? "bg-indigo-500 hover:bg-indigo-600" : ""}>
                                         {instance.is_active ? 'Em Andamento' : 'Concluído'}
                                     </Badge>
                                 </div>
                             </CardHeader>
-                            <CardContent className="pt-6">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-xs uppercase font-medium">Início</p>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            {instance.started_at
-                                                ? format(new Date(instance.started_at), "d 'de' MMMM", { locale: ptBR })
-                                                : '-'}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-xs uppercase font-medium">Código</p>
-                                        <p className="font-mono">{instance.protocol.code}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-xs uppercase font-medium">Tipo</p>
-                                        <p className="capitalize">{instance.protocol.type.toLowerCase()}</p>
-                                    </div>
-                                </div>
+                            <CardContent className="pt-8">
+                                <ProtocolTimeline instance={instance as any} />
                             </CardContent>
-                            <CardFooter className="bg-muted/10 border-t flex justify-end">
-                                <Button variant="ghost" size="sm" className="gap-2">
-                                    Ver Detalhes <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </CardFooter>
                         </Card>
                     ))}
                 </div>

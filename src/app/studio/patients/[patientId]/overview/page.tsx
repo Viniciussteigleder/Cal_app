@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { getPatient } from '@/app/studio/patients/actions';
+import { ClinicalCopilot } from '@/components/studio/clinical-copilot';
 import { getDailyLogs } from '@/app/studio/patients/[patientId]/log/actions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -135,20 +136,7 @@ export default async function PatientOverviewPage({
                 {/* Middle Column: Recent Activity & Logs */}
                 <div className="md:col-span-2 space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Card className="bg-primary/5 border-primary/20">
-                            <CardContent className="p-4 flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                    <Bot className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">Análise de IA Disponível</p>
-                                    <p className="text-xs text-muted-foreground">Baseado nos últimos 3 dias de registro</p>
-                                </div>
-                                <Button size="sm" variant="outline" className="ml-auto">
-                                    Gerar
-                                </Button>
-                            </CardContent>
-                        </Card>
+                        <ClinicalCopilot patientId={patientId} />
                         <Card className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900">
                             <CardContent className="p-4 flex items-center gap-4">
                                 <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600">
