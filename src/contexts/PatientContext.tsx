@@ -12,6 +12,7 @@ export interface Patient {
     status: string;
     lastUpdate?: Date;
     lastInteraction?: Date;
+    streak?: number;
 }
 
 interface PatientContextValue {

@@ -1,77 +1,122 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { aiService } from '@/lib/ai/ai-service';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+import { getAgentConfig } from '@/lib/ai-config';
+import { recordAiUsage } from '@/lib/ai/usage';
+
+// 1. Define Zod Schemas
+const MacroSchema = z.object({
+    protein: z.number(),
+    carbs: z.number(),
+    fat: z.number(),
+});
+
+const MealFoodSchema = z.object({
+    name: z.string(),
+    amount: z.string(),
+    unit: z.string().optional(),
+});
+
+const MealSchema = z.object({
+    name: z.string(),
+    foods: z.array(MealFoodSchema),
+    total_kcal: z.number(),
+    macros: MacroSchema,
+    instructions: z.string().optional(),
+});
+
+const DayPlanSchema = z.object({
+    day: z.number(),
+    breakfast: MealSchema,
+    lunch: MealSchema,
+    dinner: MealSchema,
+    snacks: z.array(MealSchema),
+});
+
+const MealPlanResponseSchema = z.object({
+    days: z.array(DayPlanSchema),
+    estimated_cost: z.number().describe("Estimated total cost in BRL"),
+    reasoning: z.string().describe("Explanation of why this plan was chosen"),
+});
 
 /**
  * POST /api/ai/meal-planner
  * 
- * Generate a personalized meal plan using AI
+ * Generate a personalized meal plan using AI (Unified Architecture)
  */
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createSupabaseServerClient();
-
-        // Get current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Parse request body
+        const claims = user.app_metadata;
+        const tenantId = claims.tenant_id as string;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: 'No tenant found for user' }, { status: 400 });
+        }
+
+        // Parse Body
         const body = await request.json();
         const {
             patientId,
-            tenantId,
             targetKcal,
             macroSplit,
-            preferences,
-            restrictions,
+            preferences = [],
+            restrictions = [],
             daysCount = 7,
         } = body;
 
-        if (!patientId || !tenantId || !targetKcal || !macroSplit) {
-            return NextResponse.json(
-                { error: 'Missing required fields: patientId, tenantId, targetKcal, macroSplit' },
-                { status: 400 }
-            );
-        }
+        // 2. Get Dynamic Config
+        const agentConfig = await getAgentConfig('meal_planner');
 
-        // Validate macro split adds up to 100
-        const total = macroSplit.protein + macroSplit.carbs + macroSplit.fat;
-        if (Math.abs(total - 100) > 0.1) {
-            return NextResponse.json(
-                { error: 'Macro split must add up to 100%' },
-                { status: 400 }
-            );
-        }
-
-        // Execute AI agent
-        const result = await aiService.execute({
-            tenantId,
-            agentType: 'meal_planner',
-            inputData: {
-                patientId,
-                targetKcal,
-                macroSplit,
-                preferences,
-                restrictions,
-                daysCount,
-            },
-            userId: user.id,
+        // 3. Initialize OpenAI
+        const openai = createOpenAI({
+            apiKey: process.env.OPENAI_API_KEY || 'dummy',
         });
 
-        if (!result.success) {
-            return NextResponse.json(
-                { error: result.error },
-                { status: 500 }
-            );
-        }
+        // 4. Generate Object (Safe!)
+        const { object, usage } = await generateObject({
+            model: openai(agentConfig.model),
+            schema: MealPlanResponseSchema,
+            temperature: agentConfig.temperature,
+            system: agentConfig.systemPrompt,
+            messages: [
+                {
+                    role: 'user',
+                    content: `Create a ${daysCount}-day meal plan.
+                    Target: ${targetKcal} kcal.
+                    Macros: ${JSON.stringify(macroSplit)}.
+                    Preferences: ${preferences.join(', ')}.
+                    Restrictions: ${restrictions.join(', ')}.
+                    Patient ID: ${patientId}.
+                    
+                    Ensure variety and cultural appropriateness for Brazil.`
+                }
+            ]
+        });
 
-        // Save meal plan to database
+        // 5. Track Usage
+        await recordAiUsage({
+            tenantId: tenantId,
+            nutritionistId: user.id,
+            patientId: patientId,
+            agentType: 'meal_planner',
+            creditsUsed: 1,
+            costUsd: (usage.totalTokens || 0) * (10 / 1000000),
+            costBrl: (usage.totalTokens || 0) * (10 / 1000000) * 5.5,
+            metadata: { daysCount, targetKcal }
+        });
+
+        // 6. Save to DB (Legacy support)
+        // We still save to AIMealPlan table for record keeping
         const { data: mealPlanRecord, error: dbError } = await supabase
             .from('AIMealPlan')
             .insert({
@@ -84,10 +129,10 @@ export async function POST(request: NextRequest) {
                     restrictions,
                     daysCount,
                 },
-                generated_meals: result.data.days || [],
+                generated_meals: object.days,
                 macro_distribution: macroSplit,
-                estimated_cost: result.data.estimated_cost,
-                ai_reasoning: result.data.reasoning,
+                estimated_cost: object.estimated_cost,
+                ai_reasoning: object.reasoning,
             })
             .select()
             .single();
@@ -98,48 +143,36 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: result.data,
-            executionId: result.executionId,
-            tokensUsed: result.tokensUsed,
-            cost: result.cost,
+            data: object,
             mealPlanId: mealPlanRecord?.id,
         });
+
     } catch (error) {
-        console.error('Meal planner error:', error);
+        console.error('Unified Meal Planner Error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Failed to generate meal plan' },
             { status: 500 }
         );
     }
 }
 
-/**
- * GET /api/ai/meal-planner
- * 
- * Get all AI-generated meal plans for a patient
- */
+// Keep GET for compatibility
 export async function GET(request: NextRequest) {
+    // ... existing GET implementation logic or import from a shared helper
+    // For simplicity, just rewriting the essential parts logic here as the previous file had it.
+    // In a real refactor, move GET logic to a separate handler or keep it if I'm only modifying POST.
+    // I will assume I need to rewrite it since I'm overwriting the file.
+
     try {
         const supabase = await createSupabaseServerClient();
-
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-        if (authError || !user) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+        if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { searchParams } = new URL(request.url);
         const patientId = searchParams.get('patientId');
 
-        if (!patientId) {
-            return NextResponse.json(
-                { error: 'Missing patientId parameter' },
-                { status: 400 }
-            );
-        }
+        if (!patientId) return NextResponse.json({ error: 'Missing patientId' }, { status: 400 });
 
         const { data, error } = await supabase
             .from('AIMealPlan')
@@ -147,19 +180,10 @@ export async function GET(request: NextRequest) {
             .eq('patient_id', patientId)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            return NextResponse.json(
-                { error: error.message },
-                { status: 500 }
-            );
-        }
+        if (error) throw error;
 
         return NextResponse.json({ success: true, data });
     } catch (error) {
-        console.error('Get meal plans error:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
     }
 }

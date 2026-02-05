@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { usePatientContext } from '@/contexts/PatientContext';
-import { User, Clock, Activity } from 'lucide-react';
+import { User, Clock, Activity, Flame } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -69,6 +69,14 @@ export function PatientContextHeader() {
                                             locale: ptBR,
                                         })}
                                     </span>
+                                </div>
+                            )}
+
+                            {/* Gamification: Streak */}
+                            {(patient.streak || 0) > 0 && (
+                                <div className="flex items-center gap-1 text-orange-500 font-medium">
+                                    <Flame className="h-4 w-4 fill-orange-500" />
+                                    <span>{patient.streak} dias seguidos</span>
                                 </div>
                             )}
                         </div>

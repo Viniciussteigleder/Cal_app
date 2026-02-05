@@ -6,5 +6,5 @@ export default async function PatientRootPage({
     params: Promise<{ patientId: string }>;
 }) {
     const { patientId } = await params;
-    redirect(`/studio/patients/${patientId}/prontuario`);
+    redirect(`/studio/patients/${patientId}/overview`);
 }

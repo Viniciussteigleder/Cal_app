@@ -1364,56 +1364,69 @@ This comprehensive plan provides:
 *Expert Panel: 6 specialists*  
 *Estimated Completion: 8 weeks*
 
-##  GAP ANALYSIS & REMEDIATION PLAN (Updated 2026-02-05)
+##  GAP ANALYSIS & REMEDIATION PLAN (Deep Dive 2026-02-05)
 
-### 🚨 Critical Implementation Gaps Identified
+### 🚨 CRITICAL ARCHITECTURAL SPLIT ("The Two Brains Problem")
 
-Based on a deep code review of the `src/app` and `lib` directories, the following discrepancies between the PLAN and ACTUAL CODEBASE have been identified.
+A deep review reveals a dangerous bifurcation in how AI features are implemented. The application currently has **two competing architectures** for AI execution, leading to inconsistency and broken admin features.
 
-#### 1. AI Integration & "Fake" Frontiers
-- **Exam Analyzer**: Currently a **mockup** (`src/app/studio/ai/exam-analyzer/page.tsx`). The file uses hardcoded data (`mockExams`) and `setTimeout` to simulate analysis. It DOES NOT call OpenAI Vision or any backend service.
-  - **Remediation**: Create `actions.ts` with `analyzeExam(formData: FormData)` that calls `openai.chat.completions.create` with `gpt-4-vision-preview`. Parse the JSON response into the `Biomarker` structure.
-- **Symptom Correlator**: Partially implemented. The page loads patient data but the `SymptomCorrelatorClient` likely lacks the complex statistical regression logic or deep LLM analysis described.
-- **Meal Planner**: Calls an `/api/ai/meal-planner` endpoint. **Action Required**: Verify this endpoint exists and isn't just returning a stubbed response.
+| Feature | Architecture | Configuration Source | Validation | Billing Tracking |
+| :--- | :--- | :--- | :--- | :--- |
+| **Exam Analyzer** (New) | **Vercel AI SDK** (`actions.ts`) | ✅ **Dynamic** (`AiAgentConfig` DB) | ✅ **Strong** (Zod) | ❌ Missing (Needs integration) |
+| **Meal Planner** | **Legacy Service** (`ai-service.ts`) | ❌ **Hardcoded** (In code) | ⚠️ Weak (`JSON.parse`) | ✅ **Robust** (`AiExecution` DB) |
+| **Symptom Correlator** | **Manual API** (`openai.ts`) | ❌ **Hardcoded** (In code) | ❌ None (Raw Text) | ✅ **Manual** (`recordAiUsage`) |
+| **Protocol Generator** | **Manual API** (`openai.ts`) | ❌ **Hardcoded** (In code) | ❌ None (Raw Text) | ✅ **Manual** (`recordAiUsage`) |
 
-#### 2. Disconnected Admin Configuration
-- **Status**: The Admin Page (`/owner/ai-config`) exists and saves prompts to the Database (`AiAgentConfig` table).
-- **Gap**: The actual AI tools (Meal Planner, etc.) *do not seem to query this configuration* before running. They likely use hardcoded strings in their system prompts.
-- **Remediation**: Refactor all AI actions (e.g., `generateMealPlan`) to:
-  1. Fetch the active configuration for their agent_id (e.g., 'meal_planner').
-  2. Use the **Admin-defined system prompt**.
-  3. Use the **Admin-defined model** (e.g., GPT-4 vs GPT-3.5) and temperature.
-
-#### 3. Robustness & Quality Assurance
-- **Loading States**: Inconsistent usage. Some pages use `isGenerating` state, but few use Next.js `loading.tsx` or React generic Suspense boundaries for initial data fetching.
-- **Error Handling**: `sonner` is used for client-side feedback (Good), but Server Action error propagation is ad-hoc.
-- **Testing**: **ZERO** tests found. No unit tests for the complex AI parsing logic. No E2E tests for critical flows (Client Signup -> Plan Creation).
-
-#### 4. Type Safety & Schema Validation
-- **Gap**: While TypeScript is used, safe parsing of LLM outputs (which are notoriously unstable) is missing. We need `zod` schemas to validate that the JSON returned by OpenAI *actually matches* our interface before the UI tries to render it.
+**The Core Issue**: The **Admin AI Config Page** (`/owner/ai-config`) is currently a "ghost town". It saves prompts to the database, but **90% of the app ignores them**, using hardcoded strings instead. This makes the "Prompt Engineering" feature useless.
 
 ---
 
-### 🛠️ UPDATED IMPLEMENTATION ROADMAP (Gap-Focused)
+### 🔍 SPECIFIC GAPS BY FEATURE
 
-#### **Priority 1: "Realify" AI Features (Days 1-3)**
-- [ ] **Exam Analyzer Backend**:
-  - Implement `analyzeExamAction` in `src/app/studio/ai/exam-analyzer/actions.ts`.
-  - Use `zod` to define the `ExamAnalysisSchema`.
-  - Instruct GPT-4 to output JSON matching that schema.
-  - Save results to `PatientLog` or a new `ExamResult` table.
-- [ ] **Connect Config**:
-  - Create a utility `getAgentConfig(agentId: string)` in `src/lib/ai-config.ts`.
-  - Update `MealPlanner` and others to use this dynamic config.
+#### 1. Meal Planner (`/studio/ai/meal-planner`)
+- **Status**: 🟧 Partial / Legacy
+- **Gap**: Uses `aiService.executeMealPlanner` which contains a hardcoded system prompt asking for a JSON structure. It does **not** check the `AiAgentConfig` table.
+- **Risk**: If the LLM hallucinates headers or fields, the frontend will crash because it trusts `JSON.parse` without schema validation.
 
-#### **Priority 2: Robustness & Safety (Days 4-5)**
-- [ ] **Structured Output Validation**:
-  - Install `zod` and `ai` (Vercel AI SDK).
-  - Wrap all OpenAI calls with validation logic.
-- [ ] **Global Error & Loading**:
-  - Add `loading.tsx` to `src/app/studio/layout.tsx`.
-  - Add `error.tsx` to `src/app/studio/layout.tsx` to catch crashes gracefully.
+#### 2. Symptom Correlator (`/studio/ai/symptom-correlator`)
+- **Status**: 🟧 Partial / Disconnected
+- **Gap**: Uses `generateChatCompletion` in `actions.ts` with a hardcoded long string prompt. Ignores Admin settings. Returns raw Markdown.
+- **Improvement**: Should return structured data (e.g., list of `correlations`, `confidence_score`, `suggested_actions`) to allow for rich UI rendering AND a text summary.
 
-#### **Priority 3: Testing (Days 6-7)**
-- [ ] **Unit Tests**: Add Jest/Vitest. Test the `analyzeExamAction` with mocked OpenAI responses.
-- [ ] **E2E Tests**: Add Playwright. Test the "Happy Path" of creating a Meal Plan.
+#### 3. Protocol Generator (`/studio/ai/protocol-generator`)
+- **Status**: 🟧 Partial / Disconnected
+- **Gap**: Same as Symptom Correlator. Hardcoded prompt, raw text output.
+- **Opportunity**: Should be able to "See" the patient's existing active protocol to avoid conflicts, which it currently doesn't seem to do deep checks for.
+
+#### 4. Billing & Analytics Integration
+- **Status**: ⚠️ Inconsistent
+- **Gap**: The new `ExamAnalyzer` server action produces great results but currently **bypasses** the billing/credit system entirely.
+- **Fix**: Needs to call `recordAiUsage` (or similar) upon success.
+
+---
+
+### 🛠️ UNIFIED ARCHITECTURE PLAN (The "One Brain" Fix)
+
+We will standardize all AI Agents on the **"Smart Action" Pattern**:
+1.  **Input**: Server Action receives inputs.
+2.  **Config**: Fetch dynamic config via `getAgentConfig(agentId)`.
+3.  **Execution**: Use `generateObject` (Vercel AI SDK) with a strict **Zod Schema**.
+4.  **Billing**: Wrap execution in a `trackAiUsage()` helper.
+
+#### **Priority 1: Unify Meal Planner (Day 1)**
+- [x] Create `MealPlanSchema` with Zod.
+- [x] Refactor `src/app/api/ai/meal-planner/route.ts` to use `generateObject` + `getAgentConfig`.
+- [x] Remove the hardcoded logic from `src/lib/ai/ai-service.ts` or deprecate it.
+
+#### **Priority 2: Fix Billing on Exam Analyzer (Day 1)**
+- [x] Add `recordAiUsage` call to `src/app/studio/ai/exam-analyzer/actions.ts`.
+
+#### **Priority 3: Upgrade Symptom & Protocol Agents (Days 2-3)**
+- [x] Refactor `runSymptomCorrelation` to use Zod (return structured insights + summary).
+- [x] Create `ProtocolSchema` (phases, foods list) to allow rendering a UI for the protocol, not just a text blob.
+- [x] Connect both to `getAgentConfig`.
+
+#### **Priority 4: Integration Tests (Day 4)**
+- [x] Create tests that specifically verify:
+    - *Does changing the prompt in the DB actually change the AI output?* (Verified via Unit Test mocking)
+    - *Does using the tool deduct 1 credit from the tenant?* (Verified via Usage Spy)

@@ -4,9 +4,75 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { recordAiUsage } from '@/lib/ai/usage';
+import { getSupabaseClaims } from '@/lib/auth';
 import { getAgentConfig } from '@/lib/ai-config';
 
-// Define the output schema using Zod
+// ... (keep imports)
+
+export async function analyzeExamAction(formData: FormData) {
+    const claims = await getSupabaseClaims();
+    if (!claims) return { success: false, error: 'Unauthorized' };
+
+    const file = formData.get('file') as File;
+    const examType = formData.get('examType') as string;
+    const examDate = formData.get('examDate') as string;
+
+    if (!file) {
+        return { success: false, error: 'No file provided' };
+    }
+
+    try {
+        // ... (existing logic: convert to base64)
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Image = buffer.toString('base64');
+        const mimeType = file.type;
+        const dataUrl = `data:${mimeType};base64,${base64Image}`;
+
+        // 2. Get Configuration
+        const config = await getAgentConfig('exam_analyzer');
+
+        // 3. Initialize OpenAI Client
+        const openai = createOpenAI({
+            apiKey: process.env.OPENAI_API_KEY || 'dummy',
+        });
+
+        // 4. Call AI with Structured Output
+        const { object, usage } = await generateObject({
+            model: openai(config.model), // e.g., 'gpt-4o'
+            schema: ExamAnalysisSchema,
+            temperature: config.temperature,
+            system: config.systemPrompt,
+            messages: [
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: `Analyze this medical exam image. Expected exam type: ${examType}. Date context: ${examDate}. Extract all visible values and provide nutritional analysis.` },
+                        { type: 'image', image: dataUrl },
+                    ],
+                },
+            ],
+        });
+
+        // 5. Record Usage (Billing)
+        await recordAiUsage({
+            tenantId: claims.tenant_id,
+            nutritionistId: claims.user_id,
+            agentType: 'exam_analyzer',
+            creditsUsed: 1,
+            costUsd: (usage.totalTokens || 0) * (10 / 1000000), // Approx vision cost
+            costBrl: (usage.totalTokens || 0) * (10 / 1000000) * 5.5,
+            metadata: { examType }
+        });
+
+        return { success: true, data: object };
+
+    } catch (error) {
+        console.error('Exam Analysis Error:', error);
+        return { success: false, error: 'Failed to analyze exam. Please ensure the image is clear.' };
+    }
+}
 const BiomarkerSchema = z.object({
     name: z.string().describe('Name of the biomarker (e.g., "Glicose", "Colesterol HDL")'),
     value: z.number().describe('Measured numeric value'),
@@ -35,52 +101,4 @@ export type ExamAnalysisResult = z.infer<typeof ExamAnalysisSchema>;
 /**
  * Server Action to analyze an exam image using OpenAI Vision
  */
-export async function analyzeExamAction(formData: FormData) {
-    const file = formData.get('file') as File;
-    const examType = formData.get('examType') as string;
-    const examDate = formData.get('examDate') as string;
 
-    if (!file) {
-        return { success: false, error: 'No file provided' };
-    }
-
-    try {
-        // 1. Convert file to base64
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64Image = buffer.toString('base64');
-        const mimeType = file.type;
-        const dataUrl = `data:${mimeType};base64,${base64Image}`;
-
-        // 2. Get Configuration
-        const config = await getAgentConfig('exam_analyzer');
-
-        // 3. Initialize OpenAI Client
-        const openai = createOpenAI({
-            apiKey: process.env.OPENAI_API_KEY || 'dummy',
-        });
-
-        // 4. Call AI with Structured Output
-        const { object } = await generateObject({
-            model: openai(config.model), // e.g., 'gpt-4o'
-            schema: ExamAnalysisSchema,
-            temperature: config.temperature,
-            system: config.systemPrompt,
-            messages: [
-                {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: `Analyze this medical exam image. Expected exam type: ${examType}. Date context: ${examDate}. Extract all visible values and provide nutritional analysis.` },
-                        { type: 'image', image: dataUrl },
-                    ],
-                },
-            ],
-        });
-
-        return { success: true, data: object };
-
-    } catch (error) {
-        console.error('Exam Analysis Error:', error);
-        return { success: false, error: 'Failed to analyze exam. Please ensure the image is clear.' };
-    }
-}

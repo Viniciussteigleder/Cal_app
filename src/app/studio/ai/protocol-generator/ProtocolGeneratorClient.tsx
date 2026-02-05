@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -6,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateProtocolAction } from './actions';
-import { Loader2, Zap, FileText, Settings2 } from 'lucide-react';
+import { generateProtocolAction, saveProtocolAction } from './actions';
+import { Loader2, Zap, FileText, Settings2, Save, CheckCircle2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface Patient {
     id: string;
@@ -31,15 +33,18 @@ export function ProtocolGeneratorClient({ patients }: { patients: Patient[] }) {
     const [protocolType, setProtocolType] = useState('');
     const [customNotes, setCustomNotes] = useState('');
 
-    const [result, setResult] = useState<string | null>(null);
+    const [result, setResult] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [savedId, setSavedId] = useState<string | null>(null);
 
     const handleRun = async () => {
         if (!selectedPatient || !protocolType) return;
         setLoading(true);
         setError(null);
         setResult(null);
+        setSavedId(null);
 
         try {
             const res = await generateProtocolAction(selectedPatient, protocolType, customNotes);
@@ -52,6 +57,24 @@ export function ProtocolGeneratorClient({ patients }: { patients: Patient[] }) {
             setError('Falha na requisição');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!selectedPatient || !result) return;
+        setSaving(true);
+        try {
+            const res = await saveProtocolAction(selectedPatient, result);
+            if (res.success) {
+                toast.success('Protocolo salvo e atribuído ao paciente!');
+                setSavedId('saved');
+            } else {
+                toast.error(res.error || 'Falha ao salvar');
+            }
+        } catch (err) {
+            toast.error('Erro ao salvar protocolo');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -132,11 +155,23 @@ export function ProtocolGeneratorClient({ patients }: { patients: Patient[] }) {
 
             <div className="lg:col-span-2">
                 <Card className="h-full min-h-[500px]">
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="flex items-center gap-2">
                             <FileText className="h-5 w-5" />
                             Protocolo Gerado
                         </CardTitle>
+                        {result && (
+                            <Button
+                                variant={savedId ? "outline" : "default"}
+                                onClick={handleSave}
+                                disabled={saving}
+                                className={savedId ? "border-green-500 text-green-600 bg-green-50 hover:bg-green-100" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> :
+                                    savedId ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                {savedId ? "Salvo" : "Salvar no Paciente"}
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent>
                         {loading && (
@@ -162,7 +197,7 @@ export function ProtocolGeneratorClient({ patients }: { patients: Patient[] }) {
                         {result && (
                             <div className="prose dark:prose-invert max-w-none p-4 rounded-md bg-card border">
                                 <div className="whitespace-pre-wrap text-sm leading-relaxed font-sans">
-                                    {result}
+                                    {result.full_markdown || "Erro na formatação do protocolo."}
                                 </div>
                             </div>
                         )}

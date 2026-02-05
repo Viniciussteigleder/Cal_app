@@ -14,6 +14,9 @@ import {
     MoreHorizontal,
     ChevronLeft,
     ScrollText,
+    ClipboardList,
+    BarChart,
+    BookOpen
 } from 'lucide-react';
 
 interface Module {
@@ -30,31 +33,45 @@ interface StudioSidebarProps {
     currentPhase?: number; // Default to 1 (MVP)
 }
 
-export function StudioSidebar({ patientId, currentPhase = 1 }: StudioSidebarProps) {
+export function StudioSidebar({ patientId, currentPhase = 3 }: StudioSidebarProps) {
     const pathname = usePathname();
 
     const modules: Module[] = [
         {
+            id: 'overview',
+            label: 'Visão Geral',
+            icon: FileText, // Using FileText for now, or LayoutDashboard if imported
+            href: `/studio/patients/${patientId}/overview`,
+            phase: 1,
+        },
+        {
             id: 'prontuario',
             label: 'Prontuário',
-            icon: FileText,
+            icon: ScrollText,
             href: `/studio/patients/${patientId}/prontuario`,
             phase: 1,
         },
         {
+            id: 'log',
+            label: 'Diário & Sinais',
+            icon: ClipboardList, // Need import
+            href: `/studio/patients/${patientId}/log`,
+            phase: 1,
+            badge: 'Novo',
+        },
+        {
             id: 'exames',
-            label: 'Exames',
+            label: 'Exames & IA',
             icon: TestTube,
             href: `/studio/patients/${patientId}/exames`,
             phase: 1,
         },
         {
-            id: 'log',
-            label: 'Diário',
-            icon: ScrollText,
-            href: `/studio/patients/${patientId}/log`,
-            phase: 1,
-            badge: 'Novo',
+            id: 'stats',
+            label: 'Estatísticas',
+            icon: BarChart, // Need import
+            href: `/studio/patients/${patientId}/stats`,
+            phase: 2,
         },
         {
             id: 'antropometria',
@@ -62,39 +79,21 @@ export function StudioSidebar({ patientId, currentPhase = 1 }: StudioSidebarProp
             icon: Ruler,
             href: `/studio/patients/${patientId}/antropometria`,
             phase: 2,
-            badge: 'Em breve',
-        },
-        {
-            id: 'calculo-energetico',
-            label: 'Cálculo Energético',
-            icon: Calculator,
-            href: `/studio/patients/${patientId}/calculo-energetico`,
-            phase: 2,
-            badge: 'Em breve',
         },
         {
             id: 'plano-alimentar',
             label: 'Plano Alimentar',
             icon: UtensilsCrossed,
             href: `/studio/patients/${patientId}/plano-alimentar`,
-            phase: 3,
-            badge: 'Em breve',
+            phase: 2, // Promoting to Phase 2 for visibility
         },
         {
-            id: 'prescricao',
-            label: 'Prescrição',
-            icon: FileEdit,
-            href: `/studio/patients/${patientId}/prescricao`,
+            id: 'protocols',
+            label: 'Protocolos',
+            icon: BookOpen, // Need import
+            href: `/studio/patients/${patientId}/protocols`,
             phase: 3,
-            badge: 'Em breve',
-        },
-        {
-            id: 'extras',
-            label: 'Extras',
-            icon: MoreHorizontal,
-            href: `/studio/patients/${patientId}/extras`,
-            phase: 3,
-            badge: 'Em breve',
+            badge: 'Novo',
         },
     ];
 

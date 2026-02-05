@@ -103,9 +103,10 @@ export function AiConfigList({ agents }: { agents: AgentConfig[] }) {
                                 >
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="gpt-4">GPT-4 (Alta Precisão)</SelectItem>
-                                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo (Rápido)</SelectItem>
-                                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 (Econômico)</SelectItem>
+                                        <SelectItem value="gpt-4o">GPT-4o (Mais Inteligente)</SelectItem>
+                                        <SelectItem value="gpt-4o-mini">GPT-4o Mini (Rápido & Barato)</SelectItem>
+                                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Legacy</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -116,7 +117,7 @@ export function AiConfigList({ agents }: { agents: AgentConfig[] }) {
                                 </div>
                                 <Slider
                                     value={[activeConfig.temperature]}
-                                    min={0} max={1} step={0.1}
+                                    min={0} max={2} step={0.1}
                                     onValueChange={([v]) => handleChange('temperature', v)}
                                     className="py-4"
                                 />

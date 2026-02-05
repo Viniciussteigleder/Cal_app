@@ -113,6 +113,7 @@ model Protocol {
   expert_reviewer     String?
   scientific_basis    Json?
   contraindications   String[]
+  instances           PatientProtocolInstance[]
   warnings            String[]
 
   @@unique([tenant_id, code])
@@ -155,6 +156,8 @@ model PatientProtocolInstance {
   notes       String?
   created_by  String    @db.Uuid
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  
+  protocol    Protocol  @relation(fields: [protocol_id], references: [id])
 
   @@index([patient_id, is_active])
 }

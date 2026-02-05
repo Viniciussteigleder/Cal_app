@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { runSymptomCorrelation } from './actions';
 import { Loader2, Sparkles, Activity } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface Patient {
     id: string;
@@ -117,9 +118,7 @@ export function SymptomCorrelatorClient({ patients }: { patients: Patient[] }) {
 
                         {result && (
                             <div className="prose dark:prose-invert max-w-none">
-                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                                    {result}
-                                </div>
+                                <ReactMarkdown>{result}</ReactMarkdown>
                             </div>
                         )}
                     </CardContent>
