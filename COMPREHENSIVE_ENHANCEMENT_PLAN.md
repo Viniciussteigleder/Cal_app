@@ -1363,3 +1363,57 @@ This comprehensive plan provides:
 *Created: 2026-02-03*  
 *Expert Panel: 6 specialists*  
 *Estimated Completion: 8 weeks*
+
+##  GAP ANALYSIS & REMEDIATION PLAN (Updated 2026-02-05)
+
+### 🚨 Critical Implementation Gaps Identified
+
+Based on a deep code review of the `src/app` and `lib` directories, the following discrepancies between the PLAN and ACTUAL CODEBASE have been identified.
+
+#### 1. AI Integration & "Fake" Frontiers
+- **Exam Analyzer**: Currently a **mockup** (`src/app/studio/ai/exam-analyzer/page.tsx`). The file uses hardcoded data (`mockExams`) and `setTimeout` to simulate analysis. It DOES NOT call OpenAI Vision or any backend service.
+  - **Remediation**: Create `actions.ts` with `analyzeExam(formData: FormData)` that calls `openai.chat.completions.create` with `gpt-4-vision-preview`. Parse the JSON response into the `Biomarker` structure.
+- **Symptom Correlator**: Partially implemented. The page loads patient data but the `SymptomCorrelatorClient` likely lacks the complex statistical regression logic or deep LLM analysis described.
+- **Meal Planner**: Calls an `/api/ai/meal-planner` endpoint. **Action Required**: Verify this endpoint exists and isn't just returning a stubbed response.
+
+#### 2. Disconnected Admin Configuration
+- **Status**: The Admin Page (`/owner/ai-config`) exists and saves prompts to the Database (`AiAgentConfig` table).
+- **Gap**: The actual AI tools (Meal Planner, etc.) *do not seem to query this configuration* before running. They likely use hardcoded strings in their system prompts.
+- **Remediation**: Refactor all AI actions (e.g., `generateMealPlan`) to:
+  1. Fetch the active configuration for their agent_id (e.g., 'meal_planner').
+  2. Use the **Admin-defined system prompt**.
+  3. Use the **Admin-defined model** (e.g., GPT-4 vs GPT-3.5) and temperature.
+
+#### 3. Robustness & Quality Assurance
+- **Loading States**: Inconsistent usage. Some pages use `isGenerating` state, but few use Next.js `loading.tsx` or React generic Suspense boundaries for initial data fetching.
+- **Error Handling**: `sonner` is used for client-side feedback (Good), but Server Action error propagation is ad-hoc.
+- **Testing**: **ZERO** tests found. No unit tests for the complex AI parsing logic. No E2E tests for critical flows (Client Signup -> Plan Creation).
+
+#### 4. Type Safety & Schema Validation
+- **Gap**: While TypeScript is used, safe parsing of LLM outputs (which are notoriously unstable) is missing. We need `zod` schemas to validate that the JSON returned by OpenAI *actually matches* our interface before the UI tries to render it.
+
+---
+
+### 🛠️ UPDATED IMPLEMENTATION ROADMAP (Gap-Focused)
+
+#### **Priority 1: "Realify" AI Features (Days 1-3)**
+- [ ] **Exam Analyzer Backend**:
+  - Implement `analyzeExamAction` in `src/app/studio/ai/exam-analyzer/actions.ts`.
+  - Use `zod` to define the `ExamAnalysisSchema`.
+  - Instruct GPT-4 to output JSON matching that schema.
+  - Save results to `PatientLog` or a new `ExamResult` table.
+- [ ] **Connect Config**:
+  - Create a utility `getAgentConfig(agentId: string)` in `src/lib/ai-config.ts`.
+  - Update `MealPlanner` and others to use this dynamic config.
+
+#### **Priority 2: Robustness & Safety (Days 4-5)**
+- [ ] **Structured Output Validation**:
+  - Install `zod` and `ai` (Vercel AI SDK).
+  - Wrap all OpenAI calls with validation logic.
+- [ ] **Global Error & Loading**:
+  - Add `loading.tsx` to `src/app/studio/layout.tsx`.
+  - Add `error.tsx` to `src/app/studio/layout.tsx` to catch crashes gracefully.
+
+#### **Priority 3: Testing (Days 6-7)**
+- [ ] **Unit Tests**: Add Jest/Vitest. Test the `analyzeExamAction` with mocked OpenAI responses.
+- [ ] **E2E Tests**: Add Playwright. Test the "Happy Path" of creating a Meal Plan.

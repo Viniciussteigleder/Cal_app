@@ -101,12 +101,19 @@ const mockExams: ExamAnalysis[] = [
     },
 ];
 
+import { analyzeExamAction, ExamAnalysisResult } from './actions';
+
+// ... (keep imports)
+
 export default function ExamAnalyzerPage() {
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [examType, setExamType] = useState('');
-    const [examDate, setExamDate] = useState('');
+    const [examType, setExamType] = useState('blood_test');
+    const [examDate, setExamDate] = useState(new Date().toISOString().slice(0, 10));
+
+    // State to store analyzed exams (starting with mock for demo, but adding real ones dynamically)
+    const [analyzedExams, setAnalyzedExams] = useState<ExamAnalysis[]>(mockExams);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -114,17 +121,44 @@ export default function ExamAnalyzerPage() {
         }
     };
 
-    const handleAnalyzeExam = () => {
+    const handleAnalyzeExam = async () => {
+        if (!selectedFile) return;
+
         setIsAnalyzing(true);
-        setTimeout(() => {
-            toast.success('Exame analisado com sucesso!');
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('examType', examType);
+        formData.append('examDate', examDate);
+
+        try {
+            const result = await analyzeExamAction(formData);
+
+            if (result.success && result.data) {
+                const newExam: ExamAnalysis = {
+                    id: crypto.randomUUID(),
+                    uploadDate: new Date().toISOString(),
+                    status: 'completed',
+                    ...result.data
+                };
+
+                setAnalyzedExams([newExam, ...analyzedExams]);
+                toast.success('Exame analisado com sucesso!');
+                setIsUploadOpen(false);
+                setSelectedFile(null);
+            } else {
+                toast.error(result.error || 'Erro ao analisar exame.');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Erro inesperado na comunicação com o servidor.');
+        } finally {
             setIsAnalyzing(false);
-            setIsUploadOpen(false);
-            setSelectedFile(null);
-        }, 3000);
+        }
     };
 
     const getStatusBadge = (status: Biomarker['status']) => {
+        // ... (keep existing helper)
+
         const config = {
             normal: { color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400', icon: CheckCircle },
             low: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400', icon: TrendingUp },
@@ -347,7 +381,7 @@ export default function ExamAnalyzerPage() {
                 {/* Exams List */}
                 <div className="space-y-4">
                     <h2 className="text-xl font-semibold">Exames Analisados</h2>
-                    {mockExams.map((exam) => (
+                    {analyzedExams.map((exam) => (
                         <Card key={exam.id} className="overflow-hidden">
                             <CardHeader className="bg-muted/50">
                                 <div className="flex items-start justify-between">
