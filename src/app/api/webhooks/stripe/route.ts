@@ -1,12 +1,13 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
 
 export async function POST(req: Request) {
     const body = await req.text();
-    const signature = headers().get('Stripe-Signature') as string;
+    const headerList = await headers();
+    const signature = headerList.get('Stripe-Signature') as string;
 
     let event: Stripe.Event;
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
         if (planKey === 'PROFESSIONAL') credits = 500;
         if (planKey === 'ENTERPRISE') credits = 2000;
 
-        await db.tenant.update({
+        await prisma.tenant.update({
             where: {
                 id: session.metadata.tenantId,
             },
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
         );
 
         // This is a renewal. Find tenant by subscription ID
-        const tenant = await db.tenant.findFirst({
+        const tenant = await prisma.tenant.findFirst({
             where: {
                 stripe_subscription_id: subscription.id,
             },
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
             if (tenant.plan === 'PROFESSIONAL') monthlyCredits = 500;
             if (tenant.plan === 'ENTERPRISE') monthlyCredits = 2000;
 
-            await db.tenant.update({
+            await prisma.tenant.update({
                 where: {
                     id: tenant.id,
                 },
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
     if (event.type === 'customer.subscription.updated') {
         const subscription = event.data.object as Stripe.Subscription;
 
-        await db.tenant.updateMany({
+        await prisma.tenant.updateMany({
             where: {
                 stripe_subscription_id: subscription.id,
             },
@@ -111,7 +112,7 @@ export async function POST(req: Request) {
     if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object as Stripe.Subscription;
 
-        await db.tenant.updateMany({
+        await prisma.tenant.updateMany({
             where: {
                 stripe_subscription_id: subscription.id,
             },
