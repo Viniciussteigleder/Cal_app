@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { aiService } from '@/lib/ai/ai-service';
 
 // Mock AI service - replace with actual OpenAI Whisper integration
 async function transcribeAudio(audioData: any) {
