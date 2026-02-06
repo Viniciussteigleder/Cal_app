@@ -4,9 +4,25 @@ import { prisma } from '@/lib/db';
 import { getSupabaseClaims } from '@/lib/auth';
 import { SubscriptionPlan } from '@prisma/client';
 
-export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const planParam = searchParams.get('plan');
+export async function GET() {
+    return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
+}
+
+export async function POST(req: Request) {
+    const origin = req.headers.get('origin');
+    const host = req.headers.get('host');
+    const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL;
+    const originHost = origin ? new URL(origin).host : null;
+    const allowedHost = allowedOrigin ? new URL(allowedOrigin).host : null;
+    const isSameHost = originHost && host && originHost === host;
+    const isAllowed = origin && allowedHost && originHost === allowedHost;
+
+    if (origin && !isSameHost && !isAllowed) {
+        return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
+    }
+
+    const body = await req.json().catch(() => null);
+    const planParam = body?.plan;
 
     if (!planParam) {
         return NextResponse.json({ error: 'Missing plan' }, { status: 400 });

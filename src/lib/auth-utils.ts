@@ -1,14 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { verifySessionCookieValue, type SessionPayload } from "./session";
 
-export interface SessionUser {
-  userId: string;
-  email: string;
-  name: string;
-  role: "OWNER" | "TENANT_ADMIN" | "TEAM" | "PATIENT";
-  tenantId: string;
-  patientId: string | null;
-}
+export interface SessionUser extends SessionPayload {}
 
 export async function getSession(): Promise<SessionUser | null> {
   try {
@@ -19,7 +13,7 @@ export async function getSession(): Promise<SessionUser | null> {
       return null;
     }
 
-    return JSON.parse(sessionCookie.value) as SessionUser;
+    return verifySessionCookieValue(sessionCookie.value) as SessionUser | null;
   } catch {
     return null;
   }

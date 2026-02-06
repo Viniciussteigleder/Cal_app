@@ -18,7 +18,9 @@
     "populate:comprehensive": "tsx scripts/populate-comprehensive-demo.ts",
     "setup:demo-auth": "tsx scripts/setup-demo-auth.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "node scripts/vercel-build.js"
+    "vercel-build": "node scripts/vercel-build.js",
+    "typecheck": "tsc --noEmit",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
@@ -55,6 +57,8 @@
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.2",
     "ai": "^6.0.70",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",

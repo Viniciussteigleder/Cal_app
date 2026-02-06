@@ -81,12 +81,12 @@ export default function LandingPage() {
               IA para nutricionistas e pacientes
             </div>
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-slate-900 leading-[1.05]">
-              Nutrição inteligente que
-              <span className="text-emerald-600"> transforma</span> resultados.
+              Nutrição clínica que
+              <span className="text-emerald-600"> escala</span> resultados com IA.
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
-              O NutriPlan conecta pacientes, clínicos e dados em tempo real. Planos personalizados,
-              análise automática de refeições e acompanhamento contínuo para aumentar adesão e evolução.
+              O NutriPlan conecta pacientes, nutricionistas e dados em tempo real. Planos inteligentes,
+              análise automática de refeições e acompanhamento contínuo para mais adesão e evolução.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -102,8 +102,9 @@ export default function LandingPage() {
                 size="lg"
                 variant="outline"
                 className="h-14 px-8 rounded-full border-slate-200 text-slate-700 hover:bg-white hover:text-emerald-700 text-lg"
+                onClick={openSignup}
               >
-                Ver demonstração
+                Agendar demo
                 <PlayCircle className="ml-2 h-5 w-5" />
               </Button>
             </div>
@@ -176,6 +177,35 @@ export default function LandingPage() {
       </section>
 
       {/* Logos / Social proof */}
+      <section className="px-6 pb-12">
+        <div className="max-w-6xl mx-auto rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Demo</p>
+              <h2 className="text-3xl font-bold text-slate-900">Veja o NutriPlan em acao</h2>
+              <p className="text-sm text-muted-foreground">
+                Um fluxo completo de paciente, plano e IA em menos de 2 minutos. Resultado real, sem friccao.
+              </p>
+              <Button onClick={openSignup} className="rounded-full bg-slate-900 hover:bg-slate-800 text-white">
+                Assistir demo
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+            <div className="relative aspect-video rounded-2xl bg-slate-900/90 overflow-hidden border border-slate-800">
+              <div className="absolute inset-0 bg-[radial-gradient(300px_circle_at_30%_20%,rgba(16,185,129,0.35),transparent),radial-gradient(280px_circle_at_80%_30%,rgba(59,130,246,0.35),transparent)]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-16 w-16 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-xl">
+                  <PlayCircle className="h-8 w-8" />
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-4 rounded-full bg-white/10 text-white text-xs px-3 py-1">
+                Demo interativa
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="px-6 pb-10">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6 text-center text-sm text-muted-foreground">
           {[
@@ -211,12 +241,12 @@ export default function LandingPage() {
                 acionáveis para decisões clínicas mais rápidas.
               </p>
               <div className="space-y-4">
-                {[
-                  "Análise automática de refeições por foto, voz ou texto",
-                  "Ajuste inteligente de macros com base no progresso",
-                  "Alertas de adesão com intervenções sugeridas",
-                  "Resumo semanal com comparativos e tendências",
-                ].map((item) => (
+              {[
+                "Análise automática de refeições por foto, voz ou texto",
+                "Ajuste inteligente de macros com base no progresso do paciente",
+                "Alertas preditivos de adesão com intervenção sugerida",
+                "Resumo semanal com insights clínicos e tendências",
+              ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
                     <div className="mt-1 h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center">
                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
@@ -396,27 +426,27 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid lg:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Starter",
-                price: "R$ 0",
-                description: "Para começar com acompanhamento essencial.",
-                features: ["Cadastro de pacientes", "Registro de refeições", "Chat básico"],
-              },
-              {
-                name: "Pro",
-                price: "R$ 149",
-                description: "Ideal para nutricionistas em expansão.",
-                features: ["Automação com IA", "Relatórios semanais", "Alertas de adesão"],
-                highlight: true,
-              },
-              {
-                name: "Clinic",
-                price: "R$ 399",
-                description: "Para equipes e operações multi-unidade.",
-                features: ["Multi-profissionais", "Insights preditivos", "Suporte dedicado"],
-              },
-            ].map((plan) => (
+              {[
+                {
+                  name: "Essential",
+                  price: "R$ 0",
+                  description: "Base sólida para começar a acompanhar pacientes.",
+                  features: ["Cadastro de pacientes", "Registro de refeições", "Chat essencial"],
+                },
+                {
+                  name: "Growth AI",
+                  price: "R$ 199",
+                  description: "IA aplicada ao dia a dia clínico com escala.",
+                  features: ["Automação com IA", "Relatórios semanais", "Alertas preditivos"],
+                  highlight: true,
+                },
+                {
+                  name: "Clinic Plus",
+                  price: "R$ 499",
+                  description: "Para equipes, unidades e operação avançada.",
+                  features: ["Multi-profissionais", "IA prescritiva", "Suporte dedicado"],
+                },
+              ].map((plan) => (
               <div
                 key={plan.name}
                 className={`relative rounded-3xl border p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 ${

@@ -115,7 +115,9 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null);
   const [savingPlan, setSavingPlan] = useState<PlanKey | null>(null);
+  const [migratingPlan, setMigratingPlan] = useState<PlanKey | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<PlanKey, PlanConfig>>({} as Record<PlanKey, PlanConfig>);
 
   useEffect(() => {
@@ -149,7 +151,11 @@ export default function SubscriptionPage() {
   const handleSubscribe = async (planKey: PlanKey) => {
     setCheckoutLoading(planKey);
     try {
-      const response = await fetch(`/api/stripe/checkout?plan=${planKey}`);
+      const response = await fetch(`/api/stripe/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey }),
+      });
       const data = await response.json();
       if (data.url) {
         window.location.href = data.url;
@@ -180,6 +186,7 @@ export default function SubscriptionPage() {
 
     setSavingPlan(planKey);
     setError(null);
+    setInfo(null);
 
     try {
       const response = await fetch("/api/owner/plans", {
@@ -219,6 +226,34 @@ export default function SubscriptionPage() {
     }
   };
 
+  const handleMigrate = async (planKey: PlanKey) => {
+    const draft = drafts[planKey];
+    if (!draft?.stripe_price_id) {
+      setError("Este plano não tem preço Stripe configurado.");
+      return;
+    }
+
+    setMigratingPlan(planKey);
+    setError(null);
+    setInfo(null);
+
+    try {
+      const response = await fetch("/api/owner/plans/migrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey, prorationBehavior: "create_prorations" }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Falha ao migrar assinaturas");
+
+      setInfo(`Migração concluída: ${data.updated} atualizadas, ${data.skipped} já estavam no preço, ${data.failed} falharam.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao migrar assinaturas");
+    } finally {
+      setMigratingPlan(null);
+    }
+  };
+
   const sortedPlans = useMemo(
     () => [...plans].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
     [plans]
@@ -236,6 +271,11 @@ export default function SubscriptionPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm">
           {error}
+        </div>
+      )}
+      {info && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-3 text-sm">
+          {info}
         </div>
       )}
 
@@ -403,7 +443,10 @@ export default function SubscriptionPage() {
                     Stripe product: {plan.stripe_product_id || "(não configurado)"} | Stripe price: {plan.stripe_price_id || "(não configurado)"}
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <Button variant="outline" onClick={() => handleMigrate(plan.plan)} disabled={migratingPlan === plan.plan}>
+                      {migratingPlan === plan.plan ? "Migrando..." : "Aplicar em assinaturas ativas"}
+                    </Button>
                     <Button onClick={() => handleSave(plan.plan)} disabled={savingPlan === plan.plan}>
                       {savingPlan === plan.plan ? "Salvando..." : "Salvar e sincronizar"}
                     </Button>

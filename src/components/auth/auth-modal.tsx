@@ -155,9 +155,9 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
         <div className="space-y-6">
           <div className="text-center">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {onboardingStep === 1 && "Qual seu objetivo?"}
-              {onboardingStep === 2 && "Seus dados básicos"}
-              {onboardingStep === 3 && "Quase lá!"}
+              {onboardingStep === 1 && "Defina seu objetivo principal"}
+              {onboardingStep === 2 && "Dados para personalizar o plano"}
+              {onboardingStep === 3 && "Ative sua jornada inteligente"}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               Passo {onboardingStep} de 3
@@ -175,10 +175,10 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
           {onboardingStep === 1 && (
             <div className="grid gap-3">
               {[
-                { id: "loss", label: "Perder peso", desc: "Emagrecer de forma saudável" },
-                { id: "gain", label: "Ganhar massa", desc: "Aumentar massa muscular" },
-                { id: "maintain", label: "Manter peso", desc: "Equilibrar alimentação" },
-                { id: "health", label: "Melhorar saúde", desc: "Alimentação mais saudável" },
+                { id: "loss", label: "Perder peso", desc: "Emagrecer com acompanhamento real" },
+                { id: "gain", label: "Ganhar massa", desc: "Evoluir performance nutricional" },
+                { id: "maintain", label: "Manter peso", desc: "Equilibrar hábitos e metas" },
+                { id: "health", label: "Melhorar saúde", desc: "Foco em qualidade de vida" },
               ].map((goal) => (
                 <button
                   key={goal.id}
@@ -263,7 +263,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   <span className="font-medium">Tudo pronto!</span>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Agora você pode começar a acompanhar sua alimentação e se conectar com nutricionistas.
+                  Sua conta está pronta para acompanhar refeições, metas e progresso com IA.
                 </p>
               </div>
 
@@ -344,7 +344,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
 
           <div className="text-center">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Entrar com email</h2>
-            <p className="text-sm text-muted-foreground mt-1">Digite seus dados</p>
+            <p className="text-sm text-muted-foreground mt-1">Acesse sua jornada inteligente</p>
           </div>
 
           {error && (
@@ -407,7 +407,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
 
           <div className="text-center">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Criar conta</h2>
-            <p className="text-sm text-muted-foreground mt-1">Preencha seus dados</p>
+            <p className="text-sm text-muted-foreground mt-1">Comece em menos de 2 minutos</p>
           </div>
 
           {error && (
@@ -472,9 +472,10 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     // Default: options view
     return (
       <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Bem-vindo ao NutriPlan</h2>
-          <p className="text-sm text-muted-foreground mt-1">Escolha como prefere continuar</p>
+        <div className="text-center space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">NutriPlan</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Crie sua conta inteligente</h2>
+          <p className="text-sm text-muted-foreground">Escolha como prefere continuar</p>
         </div>
 
         {error && (
@@ -557,7 +558,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md mx-4 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200 border border-white/60">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"

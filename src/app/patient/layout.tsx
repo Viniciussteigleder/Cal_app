@@ -11,6 +11,7 @@ export default function PatientLayout({
       subtitle="Seu plano alimentar, diário e sintomas em um só lugar."
       devRole="PATIENT"
       nav={[
+        { href: "/patient/view", label: "Visão geral" },
         { href: "/patient/dashboard", label: "Dashboard" },
         { href: "/patient/log", label: "Diário" },
         { href: "/patient/plan", label: "Plano" },

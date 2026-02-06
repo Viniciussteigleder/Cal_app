@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { storageService } from '@/lib/storage';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { verifySessionCookieValue } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
     try {
@@ -20,9 +21,9 @@ export async function POST(request: NextRequest) {
             // Check Mock Session
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('np_session');
-            if (sessionCookie) {
+            const session = verifySessionCookieValue(sessionCookie?.value);
+            if (session) {
                 isAuthenticated = true;
-                const session = JSON.parse(sessionCookie.value);
                 tenantId = session.tenantId || 'default';
             }
         }
@@ -107,7 +108,8 @@ export async function DELETE(request: NextRequest) {
             isAuthenticated = true;
         } else {
             const cookieStore = await cookies();
-            if (cookieStore.get('np_session')) isAuthenticated = true;
+            const session = verifySessionCookieValue(cookieStore.get('np_session')?.value);
+            if (session) isAuthenticated = true;
         }
 
         if (!isAuthenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

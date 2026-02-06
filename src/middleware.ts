@@ -1,55 +1,92 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import { verifySessionCookieValueEdge } from '@/lib/session-edge';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 // Rate limiting storage (in production, use Redis)
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
+const redis = process.env.UPSTASH_REDIS_REST_URL ? Redis.fromEnv() : null;
+const limiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(100, '1 m'),
+    })
+  : null;
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+  const pathname = request.nextUrl.pathname;
+  let rateLimitHeaders: Record<string, string> | null = null;
 
-  // Apply security headers
-  response.headers.set('X-DNS-Prefetch-Control', 'on');
-  response.headers.set(
-    'Strict-Transport-Security',
-    'max-age=63072000; includeSubDomains; preload'
-  );
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
-  response.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=()'
-  );
+  const applySecurityHeaders = (res: NextResponse) => {
+    res.headers.set('X-DNS-Prefetch-Control', 'on');
+    res.headers.set(
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload'
+    );
+    res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    res.headers.set('X-Content-Type-Options', 'nosniff');
+    res.headers.set('X-XSS-Protection', '1; mode=block');
+    res.headers.set('Referrer-Policy', 'origin-when-cross-origin');
+    res.headers.set(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=()'
+    );
+  };
 
   // Rate limiting for API routes
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const now = Date.now();
+  if (pathname.startsWith('/api/')) {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.ip ||
+      'unknown';
 
-    // Get or create rate limit entry
-    let limit = rateLimit.get(ip);
-    if (!limit || now > limit.resetTime) {
-      limit = { count: 0, resetTime: now + 60000 }; // 1 minute window
-      rateLimit.set(ip, limit);
+    if (limiter) {
+      const { success, reset, remaining } = await limiter.limit(ip);
+      rateLimitHeaders = {
+        'X-RateLimit-Limit': '100',
+        'X-RateLimit-Remaining': remaining.toString(),
+        'X-RateLimit-Reset': reset.toString(),
+      };
+
+      if (!success) {
+        const limited = new NextResponse(
+          JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '60',
+            },
+          }
+        );
+        applySecurityHeaders(limited);
+        return limited;
+      }
+    } else {
+      const now = Date.now();
+      let limit = rateLimit.get(ip);
+      if (!limit || now > limit.resetTime) {
+        limit = { count: 0, resetTime: now + 60000 };
+        rateLimit.set(ip, limit);
+      }
+      if (limit.count > 100) {
+        const limited = new NextResponse(
+          JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '60',
+            },
+          }
+        );
+        applySecurityHeaders(limited);
+        return limited;
+      }
+      limit.count++;
     }
-
-    // Check limit (100 requests per minute for API)
-    if (limit.count > 100) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': '60',
-          },
-        }
-      );
-    }
-
-    limit.count++;
   }
 
   // Clean up old rate limit entries periodically
@@ -62,8 +99,63 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Role-based gate for owner/studio/patient portals and owner APIs
+  const isOwnerPath = pathname.startsWith('/owner') || pathname.startsWith('/api/owner');
+  const isStudioPath = pathname.startsWith('/studio');
+  const isPatientPath = pathname.startsWith('/patient');
+
+  if (isOwnerPath || isStudioPath || isPatientPath) {
+    const session = await verifySessionCookieValueEdge(request.cookies.get('np_session')?.value);
+    if (!session) {
+      if (pathname.startsWith('/api/')) {
+        const unauthorized = new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        applySecurityHeaders(unauthorized);
+        return unauthorized;
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      const redirect = NextResponse.redirect(url);
+      applySecurityHeaders(redirect);
+      return redirect;
+    }
+
+    if (isOwnerPath && session.role !== 'OWNER') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      const redirect = NextResponse.redirect(url);
+      applySecurityHeaders(redirect);
+      return redirect;
+    }
+
+    if (isStudioPath && !['TENANT_ADMIN', 'TEAM', 'OWNER'].includes(session.role)) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      const redirect = NextResponse.redirect(url);
+      applySecurityHeaders(redirect);
+      return redirect;
+    }
+
+    if (isPatientPath && session.role !== 'PATIENT') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      const redirect = NextResponse.redirect(url);
+      applySecurityHeaders(redirect);
+      return redirect;
+    }
+  }
+
   // Refresh Supabase session
-  return await updateSession(request);
+  const response = await updateSession(request);
+  if (rateLimitHeaders) {
+    for (const [key, value] of Object.entries(rateLimitHeaders)) {
+      response.headers.set(key, value);
+    }
+  }
+  applySecurityHeaders(response);
+  return response;
 }
 
 export const config = {
