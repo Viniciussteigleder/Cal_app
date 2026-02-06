@@ -5,6 +5,8 @@ import { getLetterheadSettings } from './actions';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { FileText } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function LetterheadSettingsPage() {
     const { data: settings } = await getLetterheadSettings();
 

@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { TenantList } from "./TenantList";
 import { getTenants } from "./actions";
 
+export const dynamic = 'force-dynamic';
+
 export default async function OwnerTenantsPage() {
   const { success, data } = await getTenants();
 

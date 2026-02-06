@@ -1,5 +1,7 @@
 import React from 'react';
 import { getCurrentPatientId } from './actions';
+
+export const dynamic = 'force-dynamic';
 import { getDailyLogs } from '@/app/studio/patients/[patientId]/log/actions';
 import { getRecipes } from '@/app/studio/recipes/actions';
 import { DailyLogTimeline } from '@/app/studio/patients/[patientId]/log/DailyLogTimeline';

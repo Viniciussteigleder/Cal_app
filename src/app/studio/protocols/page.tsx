@@ -1,5 +1,7 @@
 import React from 'react';
 import { getProtocols } from './actions';
+
+export const dynamic = 'force-dynamic';
 import { ProtocolList } from './ProtocolList';
 
 export default async function ProtocolsPage() {

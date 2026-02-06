@@ -4,6 +4,8 @@ import { ExamsListView } from './ExamsListView';
 import { ConsolidatedHistory } from './ConsolidatedHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ExamesPage({
     params,
 }: {

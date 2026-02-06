@@ -1,5 +1,7 @@
 import React from 'react';
 import { getRecipes } from './actions';
+
+export const dynamic = 'force-dynamic';
 import { RecipeList } from './RecipeList';
 
 export default async function RecipesPage() {

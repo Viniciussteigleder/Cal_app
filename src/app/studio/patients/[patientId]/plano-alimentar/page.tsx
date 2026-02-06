@@ -7,6 +7,8 @@ import { LetterheadWrapper } from '@/components/documents/letterhead-wrapper';
 import { prisma } from '@/lib/prisma';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DietPlanPage({
     params,
 }: {

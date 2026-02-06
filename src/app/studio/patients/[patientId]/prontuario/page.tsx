@@ -5,6 +5,8 @@ import { TimelineView } from './TimelineView';
 import { ProntuarioActions } from './ProntuarioActions';
 import { ProntuarioFilters } from './ProntuarioFilters';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProntuarioPage({
     params,
     searchParams,

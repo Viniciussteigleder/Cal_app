@@ -2,6 +2,8 @@ import React from 'react';
 import { getTemplates } from './actions';
 import { TemplateList } from './TemplateList';
 
+export const dynamic = 'force-dynamic';
+
 export default async function TemplatesPage() {
   const { success, data } = await getTemplates();
 
