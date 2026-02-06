@@ -1,0 +1,205 @@
+Need to install the following packages:
+vercel@50.12.3
+Ok to proceed? (y) 
+Vercel CLI 50.12.3
+Retrieving project…
+Deploying viniciussteigleder-5797s-projects/nutri-app-cal
+Uploading [--------------------] (0.0B/88.8KB)
+Uploading [=====---------------] (25.9KB/88.8KB)
+Uploading [============--------] (55.2KB/88.8KB)
+Uploading [================----] (72.6KB/88.8KB)
+Uploading [====================] (88.8KB/88.8KB)
+Inspect: https://vercel.com/viniciussteigleder-5797s-projects/nutri-app-cal/7np1L8PiEU8cMEZCDCaVsF9u1LkF [3s]
+Production: https://nutri-app-n6z06n63f-viniciussteigleder-5797s-projects.vercel.app [3s]
+https://nutri-app-n6z06n63f-viniciussteigleder-5797s-projects.vercel.appBuilding...
+Building...
+Building: Running build in Portland, USA (West) – pdx1
+Building: Build machine configuration: 2 cores, 8 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 406 deployment files...
+Building: Restored build cache from previous deployment (9aaieAewEby9sZJmATYmrqmfCxpz)
+Building: Running "vercel build"
+Building: Vercel CLI 50.11.0
+Building: Installing dependencies...
+Building: > nutriplan@0.1.0 postinstall
+Building: > prisma generate
+Building: Environment variables loaded from .env
+Building: Prisma schema loaded from prisma/schema.prisma
+Building: ✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 416ms
+Building: Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+Building: Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+Building: up to date in 3s
+Building: 256 packages are looking for funding
+Building: run `npm fund` for details
+Building: Detected Next.js version: 16.1.6
+Building: Running "npm run vercel-build"
+Building: > nutriplan@0.1.0 vercel-build
+Building: > prisma generate && next build
+Building: Environment variables loaded from .env
+Building: Prisma schema loaded from prisma/schema.prisma
+Building: ✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 332ms
+Building: Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+Building: Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+Building: ┌─────────────────────────────────────────────────────────┐
+Building: │  Update available 5.22.0 -> 7.3.0                       │
+Building: │                                                         │
+Building: │  This is a major update - please follow the guide at    │
+Building: │  https://pris.ly/d/major-version-upgrade                │
+Building: │                                                         │
+Building: │  Run the following to update                            │
+Building: │    npm i --save-dev prisma@latest                       │
+Building: │    npm i @prisma/client@latest                          │
+Building: └─────────────────────────────────────────────────────────┘
+Building: ▲ Next.js 16.1.6 (Turbopack)
+Building: - Environments: .env
+Building: ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+Building: Creating an optimized production build ...
+Building: ✓ Compiled successfully in 37.9s
+Building: Skipping validation of types
+Building: Collecting page data using 1 worker ...
+Building: Generating static pages using 1 worker (0/106) ...
+Building: Generating static pages using 1 worker (26/106)
+Building: Generating static pages using 1 worker (52/106)
+Building: Generating static pages using 1 worker (79/106)
+Building: ✓ Generating static pages using 1 worker (106/106) in 1051.8ms
+Building: Finalizing page optimization ...
+Building: Route (app)
+Building: ┌ ○ /
+Building: ├ ○ /_not-found
+Building: ├ ○ /admin/login
+Building: ├ ƒ /api/ai/chatbot
+Building: ├ ƒ /api/ai/config
+Building: ├ ƒ /api/ai/correlations
+Building: ├ ƒ /api/ai/credits
+Building: ├ ƒ /api/ai/exam-analyzer-ocr
+Building: ├ ƒ /api/ai/food-recognition
+Building: ├ ƒ /api/ai/food-recognition/[id]
+Building: ├ ƒ /api/ai/insights
+Building: ├ ƒ /api/ai/meal-planner
+Building: ├ ƒ /api/ai/medical-record
+Building: ├ ƒ /api/ai/patient-analyzer
+Building: ├ ƒ /api/ai/protocol-generator-ai
+Building: ├ ƒ /api/ai/report-generator
+Building: ├ ƒ /api/ai/shopping-list
+Building: ├ ƒ /api/ai/supplement-advisor
+Building: ├ ƒ /api/ai/symptom-correlator-ai
+Building: ├ ƒ /api/analytics
+Building: ├ ƒ /api/auth/admin-login
+Building: ├ ƒ /api/auth/login
+Building: ├ ƒ /api/auth/logout
+Building: ├ ƒ /api/auth/session
+Building: ├ ƒ /api/auth/signup
+Building: ├ ƒ /api/dev/session
+Building: ├ ƒ /api/events
+Building: ├ ƒ /api/exams
+Building: ├ ƒ /api/foods/search
+Building: ├ ƒ /api/logs
+Building: ├ ƒ /api/meal-plans
+Building: ├ ƒ /api/notifications/email
+Building: ├ ƒ /api/owner/integrity
+Building: ├ ƒ /api/owner/integrity/run
+Building: ├ ƒ /api/owner/stats
+Building: ├ ƒ /api/patient/dashboard
+Building: ├ ƒ /api/patient/diary
+Building: ├ ƒ /api/patient/exams
+Building: ├ ƒ /api/patient/export
+Building: ├ ƒ /api/patient/foods
+Building: ├ ƒ /api/patient/meal-items
+Building: ├ ƒ /api/patient/meal-items/[id]
+Building: ├ ƒ /api/patient/meal-photos
+Building: ├ ƒ /api/patient/meals
+Building: ├ ƒ /api/patient/symptoms
+Building: ├ ƒ /api/patients
+Building: ├ ƒ /api/patients/[patientId]
+Building: ├ ƒ /api/pdf/generate
+Building: ├ ƒ /api/protocols
+Building: ├ ƒ /api/recipes
+Building: ├ ƒ /api/studio/dashboard
+Building: ├ ƒ /api/studio/forms/submissions
+Building: ├ ƒ /api/studio/forms/templates
+Building: ├ ƒ /api/studio/patients
+Building: ├ ƒ /api/studio/patients/[id]/modules
+Building: ├ ƒ /api/studio/planner
+Building: ├ ƒ /api/studio/planner/[id]
+Building: ├ ƒ /api/studio/plans
+Building: ├ ƒ /api/studio/plans/[planId]/publish
+Building: ├ ƒ /api/templates
+Building: ├ ƒ /api/upload
+Building: ├ ƒ /auth/callback
+Building: ├ ○ /login
+Building: ├ ○ /owner/ai
+Building: ├ ƒ /owner/ai-config
+Building: ├ ○ /owner/app-description
+Building: ├ ○ /owner/datasets
+Building: ├ ○ /owner/integrity
+Building: ├ ○ /owner/tenants
+Building: ├ ○ /owner/users
+Building: ├ ○ /patient/capture
+Building: ├ ○ /patient/chat
+Building: ├ ○ /patient/coach
+Building: ├ ○ /patient/dashboard
+Building: ├ ○ /patient/diary
+Building: ├ ○ /patient/exams
+Building: ├ ○ /patient/exercise
+Building: ├ ƒ /patient/log
+Building: ├ ƒ /patient/plan
+Building: ├ ○ /patient/progress
+Building: ├ ○ /patient/settings
+Building: ├ ○ /patient/symptoms
+Building: ├ ○ /patient/today
+Building: ├ ○ /patient/water
+Building: ├ ○ /studio/ai
+Building: ├ ○ /studio/ai-workflows
+Building: ├ ƒ /studio/ai-workflows/credits
+Building: ├ ○ /studio/ai/clinical-mdt
+Building: ├ ○ /studio/ai/exam-analyzer
+Building: ├ ○ /studio/ai/food-recognition
+Building: ├ ○ /studio/ai/meal-planner
+Building: ├ ○ /studio/ai/medical-record-creator
+Building: ├ ƒ /studio/ai/patient-analyzer
+Building: ├ ƒ /studio/ai/protocol-generator
+Building: ├ ○ /studio/ai/report-generator
+Building: ├ ○ /studio/ai/shopping-list
+Building: ├ ○ /studio/ai/supplement-advisor
+Building: ├ ƒ /studio/ai/symptom-correlator
+Building: ├ ○ /studio/calculations
+Building: ├ ○ /studio/chat
+Building: ├ ƒ /studio/consultations/[id]
+Building: ├ ○ /studio/dashboard
+Building: ├ ○ /studio/document-templates
+Building: ├ ○ /studio/forms
+Building: ├ ○ /studio/patients
+Building: ├ ƒ /studio/patients/[patientId]
+Building: ├ ƒ /studio/patients/[patientId]/exames
+Building: ├ ƒ /studio/patients/[patientId]/exames/[uploadId]
+Building: ├ ƒ /studio/patients/[patientId]/exames/upload
+Building: ├ ƒ /studio/patients/[patientId]/log
+Building: ├ ƒ /studio/patients/[patientId]/overview
+Building: ├ ƒ /studio/patients/[patientId]/plano-alimentar
+Building: ├ ƒ /studio/patients/[patientId]/prontuario
+Building: ├ ƒ /studio/patients/[patientId]/protocols
+Building: ├ ○ /studio/planner
+Building: ├ ƒ /studio/plans/[patientId]
+Building: ├ ƒ /studio/policies/[patientId]
+Building: ├ ƒ /studio/protocols
+Building: ├ ƒ /studio/protocols/[id]
+Building: ├ ○ /studio/protocols/new
+Building: ├ ƒ /studio/recipes
+Building: ├ ○ /studio/recipes/new
+Building: ├ ○ /studio/settings/ai-agents
+Building: ├ ○ /studio/settings/ai-providers
+Building: ├ ƒ /studio/templates
+Building: └ ○ /studio/templates/new
+Building: ƒ Proxy (Middleware)
+Building: ○  (Static)   prerendered as static content
+Building: ƒ  (Dynamic)  server-rendered on demand
+Building: Traced Next.js server files in: 86.923ms
+Building: Created all serverless functions in: 728.752ms
+Building: Collected static files (public/, static/, .next/static): 10.055ms
+Building: Build Completed in /vercel/output [50s]
+Building: Deploying outputs...
+Building: Deployment completed
+Building: Creating build cache...
+[2K[1A[2K[GProduction: https://nutri-app-n6z06n63f-viniciussteigleder-5797s-projects.vercel.app [1m]
+Completing...
+Aliased: https://nutri-app-cal.vercel.app [1m]
