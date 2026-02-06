@@ -373,7 +373,7 @@ model FoodSnapshot {
   snapshot_json      Json
   source             String
   dataset_release_id String   @db.Uuid
-  content_hash       String?  @default(dbgenerated("md5((snapshot_json)::text)"))
+  content_hash       String?
   created_at         DateTime @default(now()) @db.Timestamptz(6)
 }
 
