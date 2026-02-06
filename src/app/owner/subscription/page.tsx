@@ -121,7 +121,7 @@ export default function SubscriptionPage() {
                     onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO || '', 'PROFESSIONAL')}
                 />
 
-                {/* Enterprise Plan */}
+                {/* Enterprise Plan (Mapped to PRO MAX) */}
                 <PricingCard
                     title="Enterprise"
                     price="R$ 497"
@@ -136,7 +136,7 @@ export default function SubscriptionPage() {
                         "Gerente de Conta Dedicado"
                     ]}
                     buttonText="Falar com Vendas"
-                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE || '', 'ENTERPRISE')}
+                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MAX || '', 'ENTERPRISE')}
                 />
             </div>
 

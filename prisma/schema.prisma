@@ -23,7 +23,7 @@ model Tenant {
   ai_usage_limit Int            @default(1000)
 
   // Stripe Subscription
-  plan                   SubscriptionPlan @default(FREE)
+  plan                   SubscriptionPlan @default(BASIC)
   stripe_customer_id     String?
   stripe_subscription_id String?
   subscription_status    String? // 'active', 'past_due', 'canceled', etc.
@@ -647,10 +647,10 @@ enum TenantType {
 }
 
 enum SubscriptionPlan {
-  FREE
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
+  BASIC
+  PRO
+  PRO_MAX
+  PRO_MAX_AI
 }
 
 enum TenantStatus {

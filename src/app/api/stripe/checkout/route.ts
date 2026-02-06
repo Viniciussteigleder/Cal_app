@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth'; // Adjust based on your auth
 import { stripe } from '@/lib/stripe';
-import { db } from '@/lib/db';
-import { authOptions } from '@/lib/auth'; // Adjust location of authOptions
+import { prisma } from '@/lib/db';
+import { getSupabaseClaims } from '@/lib/auth';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -14,14 +13,18 @@ export async function GET(req: Request) {
     }
 
     // Verify authentication
-    // This is a simplified check. You should verify the user owns the tenant.
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const claims = await getSupabaseClaims();
+    if (!claims) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    // Security check: ensure the user belongs to the tenant they are trying to pay for
+    if (claims.tenant_id !== tenantId) {
+        return new NextResponse('Forbidden: You can only subscribe for your own tenant', { status: 403 });
+    }
+
     // Get Tenant to check for existing customer ID
-    const tenant = await db.tenant.findUnique({
+    const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
     });
 
@@ -33,8 +36,14 @@ export async function GET(req: Request) {
 
     // If no customer ID, create one
     if (!customerId) {
+        // We don't have the email in claims easily unless we query User table
+        // Fetch user email
+        const user = await prisma.user.findUnique({
+            where: { id: claims.user_id }
+        });
+
         const customer = await stripe.customers.create({
-            email: session.user?.email || undefined,
+            email: user?.email || undefined,
             name: tenant.name,
             metadata: {
                 tenantId: tenant.id,
@@ -43,7 +52,7 @@ export async function GET(req: Request) {
         customerId = customer.id;
 
         // Save it immediately so we don't create duplicates
-        await db.tenant.update({
+        await prisma.tenant.update({
             where: { id: tenant.id },
             data: { stripe_customer_id: customerId },
         });

@@ -12,6 +12,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         { href: "/owner/datasets", label: "Datasets" },
         { href: "/owner/integrity", label: "Integridade" },
         { href: "/owner/app-description", label: "Descrição" },
+        { href: "/owner/subscription", label: "Assinatura" },
       ]}
     >
       {children}
