@@ -15,6 +15,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "populate:demo": "tsx scripts/populate-demo-data.ts",
+    "setup:demo-auth": "tsx scripts/setup-demo-auth.ts",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && next build"
   },
