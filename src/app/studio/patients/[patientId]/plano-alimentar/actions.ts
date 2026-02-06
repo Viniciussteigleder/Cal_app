@@ -59,7 +59,6 @@ export async function assignProtocol(patientId: string, protocolId: string) {
         return { success: false, error: "Failed to assign protocol" };
     }
 }
-}
 
 export async function getActivePlan(patientId: string) {
     const claims = await getSupabaseClaims();
