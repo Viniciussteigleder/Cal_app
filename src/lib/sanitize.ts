@@ -171,7 +171,7 @@ export function validateDate(
  * @param maxDepth - Maximum nesting depth (default: 5)
  * @returns Sanitized object
  */
-export function sanitizeObject(obj: any, maxDepth: number = 5): any {
+export function sanitizeObject(obj: unknown, maxDepth: number = 5): unknown {
     if (maxDepth <= 0) return null;
     if (obj === null || obj === undefined) return null;
     if (typeof obj !== 'object') return obj;
@@ -182,8 +182,8 @@ export function sanitizeObject(obj: any, maxDepth: number = 5): any {
             .map(item => sanitizeObject(item, maxDepth - 1));
     }
 
-    const sanitized: any = {};
-    for (const [key, value] of Object.entries(obj)) {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
         if (value !== null && value !== undefined) {
             sanitized[key] = sanitizeObject(value, maxDepth - 1);
         }

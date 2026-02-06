@@ -36,7 +36,7 @@ export class StorageService {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      const { data, error } = await this.supabase.storage
+      const { error } = await this.supabase.storage
         .from(bucket)
         .upload(fileName, buffer, {
           contentType: file.type,

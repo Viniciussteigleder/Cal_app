@@ -240,6 +240,9 @@ export class AIService {
             case 'patient_analyzer':
                 return this.executePatientAnalyzer(inputData);
 
+            case 'medical_record_creator':
+                return this.executeMedicalRecordCreator(inputData);
+
             // Add other agents here...
 
             default:
@@ -414,6 +417,85 @@ export class AIService {
             data: analysis,
             tokensUsed: response.usage?.total_tokens,
         };
+    }
+
+    /**
+     * Medical Record Creator Agent
+     * Transcribes audio and generates clinical documentation (SOAP)
+     */
+    private async executeMedicalRecordCreator(input: {
+        action: 'transcribe' | 'generate-soap';
+        audioUrl?: string; // For transcription
+        transcription?: string; // For SOAP generation
+        consultationType?: string;
+    }): Promise<{ data: any; tokensUsed?: number }> {
+        if (!this.openai) {
+            throw new Error('OpenAI not initialized');
+        }
+
+        // 1. Transcription Mode
+        if (input.action === 'transcribe') {
+            if (!input.audioUrl) throw new Error('Audio URL is required for transcription');
+
+            // Fetch audio file from URL
+            const audioResponse = await fetch(input.audioUrl);
+            if (!audioResponse.ok) throw new Error('Failed to fetch audio file');
+
+            const blob = await audioResponse.blob();
+            const file = new File([blob], 'consultation.webm', { type: blob.type });
+
+            const transcription = await this.openai.audio.transcriptions.create({
+                file: file,
+                model: 'whisper-1',
+                language: 'pt',
+            });
+
+            return {
+                data: {
+                    text: transcription.text,
+                    // Mock additional metadata as Whisper only returns text/json
+                    duration: 0,
+                    language: 'pt-BR',
+                    confidence: 1.0,
+                },
+                tokensUsed: 0, // Whisper doesn't report tokens in the same way
+            };
+        }
+
+        // 2. SOAP Generation Mode
+        if (input.action === 'generate-soap') {
+            if (!input.transcription) throw new Error('Transcription is required for SOAP generation');
+
+            const response = await this.openai.chat.completions.create({
+                model: 'gpt-4-turbo-preview',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are an expert medical scribe.
+                        Generate a structured SOAP note from the consultation transcription.
+                        Return JSON with: subjective, objective, assessment, plan.
+                        Language: Portuguese (BR).`,
+                    },
+                    {
+                        role: 'user',
+                        content: `Consultation Type: ${input.consultationType || 'General'}
+                        Transcription: ${input.transcription}`,
+                    },
+                ],
+                max_tokens: 2000,
+                response_format: { type: 'json_object' },
+            });
+
+            const content = response.choices[0]?.message?.content;
+            const soapNote = content ? JSON.parse(content) : {};
+
+            return {
+                data: { soapNote },
+                tokensUsed: response.usage?.total_tokens,
+            };
+        }
+
+        throw new Error(`Invalid action: ${input.action}`);
     }
 
     // ============================================================================

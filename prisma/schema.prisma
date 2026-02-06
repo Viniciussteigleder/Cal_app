@@ -27,6 +27,7 @@ model User {
   tenant_id     String        @db.Uuid
   status        UserStatus
   planner_tasks PlannerTask[]
+  patient       Patient?
 }
 
 model Patient {
@@ -38,6 +39,7 @@ model Patient {
   created_at       DateTime         @default(now()) @db.Timestamptz(6)
   enabled_modules  Json?
   form_submissions FormSubmission[]
+  user             User?            @relation(fields: [user_id], references: [id])
 }
 
 model PatientProfile {

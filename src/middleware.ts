@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
 // Rate limiting storage (in production, use Redis)
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // Apply security headers
@@ -24,7 +25,7 @@ export function middleware(request: NextRequest) {
 
   // Rate limiting for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
     const now = Date.now();
 
     // Get or create rate limit entry
@@ -61,7 +62,8 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return response;
+  // Refresh Supabase session
+  return await updateSession(request);
 }
 
 export const config = {

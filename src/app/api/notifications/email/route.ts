@@ -1,20 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Mock email service - replace with SendGrid/Resend
-async function sendEmail(data: any) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    console.log('Email sent:', {
-        to: data.to,
-        subject: data.subject,
-        type: data.type,
-    });
-
-    return {
-        messageId: `msg_${Date.now()}`,
-        status: 'sent',
-    };
-}
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
     try {
@@ -38,50 +23,60 @@ export async function POST(request: NextRequest) {
         }
 
         let subject = '';
-        let template = '';
+        let htmlContent = ''; // In a real app, use React Email or compiled templates
 
         // Determine email template based on type
         switch (type) {
             case 'meal_plan':
                 subject = 'Seu Novo Plano Alimentar - NutriPlan';
-                template = 'meal-plan-email';
+                htmlContent = `<h1>Olá!</h1><p>Seu novo plano alimentar está pronto.</p><p>Acesse o app para conferir.</p>`;
                 break;
             case 'shopping_list':
                 subject = 'Lista de Compras - NutriPlan';
-                template = 'shopping-list-email';
+                htmlContent = `<h1>Lista de Compras</h1><p>Aqui estão os itens para sua semana.</p>`;
                 break;
             case 'progress_report':
                 subject = 'Relatório de Progresso - NutriPlan';
-                template = 'progress-report-email';
+                htmlContent = `<h1>Parabéns!</h1><p>Veja seu progresso desta semana.</p>`;
                 break;
             case 'appointment_reminder':
                 subject = 'Lembrete de Consulta - NutriPlan';
-                template = 'appointment-reminder-email';
+                htmlContent = `<h1>Lembrete</h1><p>Sua consulta está chegando.</p>`;
                 break;
             case 'welcome':
                 subject = 'Bem-vindo ao NutriPlan!';
-                template = 'welcome-email';
+                htmlContent = `<h1>Boas vindas!</h1><p>Estamos felizes em ter você conosco.</p>`;
                 break;
             case 'password_reset':
                 subject = 'Redefinir Senha - NutriPlan';
-                template = 'password-reset-email';
+                htmlContent = `<h1>Recuperação de Senha</h1><p>Use este link para redefinir sua senha.</p>`;
                 break;
             default:
                 subject = 'Notificação - NutriPlan';
-                template = 'generic-email';
+                htmlContent = `<p>Você tem uma nova notificação.</p>`;
         }
 
+        // Use the centralized email service (handles Mock vs Real automatically)
         const result = await sendEmail({
             to,
             subject,
-            template,
-            data,
+            html: htmlContent,
+            from: 'NutriPlan <onboarding@resend.dev>' // Default, can be overridden
         });
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: 'Failed to send email provider request', details: result.error },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({
             success: true,
-            messageId: result.messageId,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            messageId: (result as any).data?.id || (result as any).id,
             message: 'Email sent successfully',
+            simulated: (result as any).simulated || false
         });
     } catch (error) {
         console.error('Error sending email:', error);
