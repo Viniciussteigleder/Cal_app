@@ -1,7 +1,15 @@
 import { createSupabaseAdminClient } from './supabase/admin';
 
 export class StorageService {
-  private supabase = createSupabaseAdminClient();
+  private _supabase: ReturnType<typeof createSupabaseAdminClient> | null = null;
+
+  /** Lazy-init so the Supabase client is only created at runtime, not at build time. */
+  private get supabase() {
+    if (!this._supabase) {
+      this._supabase = createSupabaseAdminClient();
+    }
+    return this._supabase;
+  }
 
   /**
    * Upload a file to Supabase Storage
