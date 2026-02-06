@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    console.log(`Login attempt for: ${normalizedEmail}`);
 
     // 1. Try database lookup first (Real Auth)
     try {
@@ -54,8 +57,9 @@ export async function POST(request: NextRequest) {
         let isValid = false;
 
         // 1a. Check password hash
-        if (user.password_hash) {
-          isValid = await compare(password, user.password_hash);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((user as any).password_hash) {
+          isValid = await compare(cleanPassword, (user as any).password_hash);
         }
 
         // 1b. Fallback for LEGACY users/Dev only - remove in strict prod
@@ -110,12 +114,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Check Mock Users (Fallback for Dev/Demo only)
-    // Only available in development environment
-    if ((process.env.NODE_ENV as string) !== "production") {
+    // Only available in development environment OR if explicit demo login flag is set
+    const isDev = process.env.NODE_ENV !== "production";
+    const isDemoEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true";
+
+    if (isDev || isDemoEnabled) {
       const demoPassword = getDemoPassword();
       const mockUser = MOCK_USERS[normalizedEmail as keyof typeof MOCK_USERS];
 
-      if (mockUser && password === demoPassword) {
+      if (mockUser && cleanPassword === demoPassword) {
         // Set session cookie with mock user data
         const userRole = mockUser.role as string;
         const sessionData = {

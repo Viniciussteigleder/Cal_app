@@ -1,22 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { storageService } from '@/lib/storage';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
     try {
-        const formData = await request.formData();
-        const file = formData.get('file') as File;
-        const type = formData.get('type') as string; // 'image', 'audio', 'pdf', 'document'
-        const patientId = formData.get('patientId') as string;
+        // 1. Authentication Check
+        let isAuthenticated = false;
+        let tenantId = 'default'; // Default for authorized mock users
 
-        if (!file) {
+        // Check Supabase Auth
+        const supabase = await createSupabaseServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            isAuthenticated = true;
+            tenantId = user.user_metadata?.tenant_id || 'default';
+        } else {
+            // Check Mock Session
+            const cookieStore = await cookies();
+            const sessionCookie = cookieStore.get('np_session');
+            if (sessionCookie) {
+                isAuthenticated = true;
+                const session = JSON.parse(sessionCookie.value);
+                tenantId = session.tenantId || 'default';
+            }
+        }
+
+        if (!isAuthenticated) {
             return NextResponse.json(
-                { error: 'No file provided' },
-                { status: 400 }
+                { error: 'Unauthorized' },
+                { status: 401 }
             );
         }
 
-        // Validate file type
+        // 2. Process Request
+        const formData = await request.formData();
+        const file = formData.get('file') as File;
+        const type = formData.get('type') as string; // 'image', 'audio', 'pdf', 'document'
+
+        if (!file) {
+            return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+        }
+
+        // 3. Validation
         const validTypes = {
             image: ['image/jpeg', 'image/png', 'image/webp'],
             audio: ['audio/mpeg', 'audio/wav', 'audio/webm'],
@@ -26,47 +53,41 @@ export async function POST(request: NextRequest) {
 
         if (type && validTypes[type as keyof typeof validTypes]) {
             if (!validTypes[type as keyof typeof validTypes].includes(file.type)) {
-                return NextResponse.json(
-                    { error: `Invalid file type for ${type}` },
-                    { status: 400 }
-                );
+                return NextResponse.json({ error: `Invalid file type for ${type}` }, { status: 400 });
             }
         }
 
-        // Validate file size (max 10MB)
         const maxSize = 10 * 1024 * 1024; // 10MB
         if (file.size > maxSize) {
-            return NextResponse.json(
-                { error: 'File size exceeds 10MB limit' },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'File size exceeds 10MB limit' }, { status: 400 });
         }
 
-        // Generate unique filename
+        // 4. Upload to Supabase Storage
+        // Use a bucket named based on type or generic 'uploads'
+        // If type is 'image', maybe 'images' bucket? Or just 'uploads' with folder?
+        // Let's use 'uploads' bucket and use folders.
+        const bucketName = 'uploads';
+        const folder = type || 'misc';
+
+        // Sanitize filename
         const timestamp = Date.now();
         const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = `${timestamp}_${originalName}`;
+        const path = `${tenantId}/${folder}/${timestamp}_${originalName}`;
 
-        // In production, upload to S3/Supabase Storage
-        // For now, save locally (mock)
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+        const result = await storageService.uploadFile(file, bucketName, path);
 
-        // Mock file path (in production, this would be S3/Supabase URL)
-        const fileUrl = `/uploads/${type || 'files'}/${filename}`;
-
-        // Return file information
         return NextResponse.json({
             success: true,
             file: {
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                url: fileUrl,
+                url: result.url,
                 uploadedAt: new Date().toISOString(),
             },
             message: 'File uploaded successfully',
         });
+
     } catch (error) {
         console.error('Error uploading file:', error);
         return NextResponse.json(
@@ -78,18 +99,36 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
+        // Auth Check (Same as above)
+        let isAuthenticated = false;
+        const supabase = await createSupabaseServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            isAuthenticated = true;
+        } else {
+            const cookieStore = await cookies();
+            if (cookieStore.get('np_session')) isAuthenticated = true;
+        }
+
+        if (!isAuthenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const { searchParams } = new URL(request.url);
         const fileUrl = searchParams.get('fileUrl');
 
-        if (!fileUrl) {
-            return NextResponse.json(
-                { error: 'File URL is required' },
-                { status: 400 }
-            );
-        }
+        if (!fileUrl) return NextResponse.json({ error: 'File URL is required' }, { status: 400 });
 
-        // In production, delete from S3/Supabase Storage
-        // For now, just return success (mock)
+        // Extract path from URL
+        // URL format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+        // We need the path inside the bucket.
+        // Simple extraction: split by bucket name.
+        const bucketName = 'uploads';
+        const parts = fileUrl.split(`/${bucketName}/`);
+        if (parts.length < 2) {
+            return NextResponse.json({ error: 'Invalid file URL for this storage' }, { status: 400 });
+        }
+        const path = parts[1];
+
+        await storageService.deleteFile(bucketName, path);
 
         return NextResponse.json({
             success: true,

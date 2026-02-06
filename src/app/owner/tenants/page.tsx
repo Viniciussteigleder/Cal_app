@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TenantList } from "./TenantList";
+import { getTenants } from "./actions";
 
-export default function OwnerTenantsPage() {
+export default async function OwnerTenantsPage() {
+  const { success, data } = await getTenants();
+
   return (
     <div className="grid gap-6">
       <Card>
@@ -19,30 +22,7 @@ export default function OwnerTenantsPage() {
             <Button>Novo tenant</Button>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Pacientes</TableHead>
-                <TableHead>Planos ativos</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell>Clínica A</TableCell>
-                <TableCell>Ativo</TableCell>
-                <TableCell>120</TableCell>
-                <TableCell>48</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Clínica B</TableCell>
-                <TableCell>Ativo</TableCell>
-                <TableCell>75</TableCell>
-                <TableCell>31</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <TenantList tenants={data || []} />
         </CardContent>
       </Card>
     </div>

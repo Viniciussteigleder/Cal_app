@@ -1,117 +1,67 @@
-/**
- * File Storage Service
- * Handles file uploads to Supabase Storage
- */
+import { createSupabaseAdminClient } from './supabase/admin';
 
-import { createSupabaseServerClient } from "./supabase/server";
+export class StorageService {
+  private supabase = createSupabaseAdminClient();
 
-const STORAGE_BUCKET = "patient-files";
+  /**
+   * Upload a file to Supabase Storage
+   * @param file - The file object to upload
+   * @param bucket - The storage bucket name
+   * @param path - Optional path/filename. If not provided, generates a unique name.
+   * @returns Public URL of the uploaded file
+   */
+  async uploadFile(file: File, bucket: string, path?: string): Promise<{ url: string; path: string }> {
+    try {
+      // 1. Ensure bucket exists (optional, mostly for dev convenience)
+      const { data: buckets } = await this.supabase.storage.listBuckets();
+      if (!buckets?.find((b) => b.name === bucket)) {
+        await this.supabase.storage.createBucket(bucket, {
+          public: true, // Make files publicly accessible by default for this app
+          fileSizeLimit: 10485760, // 10MB
+        });
+      }
 
-export interface UploadResult {
-  success: boolean;
-  url?: string;
-  error?: string;
-  path?: string;
-}
+      // 2. Generate path if not provided
+      const fileName = path || `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
-/**
- * Upload a file to Supabase Storage
- */
-export async function uploadFile(
-  file: File,
-  folder: "exams" | "meal-photos",
-  tenantId: string,
-  patientId: string
-): Promise<UploadResult> {
-  try {
-    const supabase = await createSupabaseServerClient();
+      // 3. Upload file
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    // Generate unique filename with timestamp
-    const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filePath = `${tenantId}/${patientId}/${folder}/${timestamp}-${sanitizedName}`;
+      const { data, error } = await this.supabase.storage
+        .from(bucket)
+        .upload(fileName, buffer, {
+          contentType: file.type,
+          upsert: false,
+        });
 
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+      if (error) throw error;
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      });
+      // 4. Get Public URL
+      const { data: { publicUrl } } = this.supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
 
-    if (error) {
-      console.error("Storage upload error:", error);
       return {
-        success: false,
-        error: error.message,
+        url: publicUrl,
+        path: fileName,
       };
+    } catch (error) {
+      console.error('Storage Upload Error:', error);
+      throw error;
     }
+  }
 
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+  /**
+   * Delete a file from storage
+   */
+  async deleteFile(bucket: string, path: string): Promise<void> {
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .remove([path]);
 
-    return {
-      success: true,
-      url: publicUrl,
-      path: filePath,
-    };
-  } catch (error) {
-    console.error("Upload error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    if (error) throw error;
   }
 }
 
-/**
- * Delete a file from Supabase Storage
- */
-export async function deleteFile(filePath: string): Promise<boolean> {
-  try {
-    const supabase = await createSupabaseServerClient();
-
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .remove([filePath]);
-
-    if (error) {
-      console.error("Storage delete error:", error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Delete error:", error);
-    return false;
-  }
-}
-
-/**
- * Get signed URL for private file access (valid for 1 hour)
- */
-export async function getSignedUrl(filePath: string): Promise<string | null> {
-  try {
-    const supabase = await createSupabaseServerClient();
-
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .createSignedUrl(filePath, 3600); // 1 hour
-
-    if (error) {
-      console.error("Signed URL error:", error);
-      return null;
-    }
-
-    return data.signedUrl;
-  } catch (error) {
-    console.error("Get signed URL error:", error);
-    return null;
-  }
-}
+export const storageService = new StorageService();

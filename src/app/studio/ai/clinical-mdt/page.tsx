@@ -15,6 +15,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { runClinicalMDT, ClinicalMDTInputs } from './actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SpecialistsList } from './SpecialistsList';
+import { CaseLibrary } from './CaseLibrary';
 
 export default function ClinicalMDTPage() {
     const [isGenerating, setIsGenerating] = useState(false);
@@ -82,15 +84,19 @@ export default function ClinicalMDTPage() {
         <DashboardLayout role="nutritionist">
             <div className="space-y-6 h-full flex flex-col">
                 {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold flex items-center gap-2">
-                        <Stethoscope className="h-8 w-8 text-primary" />
-                        MDT Clínico Colaborativo (Beta)
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Equipe multidisciplinar virtual para casos complexos.
-                    </p>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-bold flex items-center gap-2">
+                            <Stethoscope className="h-8 w-8 text-primary" />
+                            MDT Clínico Colaborativo (Beta)
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            Equipe multidisciplinar virtual para casos complexos.
+                        </p>
+                    </div>
                 </div>
+
+                <SpecialistsList />
 
                 <MedicalDisclaimer />
 
@@ -102,153 +108,160 @@ export default function ClinicalMDTPage() {
 
                     {/* INPUT TAB */}
                     <TabsContent value="input" className="mt-4 space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Configuração do Caso</CardTitle>
-                                <CardDescription>Defina o contexto clínico e dados do paciente para a equipe multi-agente.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Left Column */}
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Template do Caso</Label>
-                                        <Select value={templateName} onValueChange={setTemplateName}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Gastroenterologia Funcional">Gastroenterologia Funcional</SelectItem>
-                                                <SelectItem value="Saúde da Mulher & Hormônios">Saúde da Mulher & Hormônios</SelectItem>
-                                                <SelectItem value="Performance Esportiva">Performance Esportiva</SelectItem>
-                                                <SelectItem value="Oncologia Integrativa">Oncologia Integrativa</SelectItem>
-                                                <SelectItem value="Pediatria">Pediatria</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <div className="lg:col-span-3">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Configuração do Caso</CardTitle>
+                                        <CardDescription>Defina o contexto clínico e dados do paciente para a equipe multi-agente.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Left Column */}
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Template do Caso</Label>
+                                                <Select value={templateName} onValueChange={setTemplateName}>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Gastroenterologia Funcional">Gastroenterologia Funcional</SelectItem>
+                                                        <SelectItem value="Saúde da Mulher & Hormônios">Saúde da Mulher & Hormônios</SelectItem>
+                                                        <SelectItem value="Performance Esportiva">Performance Esportiva</SelectItem>
+                                                        <SelectItem value="Oncologia Integrativa">Oncologia Integrativa</SelectItem>
+                                                        <SelectItem value="Pediatria">Pediatria</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                                    <div className="space-y-2">
-                                        <Label>Ambiente Clínico (Setting)</Label>
-                                        <Select value={clinicalSetting} onValueChange={setClinicalSetting}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="outpatient">Consultório (Outpatient)</SelectItem>
-                                                <SelectItem value="telehealth">Teleconsulta</SelectItem>
-                                                <SelectItem value="inpatient">Hospitalar (Inpatient)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                            <div className="space-y-2">
+                                                <Label>Ambiente Clínico (Setting)</Label>
+                                                <Select value={clinicalSetting} onValueChange={setClinicalSetting}>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="outpatient">Consultório (Outpatient)</SelectItem>
+                                                        <SelectItem value="telehealth">Teleconsulta</SelectItem>
+                                                        <SelectItem value="inpatient">Hospitalar (Inpatient)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                                    <div className="space-y-2">
-                                        <Label>JSON de Intake / Anamnese</Label>
-                                        <Textarea
-                                            value={intakeJson}
-                                            onChange={(e) => setIntakeJson(e.target.value)}
-                                            className="font-mono text-xs h-40"
-                                            placeholder="{ patient_data... }"
-                                        />
-                                        <p className="text-xs text-muted-foreground">Cole o JSON estruturado do paciente aqui.</p>
-                                    </div>
+                                            <div className="space-y-2">
+                                                <Label>JSON de Intake / Anamnese</Label>
+                                                <Textarea
+                                                    value={intakeJson}
+                                                    onChange={(e) => setIntakeJson(e.target.value)}
+                                                    className="font-mono text-xs h-40"
+                                                    placeholder="{ patient_data... }"
+                                                />
+                                                <p className="text-xs text-muted-foreground">Cole o JSON estruturado do paciente aqui.</p>
+                                            </div>
 
-                                    <div className="space-y-2">
-                                        <Label>Resumo de Anexos/Exames</Label>
-                                        <Textarea
-                                            value={attachmentsNotes}
-                                            onChange={(e) => setAttachmentsNotes(e.target.value)}
-                                            rows={3}
-                                            placeholder="Resumo de exames anteriores, imagens, laudos..."
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Right Column */}
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Medicamentos & Suplementos Atuais</Label>
-                                        <Textarea
-                                            value={medsSupps}
-                                            onChange={(e) => setMedsSupps(e.target.value)}
-                                            rows={2}
-                                            placeholder="Lista de medicamentos e suplementos em uso"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Orçamento / Tempo / Cultura</Label>
-                                            <Input
-                                                value={timeBudgetCulture}
-                                                onChange={(e) => setTimeBudgetCulture(e.target.value)}
-                                            />
+                                            <div className="space-y-2">
+                                                <Label>Resumo de Anexos/Exames</Label>
+                                                <Textarea
+                                                    value={attachmentsNotes}
+                                                    onChange={(e) => setAttachmentsNotes(e.target.value)}
+                                                    rows={3}
+                                                    placeholder="Resumo de exames anteriores, imagens, laudos..."
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Refeições Fora</Label>
-                                            <Input
-                                                value={eatingOut}
-                                                onChange={(e) => setEatingOut(e.target.value)}
-                                                placeholder="Ex: 2x semana"
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Idioma</Label>
-                                            <Select value={language} onValueChange={setLanguage}>
-                                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Português (BR)">Português (BR)</SelectItem>
-                                                    <SelectItem value="English">English</SelectItem>
-                                                    <SelectItem value="Español">Español</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Nível de Leitura (Paciente)</Label>
-                                            <Select value={readingLevel} onValueChange={setReadingLevel}>
-                                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Fundamental">Fundamental (Simples)</SelectItem>
-                                                    <SelectItem value="Ensino Médio">Ensino Médio (Padrão)</SelectItem>
-                                                    <SelectItem value="Técnico/Superior">Técnico/Superior (Detalhado)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
+                                        {/* Right Column */}
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Medicamentos & Suplementos Atuais</Label>
+                                                <Textarea
+                                                    value={medsSupps}
+                                                    onChange={(e) => setMedsSupps(e.target.value)}
+                                                    rows={2}
+                                                    placeholder="Lista de medicamentos e suplementos em uso"
+                                                />
+                                            </div>
 
-                                    <div className="space-y-2">
-                                        <Label>Regras do Care Kit (Estilo Clínico)</Label>
-                                        <Textarea
-                                            value={careKitRules}
-                                            onChange={(e) => setCareKitRules(e.target.value)}
-                                            rows={3}
-                                            placeholder="Estilo de conduta, formatos preferidos, guidelines locais..."
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex justify-end border-t p-4 bg-muted/20">
-                                <Button
-                                    size="lg"
-                                    className="bg-emerald-600 hover:bg-emerald-700"
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating}
-                                >
-                                    {isGenerating ? (
-                                        <>
-                                            <Brain className="mr-2 h-4 w-4 animate-spin" />
-                                            Analisando Caso com MDT...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <PlayCircle className="mr-2 h-4 w-4" />
-                                            Iniciar MDT Clínico
-                                        </>
-                                    )}
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label>Orçamento / Tempo / Cultura</Label>
+                                                    <Input
+                                                        value={timeBudgetCulture}
+                                                        onChange={(e) => setTimeBudgetCulture(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Refeições Fora</Label>
+                                                    <Input
+                                                        value={eatingOut}
+                                                        onChange={(e) => setEatingOut(e.target.value)}
+                                                        placeholder="Ex: 2x semana"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label>Idioma</Label>
+                                                    <Select value={language} onValueChange={setLanguage}>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Português (BR)">Português (BR)</SelectItem>
+                                                            <SelectItem value="English">English</SelectItem>
+                                                            <SelectItem value="Español">Español</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Nível de Leitura (Paciente)</Label>
+                                                    <Select value={readingLevel} onValueChange={setReadingLevel}>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Fundamental">Fundamental (Simples)</SelectItem>
+                                                            <SelectItem value="Ensino Médio">Ensino Médio (Padrão)</SelectItem>
+                                                            <SelectItem value="Técnico/Superior">Técnico/Superior (Detalhado)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Regras do Care Kit (Estilo Clínico)</Label>
+                                                <Textarea
+                                                    value={careKitRules}
+                                                    onChange={(e) => setCareKitRules(e.target.value)}
+                                                    rows={3}
+                                                    placeholder="Estilo de conduta, formatos preferidos, guidelines locais..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="flex justify-end border-t p-4 bg-muted/20">
+                                        <Button
+                                            size="lg"
+                                            className="bg-emerald-600 hover:bg-emerald-700"
+                                            onClick={handleGenerate}
+                                            disabled={isGenerating}
+                                        >
+                                            {isGenerating ? (
+                                                <>
+                                                    <Brain className="mr-2 h-4 w-4 animate-spin" />
+                                                    Analisando Caso com MDT...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <PlayCircle className="mr-2 h-4 w-4" />
+                                                    Iniciar MDT Clínico
+                                                </>
+                                            )}
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            </div>
+                            <div className="lg:col-span-1 space-y-4">
+                                <CaseLibrary />
+                            </div>
+                        </div>
                     </TabsContent>
 
                     {/* RESULT TAB */}

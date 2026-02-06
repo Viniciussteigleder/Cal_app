@@ -78,22 +78,30 @@ const CONSULTATION_HISTORY = [
 // Average of last 12 months mock
 const AVERAGE_COUNT = 56;
 
-function ConsultationHistoryChart() {
-    const maxVal = Math.max(...CONSULTATION_HISTORY.map(d => d.count)) * 1.2;
+// ... (imports remain)
+import { getDashboardStats } from "./actions";
+
+// ... (retain Mock Data for Alerts section as it's complex to fake)
+
+// Simplified Chart Component accepting data prop
+function ConsultationHistoryChart({ data }: { data: { month: string, count: number }[] }) {
+    if (!data || data.length === 0) return <div>No data</div>;
+    const maxVal = Math.max(...data.map(d => d.count)) * 1.2 || 10;
+    const average = data.reduce((acc, curr) => acc + curr.count, 0) / data.length;
 
     return (
         <div className="w-full h-48 flex items-end justify-between gap-2 pt-6 relative">
             {/* Average Line */}
             <div
                 className="absolute w-full border-t-2 border-slate-700 dark:border-slate-400 border-dashed flex items-center"
-                style={{ bottom: `${(AVERAGE_COUNT / maxVal) * 100}%` }}
+                style={{ bottom: `${(average / maxVal) * 100}%` }}
             >
                 <span className="text-[10px] bg-card px-1 absolute -right-0 -top-2.5 text-muted-foreground font-medium border rounded shadow-sm">
-                    Média 12m: {AVERAGE_COUNT}
+                    Média 12m: {average.toFixed(0)}
                 </span>
             </div>
 
-            {CONSULTATION_HISTORY.map((item, idx) => {
+            {data.map((item, idx) => {
                 const heightPct = (item.count / maxVal) * 100;
                 return (
                     <div key={idx} className="flex flex-col items-center gap-2 flex-1 group relative">
@@ -114,12 +122,21 @@ function ConsultationHistoryChart() {
     )
 }
 
-export default function StudioDashboard() {
+export default async function StudioDashboard() {
+    const { success, data } = await getDashboardStats();
+
+    // Default Fallbacks if DB empty
+    const stats = success && data ? data : {
+        totalPatients: 0,
+        activePlans: 0,
+        totalConsultations: 0,
+        chartData: []
+    };
+
     return (
         <DashboardLayout role="nutritionist">
             <div className="space-y-8 animate-in fade-in duration-500 pb-10">
-
-                {/* Header: Clinical Command Center */}
+                {/* Header ... */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -128,7 +145,7 @@ export default function StudioDashboard() {
                         </div>
                         <h1 className="text-3xl font-bold text-foreground tracking-tight">Centro de Controle</h1>
                         <p className="text-muted-foreground max-w-xl text-sm mt-1">
-                            Monitoramento em tempo real de carga histamínica e integridade da barreira intestinal.
+                            Bem-vindo de volta. Você tem {stats.activePlans} planos ativos e {stats.totalPatients} pacientes registrados.
                         </p>
                     </div>
                 </div>
@@ -140,13 +157,13 @@ export default function StudioDashboard() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <CardTitle className="text-lg">Histórico de Consultas</CardTitle>
-                                    <CardDescription>Crescimento mensal de pacientes atendidos.</CardDescription>
+                                    <CardDescription>Visualização anual de atendimentos.</CardDescription>
                                 </div>
-                                <Badge variant="outline" className="bg-background">Jan - Dez 2025</Badge>
+                                <Badge variant="outline" className="bg-background">Jan - Dez {new Date().getFullYear()}</Badge>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <ConsultationHistoryChart />
+                            <ConsultationHistoryChart data={stats.chartData} />
                         </CardContent>
                     </Card>
 
@@ -156,17 +173,17 @@ export default function StudioDashboard() {
                                 <BarChart3 className="h-8 w-8 text-white" />
                             </div>
                             <div>
-                                <div className="text-5xl font-bold tracking-tighter">72</div>
-                                <div className="text-emerald-100 text-sm font-medium uppercase tracking-wide mt-1">Pacientes este mês</div>
+                                <div className="text-5xl font-bold tracking-tighter">{stats.totalPatients}</div>
+                                <div className="text-emerald-100 text-sm font-medium uppercase tracking-wide mt-1">Total de Pacientes</div>
                             </div>
                             <div className="w-full h-px bg-emerald-500/50 my-2" />
                             <div className="flex justify-between w-full px-4 text-sm text-emerald-50">
-                                <span>Média 12m:</span>
-                                <span className="font-bold">56</span>
+                                <span>Planos Ativos:</span>
+                                <span className="font-bold">{stats.activePlans}</span>
                             </div>
                             <div className="flex justify-between w-full px-4 text-sm text-emerald-50">
-                                <span>Crescimento:</span>
-                                <span className="font-bold">+12%</span>
+                                <span>Total Consultas:</span>
+                                <span className="font-bold">{stats.totalConsultations}</span>
                             </div>
                         </CardContent>
                     </Card>

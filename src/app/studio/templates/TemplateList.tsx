@@ -20,60 +20,48 @@ export function TemplateList({ templates }: { templates: Template[] }) {
     const router = useRouter();
 
     return (
-        <Card>
-            <CardContent className="p-0">
-                <div className="flex justify-end p-4">
-                    <Button onClick={() => router.push('/studio/templates/new')}>
-                        <Plus className="mr-2 h-4 w-4" /> Novo Template
-                    </Button>
-                </div>
+        <div className="space-y-6">
+            <div className="flex justify-end">
+                <Button onClick={() => router.push('/studio/templates/new')} className="bg-emerald-600 hover:bg-emerald-700">
+                    <Plus className="mr-2 h-4 w-4" /> Novo Template
+                </Button>
+            </div>
 
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Título</TableHead>
-                            <TableHead>Tipo</TableHead>
-                            <TableHead>Origem</TableHead>
-                            <TableHead>Criado em</TableHead>
-                            <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {templates.map((template) => (
-                            <TableRow key={template.id}>
-                                <TableCell className="font-medium">
-                                    <div className="flex items-center gap-2">
-                                        <FileText className="h-4 w-4 text-muted-foreground" />
-                                        {template.title}
+            {templates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-lg bg-muted/40 text-muted-foreground">
+                    <FileText className="w-12 h-12 mb-4 opacity-20" />
+                    <p>Nenhum modelo encontrado.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {templates.map((template) => (
+                        <Card key={template.id} className="group hover:shadow-md transition-shadow border-muted cursor-pointer relative overflow-hidden">
+                            {template.is_system && (
+                                <div className="absolute top-0 right-0 p-2">
+                                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">System</Badge>
+                                </div>
+                            )}
+                            <CardContent className="p-6 space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                                        <FileText className="w-6 h-6" />
                                     </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="outline">{template.type}</Badge>
-                                </TableCell>
-                                <TableCell>
-                                    {template.is_system ?
-                                        <Badge>Sistema</Badge> :
-                                        <span className="text-muted-foreground text-sm">Personalizado</span>
-                                    }
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-sm">
-                                    {new Date(template.created_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm">Editar</Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {templates.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                                    Nenhum modelo encontrado.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-emerald-600 transition-colors">{template.title}</h3>
+                                    <p className="text-sm text-muted-foreground capitalize">{template.type.replace('_', ' ')}</p>
+                                </div>
+                                <div className="text-xs text-muted-foreground pt-2 border-t flex justify-between items-center">
+                                    <span>{new Date(template.created_at).toLocaleDateString()}</span>
+                                    <Button variant="ghost" size="sm" className="h-6 text-xs hover:text-emerald-600" onClick={(e) => { e.stopPropagation(); /* edit logic */ }}>
+                                        Editar
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }

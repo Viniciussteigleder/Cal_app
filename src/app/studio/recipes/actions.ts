@@ -60,9 +60,18 @@ const RecipeSchema = z.object({
     }),
 });
 
-export async function generateAiRecipe(userRequest: string) {
+interface RecipeOptions {
+    prompt: string;
+    allergies: string[];
+    include: string[];
+    exclude: string[];
+}
+
+export async function generateAiRecipe(options: RecipeOptions) {
     const claims = await getSupabaseClaims();
     if (!claims) return { success: false, error: 'Unauthorized' };
+
+    const { prompt, allergies, include, exclude } = options;
 
     try {
         // 1. Config
@@ -70,6 +79,12 @@ export async function generateAiRecipe(userRequest: string) {
 
         // 2. OpenAI
         const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy' });
+
+        // Build constraint prompt
+        let constraintText = "";
+        if (allergies.length > 0) constraintText += `\n- SEM: ${allergies.join(', ')}`;
+        if (exclude.length > 0) constraintText += `\n- EVITAR: ${exclude.join(', ')}`;
+        if (include.length > 0) constraintText += `\n- INCLUIR OBRIGATORIAMENTE: ${include.join(', ')}`;
 
         // 3. Generate
         const { object, usage } = await generateObject({
@@ -79,7 +94,8 @@ export async function generateAiRecipe(userRequest: string) {
             system: config.systemPrompt || "Você é um chef nutricionista criativo.",
             messages: [{
                 role: 'user',
-                content: `Crie uma receita para: "${userRequest}". 
+                content: `Crie uma receita para: "${prompt}".
+                ${constraintText}
                 Inclua lista de ingredientes, passo a passo e tabela nutricional.`
             }]
         });
@@ -111,7 +127,7 @@ export async function generateAiRecipe(userRequest: string) {
             creditsUsed: 1,
             costUsd: (usage.totalTokens || 0) * (5 / 1000000),
             costBrl: (usage.totalTokens || 0) * (5 / 1000000) * 5.5,
-            metadata: { request: userRequest }
+            metadata: { request: prompt, constraints: { allergies, include, exclude } }
         });
 
         revalidatePath('/studio/recipes');
