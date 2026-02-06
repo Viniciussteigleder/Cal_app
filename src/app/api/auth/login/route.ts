@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { compare } from "bcryptjs";
 import { MOCK_USERS } from "@/lib/mock-data";
+import { createSessionCookieValue, type SessionPayload } from "@/lib/session";
 
 // Demo password from environment variable - ONLY for mock users or dev environment specific fallback if needed
-function getDemoPassword(): string {
-  return process.env.DEMO_PASSWORD || "demo123";
+function getDemoPassword(): string | null {
+  return process.env.DEMO_PASSWORD || null;
 }
 
 export async function POST(request: NextRequest) {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
           // Find patient for this user
           const patient = await prisma.patient.findUnique({ where: { user_id: user.id } });
 
-          const sessionData = {
+          const sessionData: SessionPayload = {
             userId: user.id,
             email: user.email,
             name: user.name,
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
           };
 
           const cookieStore = await cookies();
-          cookieStore.set("np_session", JSON.stringify(sessionData), {
+          cookieStore.set("np_session", createSessionCookieValue(sessionData), {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
@@ -120,12 +121,18 @@ export async function POST(request: NextRequest) {
 
     if (isDev || isDemoEnabled) {
       const demoPassword = getDemoPassword();
+      if (!demoPassword) {
+        return NextResponse.json(
+          { error: "Demo login is disabled" },
+          { status: 403 }
+        );
+      }
       const mockUser = MOCK_USERS[normalizedEmail as keyof typeof MOCK_USERS];
 
       if (mockUser && cleanPassword === demoPassword) {
         // Set session cookie with mock user data
         const userRole = mockUser.role as string;
-        const sessionData = {
+        const sessionData: SessionPayload = {
           userId: mockUser.id,
           email: mockUser.email,
           name: mockUser.name,
@@ -135,7 +142,7 @@ export async function POST(request: NextRequest) {
         };
 
         const cookieStore = await cookies();
-        cookieStore.set("np_session", JSON.stringify(sessionData), {
+        cookieStore.set("np_session", createSessionCookieValue(sessionData), {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",

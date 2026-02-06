@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { hash } from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
+import { createSessionCookieValue, type SessionPayload } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create session
-    const sessionData = {
+    const sessionData: SessionPayload = {
       userId: result.user.id,
       email: result.user.email,
       name: result.user.name,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     };
 
     const cookieStore = await cookies();
-    cookieStore.set("np_session", JSON.stringify(sessionData), {
+    cookieStore.set("np_session", createSessionCookieValue(sessionData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

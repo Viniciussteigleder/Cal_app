@@ -18,7 +18,7 @@
     "populate:comprehensive": "tsx scripts/populate-comprehensive-demo.ts",
     "setup:demo-auth": "tsx scripts/setup-demo-auth.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && next build"
+    "vercel-build": "node scripts/vercel-build.js"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
@@ -100,5 +100,9 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
   }
 }

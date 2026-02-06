@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "./supabase/server";
 import type { SessionClaims } from "./db";
 import { cookies } from "next/headers";
+import { verifySessionCookieValue } from "./session";
 
 export async function getSupabaseClaims(): Promise<SessionClaims | null> {
   // 1. Check Mock/Demo Session FIRST (Avoids Supabase init crash if envs are missing)
@@ -9,9 +10,10 @@ export async function getSupabaseClaims(): Promise<SessionClaims | null> {
 
   if (sessionCookie) {
     try {
-      const session = JSON.parse(sessionCookie.value);
+      const session = verifySessionCookieValue(sessionCookie.value);
+      if (!session) return null;
       // Support both structure formats (flat or nested user)
-      const userId = session.userId || session.user?.id;
+      const userId = session.userId || (session as any).user?.id;
       const tenantId = session.tenantId;
       const role = session.role;
 
@@ -23,7 +25,7 @@ export async function getSupabaseClaims(): Promise<SessionClaims | null> {
         };
       }
     } catch {
-      // Invalid json, ignore
+      // Invalid session, ignore
     }
   }
 

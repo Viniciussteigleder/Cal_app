@@ -2,34 +2,51 @@ import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
 import { getSupabaseClaims } from '@/lib/auth';
+import { SubscriptionPlan } from '@prisma/client';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
-    const priceId = searchParams.get('priceId');
-    const tenantId = searchParams.get('tenantId');
+    const planParam = searchParams.get('plan');
 
-    if (!priceId || !tenantId) {
-        return new NextResponse('Missing priceId or tenantId', { status: 400 });
+    if (!planParam) {
+        return NextResponse.json({ error: 'Missing plan' }, { status: 400 });
     }
 
     // Verify authentication
     const claims = await getSupabaseClaims();
     if (!claims) {
-        return new NextResponse('Unauthorized', { status: 401 });
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Security check: ensure the user belongs to the tenant they are trying to pay for
-    if (claims.tenant_id !== tenantId) {
-        return new NextResponse('Forbidden: You can only subscribe for your own tenant', { status: 403 });
+    if (claims.role === 'PATIENT') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const planKey = planParam.toUpperCase();
+    if (!Object.values(SubscriptionPlan).includes(planKey as SubscriptionPlan)) {
+        return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
     // Get Tenant to check for existing customer ID
+    const tenantId = claims.tenant_id;
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
     });
 
     if (!tenant) {
-        return new NextResponse('Tenant not found', { status: 404 });
+        return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+    }
+
+    const planConfig = await prisma.subscriptionPlanConfig.findUnique({
+        where: { plan: planKey as SubscriptionPlan },
+    });
+
+    if (!planConfig || !planConfig.is_active) {
+        return NextResponse.json({ error: 'Plan not available' }, { status: 404 });
+    }
+
+    if (!planConfig.stripe_price_id || planConfig.price_cents <= 0) {
+        return NextResponse.json({ error: 'Plan does not require checkout' }, { status: 400 });
     }
 
     let customerId = tenant.stripe_customer_id;
@@ -58,11 +75,6 @@ export async function GET(req: Request) {
         });
     }
 
-    // Determine Metadata Plan Name for Webhook
-    // Ideally this mapping should be robust or derived from Price Lookup
-    // For now, we rely on the client sending the right Price ID.
-    // We can pass the Price ID to metadata to confirm match later if needed.
-
     try {
         const checkoutSession = await stripe.checkout.sessions.create({
             customer: customerId,
@@ -70,7 +82,7 @@ export async function GET(req: Request) {
             payment_method_types: ['card'],
             line_items: [
                 {
-                    price: priceId,
+                    price: planConfig.stripe_price_id,
                     quantity: 1,
                 },
             ],
@@ -78,10 +90,7 @@ export async function GET(req: Request) {
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/owner/subscription?canceled=true`,
             metadata: {
                 tenantId: tenantId,
-                // We can't easily know the Plan Enum from just Price ID without a lookup table.
-                // For now, let's rely on the webhook fetching the Subscription and Mapping it, 
-                // OR pass it as a query param to this route to stash in metadata.
-                plan: searchParams.get('planName') || 'PROFESSIONAL',
+                plan: planKey,
             },
         });
 

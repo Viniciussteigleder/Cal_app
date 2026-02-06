@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { compare } from "bcryptjs";
+import { createSessionCookieValue, type SessionPayload } from "@/lib/session";
 
 // Allowed admin emails - keeping this as an extra layer of security if desired, 
 // but primarily we should rely on User Role in DB.
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create Session
-      const sessionData = {
+      const sessionData: SessionPayload = {
         userId: user.id,
         email: user.email,
         name: user.name,
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       };
 
       const cookieStore = await cookies();
-      cookieStore.set("np_session", JSON.stringify(sessionData), {
+      cookieStore.set("np_session", createSessionCookieValue(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
