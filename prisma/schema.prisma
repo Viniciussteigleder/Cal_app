@@ -21,6 +21,12 @@ model Tenant {
   ai_enabled     Boolean        @default(true)
   ai_credits     Int            @default(100)
   ai_usage_limit Int            @default(1000)
+
+  // Stripe Subscription
+  plan                   SubscriptionPlan @default(FREE)
+  stripe_customer_id     String?
+  stripe_subscription_id String?
+  subscription_status    String? // 'active', 'past_due', 'canceled', etc.
 }
 
 model User {
@@ -638,6 +644,13 @@ model FormSubmission {
 enum TenantType {
   B2C
   B2B
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
 }
 
 enum TenantStatus {
