@@ -188,3 +188,79 @@ export async function checkRBACEnforcement(client: PrismaClient): Promise<Issue[
   }
   return issues;
 }
+
+export async function checkCrossTenantReferences(client: PrismaClient): Promise<Issue[]> {
+  const issues: Issue[] = [];
+
+  // Check 1: Patient <-> User Tenant Mismatch
+  const patientUserMismatches = await client.$queryRaw<
+    { id: string; user_id: string; pt: string; ut: string }[]
+  >`
+    SELECT p.id, p.user_id, p.tenant_id as pt, u.tenant_id as ut
+    FROM "Patient" p
+    JOIN "User" u ON p.user_id = u.id
+    WHERE p.tenant_id != u.tenant_id
+  `;
+
+  for (const m of patientUserMismatches) {
+    issues.push({
+      severity: "CRITICAL",
+      entity_type: "patient",
+      entity_id: m.id,
+      details: {
+        issue: "cross_tenant_user_link",
+        patient_tenant: m.pt,
+        user_tenant: m.ut,
+      },
+    });
+  }
+
+  // Check 2: Plan <-> Patient Tenant Mismatch
+  const planPatientMismatches = await client.$queryRaw<
+    { id: string; patient_id: string; plt: string; pat: string }[]
+  >`
+    SELECT pl.id, pl.patient_id, pl.tenant_id as plt, pa.tenant_id as pat
+    FROM "Plan" pl
+    JOIN "Patient" pa ON pl.patient_id = pa.id
+    WHERE pl.tenant_id != pa.tenant_id
+  `;
+
+  for (const m of planPatientMismatches) {
+    issues.push({
+      severity: "CRITICAL",
+      entity_type: "plan",
+      entity_id: m.id,
+      details: {
+        issue: "cross_tenant_plan_link",
+        plan_tenant: m.plt,
+        patient_tenant: m.pat,
+      },
+    });
+  }
+
+  // Check 3: ProtocolInstance <-> Patient Tenant Mismatch
+  const protocolPatientMismatches = await client.$queryRaw<
+    { id: string; patient_id: string; prit: string; pat: string }[]
+  >`
+    SELECT pi.id, pi.patient_id, pi.tenant_id as prit, pa.tenant_id as pat
+    FROM "PatientProtocolInstance" pi
+    JOIN "Patient" pa ON pi.patient_id = pa.id
+    WHERE pi.tenant_id != pa.tenant_id
+  `;
+
+  for (const m of protocolPatientMismatches) {
+    issues.push({
+      severity: "CRITICAL",
+      entity_type: "protocol_instance",
+      entity_id: m.id,
+      details: {
+        issue: "cross_tenant_protocol_link",
+        instance_tenant: m.prit,
+        patient_tenant: m.pat,
+      },
+    });
+  }
+
+  return issues;
+}
+

@@ -5,10 +5,15 @@ import { getSupabaseClaims } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 const DEFAULT_AGENTS = [
-    { id: 'protocol_generator', name: 'Gerador de Protocolos', defaultSystem: 'Você é um nutricionista expert...' },
-    { id: 'symptom_correlator', name: 'Correlator de Sintomas', defaultSystem: 'Você é um detetive médico...' },
-    { id: 'recipe_generator', name: 'Gerador de Receitas', defaultSystem: 'Você é um chef nutricionista...' },
+    { id: 'meal_planner', name: 'Planejador de Refeições', defaultSystem: 'Você é um nutricionista expert que cria planos alimentares detalhados...' },
+    { id: 'patient_analyzer', name: 'Analisador de Pacientes', defaultSystem: 'Você é uma IA de análise comportamental de pacientes...' },
     { id: 'exam_analyzer', name: 'Analisador de Exames', defaultSystem: 'Você é um especialista em exames laboratoriais...' },
+    { id: 'protocol_generator', name: 'Gerador de Protocolos', defaultSystem: 'Você é um nutricionista expert em protocolos clínicos...' },
+    { id: 'symptom_correlator', name: 'Correlator de Sintomas', defaultSystem: 'Você é um detetive médico que correlaciona sintomas com dieta...' },
+    { id: 'recipe_creator', name: 'Criador de Receitas', defaultSystem: 'Você é um chef nutricionista criativo...' },
+    { id: 'nutrition_coach', name: 'Nutri Coach (Chat)', defaultSystem: 'Você é um coach nutricional empático e motivador...' },
+    { id: 'supplement_advisor', name: 'Consultor de Suplementos', defaultSystem: 'Você é um especialista em suplementação esportiva e clínica...' },
+    { id: 'medical_record_creator', name: 'Criador de Prontuários', defaultSystem: 'Você é um escriba médico especialista em SOAP...' },
 ];
 
 export async function getAiConfigs() {

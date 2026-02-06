@@ -16,6 +16,11 @@ model Tenant {
   form_templates FormTemplate[]
   planner_tasks  PlannerTask[]
   settings       Json?
+  
+  // AI Limits
+  ai_enabled     Boolean        @default(true)
+  ai_credits     Int            @default(100)
+  ai_usage_limit Int            @default(1000)
 }
 
 model User {
@@ -258,6 +263,47 @@ model AiAgentConfig {
   updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@unique([tenant_id, agent_id])
+}
+
+model AIExecution {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String   @db.Uuid
+  model_id          String?  // Can be ID or Name
+  agent_type        String
+  input_data        Json
+  output_data       Json?
+  status            String   // 'running', 'completed', 'failed'
+  tokens_used       Int?
+  execution_time_ms Int?
+  cost              Decimal? @db.Decimal(10, 4)
+  error_message     String?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([tenant_id, agent_type])
+  @@index([created_at])
+}
+
+model AIModel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique // e.g., 'gpt-4-turbo-preview'
+  provider    String   // 'openai', 'anthropic'
+  type        String   // 'llm', 'vision'
+  cost_per_1k Decimal  @db.Decimal(10, 4)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model AIFeedback {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  execution_id  String   @db.Uuid
+  user_id       String   @db.Uuid
+  rating        Int
+  feedback_text String?
+  was_helpful   Boolean
+  corrections   Json?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([execution_id])
 }
 
 model RecipeIngredient {

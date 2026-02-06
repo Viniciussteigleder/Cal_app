@@ -57,6 +57,13 @@ export interface AIModelConfig {
     endpoint?: string;
 }
 
+export interface AgentRuntimeConfig {
+    modelName: string;
+    systemPrompt: string;
+    temperature: number;
+    isActive: boolean;
+}
+
 // ============================================================================
 // AI SERVICE CLASS
 // ============================================================================
@@ -106,14 +113,18 @@ export class AIService {
                 throw new Error('Insufficient AI credits');
             }
 
-            // Get the appropriate AI model for this agent
-            const model = await this.getModelForAgent(input.agentType);
+            // Get agent configuration
+            const config = await this.getAgentConfig(input.tenantId, input.agentType);
+
+            if (!config.isActive) {
+                throw new Error('This agent is disabled by the administrator');
+            }
 
             // Create execution record
             const execution = await prisma.aIExecution.create({
                 data: {
                     tenant_id: input.tenantId,
-                    model_id: model.id,
+                    model_id: config.modelName, // Storing model name as ID for now, or fetch ID if needed
                     agent_type: input.agentType,
                     input_data: input.inputData,
                     status: 'running',
@@ -123,9 +134,10 @@ export class AIService {
             executionId = execution.id;
 
             // Execute the appropriate agent
-            const result = await this.executeAgent(input.agentType, input.inputData, model);
+            const result = await this.executeAgent(input.agentType, input.inputData, config);
 
             // Calculate cost (example: $0.01 per 1000 tokens)
+            // TODO: Fetch price per model dynamically
             const cost = result.tokensUsed ? (result.tokensUsed / 1000) * 0.01 : 0;
             const executionTimeMs = Date.now() - startTime;
 
@@ -185,41 +197,80 @@ export class AIService {
     }
 
     /**
-     * Get the appropriate AI model for a specific agent type
+     * Get the effective configuration for an agent
+     * cascading from DB -> Defaults
      */
-    private async getModelForAgent(agentType: AIAgentType) {
-        const modelMap: Record<AIAgentType, { name: string; type: string }> = {
-            food_recognition: { name: 'gpt-4-vision-preview', type: 'vision' },
-            meal_planner: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            patient_analyzer: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            exam_analyzer: { name: 'gpt-4-vision-preview', type: 'vision' },
-            medical_record_creator: { name: 'whisper-1', type: 'speech_to_text' },
-            protocol_generator: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            symptom_correlator: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            recipe_creator: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            nutrition_coach: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            supplement_advisor: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            shopping_list_generator: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            macro_balancer: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            report_generator: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            appointment_scheduler: { name: 'gpt-4-turbo-preview', type: 'llm' },
-            content_educator: { name: 'gpt-4-turbo-preview', type: 'llm' },
-        };
-
-        const modelInfo = modelMap[agentType];
-
-        const model = await prisma.aIModel.findFirst({
+    private async getAgentConfig(tenantId: string, agentType: AIAgentType): Promise<AgentRuntimeConfig> {
+        // 1. Try to fetch from Tenant Config
+        const dbConfig = await prisma.aiAgentConfig.findUnique({
             where: {
-                name: modelInfo.name,
-                is_active: true,
+                tenant_id_agent_id: {
+                    tenant_id: tenantId,
+                    agent_id: agentType,
+                },
             },
         });
 
-        if (!model) {
-            throw new Error(`No active model found for agent type: ${agentType}`);
+        // 2. Define defaults if no DB config found
+        const defaults: Record<string, AgentRuntimeConfig> = {
+            meal_planner: {
+                modelName: 'gpt-4-turbo-preview',
+                systemPrompt: `You are an expert nutritionist AI that creates personalized meal plans.
+          
+          Create a detailed meal plan based on the patient's requirements.
+          Return a JSON object with:
+          - days: array of day objects
+          - each day has: breakfast, lunch, dinner, snacks
+          - each meal has: foods (array), total_kcal, macros {protein, carbs, fat}
+          - estimated_cost: total estimated cost in BRL
+          - reasoning: brief explanation of your choices`,
+                temperature: 0.7,
+                isActive: true
+            },
+            patient_analyzer: {
+                modelName: 'gpt-4-turbo-preview',
+                systemPrompt: `You are a patient behavior analysis AI.
+          
+          Analyze the patient's data and return a JSON object with:
+          - adherence_score: number (0-100)
+          - progress_score: number (0-100)
+          - dropout_risk: "low" | "medium" | "high" | "critical"
+          - intervention_needed: boolean
+          - insights: array of key observations
+          - recommended_actions: array of suggested interventions`,
+                temperature: 0.5,
+                isActive: true
+            },
+            medical_record_creator: {
+                modelName: 'gpt-4-turbo-preview', // For SOAP generation
+                systemPrompt: `You are an expert medical scribe.
+                        Generate a structured SOAP note from the consultation transcription.
+                        Return JSON with: subjective, objective, assessment, plan.
+                        Language: Portuguese (BR).`,
+                temperature: 0.3,
+                isActive: true
+            },
+            // Fallback for others
+            default: {
+                modelName: 'gpt-4-turbo-preview',
+                systemPrompt: 'You are a helpful AI assistant.',
+                temperature: 0.7,
+                isActive: true
+            }
+        };
+
+        const defaultConfig = defaults[agentType] || defaults.default;
+
+        if (dbConfig) {
+            return {
+                modelName: dbConfig.model_name || defaultConfig.modelName,
+                systemPrompt: dbConfig.system_prompt || defaultConfig.systemPrompt,
+                temperature: dbConfig.temperature ? Number(dbConfig.temperature) : defaultConfig.temperature,
+                isActive: dbConfig.is_active
+            };
         }
 
-        return model;
+        return defaultConfig;
     }
 
     /**
@@ -228,20 +279,20 @@ export class AIService {
     private async executeAgent(
         agentType: AIAgentType,
         inputData: Record<string, any>,
-        model: any
+        config: AgentRuntimeConfig
     ): Promise<{ data: any; tokensUsed?: number }> {
         switch (agentType) {
             case 'food_recognition':
                 return this.executeFoodRecognition(inputData);
 
             case 'meal_planner':
-                return this.executeMealPlanner(inputData);
+                return this.executeMealPlanner(inputData, config);
 
             case 'patient_analyzer':
-                return this.executePatientAnalyzer(inputData);
+                return this.executePatientAnalyzer(inputData, config);
 
             case 'medical_record_creator':
-                return this.executeMedicalRecordCreator(inputData);
+                return this.executeMedicalRecordCreator(inputData, config);
 
             // Add other agents here...
 
@@ -325,25 +376,18 @@ export class AIService {
         preferences?: string[];
         restrictions?: string[];
         daysCount?: number;
-    }): Promise<{ data: any; tokensUsed?: number }> {
+    }, config: AgentRuntimeConfig): Promise<{ data: any; tokensUsed?: number }> {
         if (!this.openai) {
             throw new Error('OpenAI not initialized');
         }
 
         const response = await this.openai.chat.completions.create({
-            model: 'gpt-4-turbo-preview',
+            model: config.modelName,
+            temperature: config.temperature,
             messages: [
                 {
                     role: 'system',
-                    content: `You are an expert nutritionist AI that creates personalized meal plans.
-          
-          Create a detailed meal plan based on the patient's requirements.
-          Return a JSON object with:
-          - days: array of day objects
-          - each day has: breakfast, lunch, dinner, snacks
-          - each meal has: foods (array), total_kcal, macros {protein, carbs, fat}
-          - estimated_cost: total estimated cost in BRL
-          - reasoning: brief explanation of your choices`,
+                    content: config.systemPrompt,
                 },
                 {
                     role: 'user',
@@ -376,25 +420,18 @@ export class AIService {
         recentMeals: any[];
         consultationHistory: any[];
         symptoms: any[];
-    }): Promise<{ data: any; tokensUsed?: number }> {
+    }, config: AgentRuntimeConfig): Promise<{ data: any; tokensUsed?: number }> {
         if (!this.openai) {
             throw new Error('OpenAI not initialized');
         }
 
         const response = await this.openai.chat.completions.create({
-            model: 'gpt-4-turbo-preview',
+            model: config.modelName,
+            temperature: config.temperature,
             messages: [
                 {
                     role: 'system',
-                    content: `You are a patient behavior analysis AI.
-          
-          Analyze the patient's data and return a JSON object with:
-          - adherence_score: number (0-100)
-          - progress_score: number (0-100)
-          - dropout_risk: "low" | "medium" | "high" | "critical"
-          - intervention_needed: boolean
-          - insights: array of key observations
-          - recommended_actions: array of suggested interventions`,
+                    content: config.systemPrompt,
                 },
                 {
                     role: 'user',
@@ -428,7 +465,7 @@ export class AIService {
         audioUrl?: string; // For transcription
         transcription?: string; // For SOAP generation
         consultationType?: string;
-    }): Promise<{ data: any; tokensUsed?: number }> {
+    }, config: AgentRuntimeConfig): Promise<{ data: any; tokensUsed?: number }> {
         if (!this.openai) {
             throw new Error('OpenAI not initialized');
         }
@@ -446,7 +483,7 @@ export class AIService {
 
             const transcription = await this.openai.audio.transcriptions.create({
                 file: file,
-                model: 'whisper-1',
+                model: 'whisper-1', // Transcription model is fixed for now
                 language: 'pt',
             });
 
@@ -467,14 +504,12 @@ export class AIService {
             if (!input.transcription) throw new Error('Transcription is required for SOAP generation');
 
             const response = await this.openai.chat.completions.create({
-                model: 'gpt-4-turbo-preview',
+                model: config.modelName,
+                temperature: config.temperature,
                 messages: [
                     {
                         role: 'system',
-                        content: `You are an expert medical scribe.
-                        Generate a structured SOAP note from the consultation transcription.
-                        Return JSON with: subjective, objective, assessment, plan.
-                        Language: Portuguese (BR).`,
+                        content: config.systemPrompt,
                     },
                     {
                         role: 'user',

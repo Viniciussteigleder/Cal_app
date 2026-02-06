@@ -53,7 +53,7 @@ export function PatientAnalyzerClient({ patients }: { patients: Patient[] }) {
 
                 // Generate mock adherence history for chart based on score
                 const history = Array.from({ length: 30 }, (_, i) => ({
-                    day: `Day ${i + 1}`,
+                    day: `Dia ${i + 1}`,
                     adherence: Math.max(60, Math.min(100, (res.data?.adherence_score || 0) + (Math.random() - 0.5) * 20)),
                 }));
                 setAdherenceHistory(history);
