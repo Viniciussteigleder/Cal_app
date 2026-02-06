@@ -47,8 +47,9 @@ export default function AppDescriptionPage() {
     { id: 'motor-regras', label: '3. Motor de Regras', icon: ShieldAlert },
     { id: 'casos-praticos', label: '4. Casos Práticos', icon: Activity },
     { id: 'impacto-mudancas', label: '5. Impacto de Mudanças', icon: ArrowRight },
-    { id: 'monitoramento', label: '6. Monitoramento', icon: LayoutDashboard },
-    { id: 'faq', label: '7. FAQ & Glossário', icon: Brain },
+    { id: 'infraestrutura', label: '6. Infraestrutura (Live)', icon: Database },
+    { id: 'monitoramento', label: '7. Monitoramento', icon: LayoutDashboard },
+    { id: 'faq', label: '8. FAQ & Glossário', icon: Brain },
   ];
 
   return (
@@ -93,7 +94,7 @@ export default function AppDescriptionPage() {
         <div className="bg-gradient-to-br from-emerald-900/20 to-emerald-600/10 rounded-xl p-8 border border-emerald-500/20">
           <h1 className="text-4xl font-bold tracking-tight mb-4">Como o NutriPlan Funciona</h1>
           <p className="text-lg text-muted-foreground max-w-3xl">
-            Guia oficial para App Owners e Administradores. Governe a plataforma com segurança, configure regras de IA e monitore a qualidade clínica.
+            Guia oficial para App Owners e Administradores. Governe a plataforma com segurança, configure regras de IA e monitore a qualidade clínica (v2.1).
           </p>
         </div>
 
@@ -459,6 +460,91 @@ export default function AppDescriptionPage() {
               </Table>
             </CardContent>
           </Card>
+        </section>
+
+        {/* 6. Infraestrutura Section */}
+        <section id="infraestrutura" className="space-y-6 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-2 pb-2 border-b">
+            <Database className="h-6 w-6 text-cyan-500" />
+            Infraestrutura Conectada (v2.1)
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="border-cyan-200 dark:border-cyan-800">
+              <CardHeader className="bg-cyan-50/50 dark:bg-cyan-950/20">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-green-500" />
+                  Serviços Ativos
+                </CardTitle>
+                <CardDescription>Integrações de backend em produção.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <MessageSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold">Resend Email</h4>
+                    <p className="text-xs text-muted-foreground">Motor transacional para boas-vindas e alertas.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <Database className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold">Supabase Storage</h4>
+                    <p className="text-xs text-muted-foreground">Armazenamento seguro de exames e fotos.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <Brain className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold">OpenAI (Vision + Whisper)</h4>
+                    <p className="text-xs text-muted-foreground">Reconhecimento de alimentos e transcrição de áudio.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold">React PDF Engine</h4>
+                    <p className="text-xs text-muted-foreground">Geração nativa de documentos e planos.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">Status do Sistema</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium text-xs">Versão do Core</TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">v2.1.0</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium text-xs">Ambiente</TableCell>
+                      <TableCell className="text-right text-xs"><Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-100">Production Ready</Badge></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium text-xs">Segurança</TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">RLS + Middleware Auth</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium text-xs">Último Build</TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">{new Date().toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </section>
 
         {/* 6. FAQ Section */}

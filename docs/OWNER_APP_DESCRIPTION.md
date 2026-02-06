@@ -1,8 +1,8 @@
 # 🌟 NutriPlan - Plataforma Revolucionária de Nutrição Inteligente
 
-**Versão**: 2.0  
-**Última Atualização**: 03 de Fevereiro de 2026  
-**Desenvolvido com**: Next.js 15, React 19, TypeScript, Supabase, OpenAI GPT-4
+**Versão**: 2.1 (Production Ready)  
+**Última Atualização**: 06 de Fevereiro de 2026  
+**Desenvolvido com**: Next.js 15, Supabase Storage, Resend Email, OpenAI (Vision/Whisper), React-PDF
 
 ---
 
@@ -798,6 +798,45 @@ Planos Inclusos:
 - Créditos por feature
 - Tendência de uso
 - Projeção mensal
+
+---
+
+## 🏗️ INFRAESTRUTURA DE PRODUÇÃO (v2.1)
+
+### **Serviços Backend Integrados**
+
+#### **1. Motor de E-mail (Resend)** 📧
+- **Status**: ✅ Ativo em Produção
+- **Fallback**: Modo Mock (Dev) automático se sem chaves.
+- **Templates**:
+  - Boas-vindas (Onboarding)
+  - Novo Plano Alimentar
+  - Lembrete de Consulta
+  - Redefinição de Senha
+
+#### **2. Sistema de Arquivos (Supabase Storage)** 🗄️
+- **Status**: ✅ Ativo
+- **Buckets Configurados**:
+  - `/patients`: Fotos de perfil e documentos
+  - `/exams`: PDFs e imagens de exames clínicos
+  - `/uploads`: Uploads temporários e diversos
+- **Segurança**: Políticas RLS ativas para isolamento de tenants.
+
+#### **3. Geração de Documentos (React-PDF)** 📄
+- **Status**: ✅ Ativo
+- **Recursos**:
+  - Renderização Server-Side (Stream) para alta performance.
+  - Templates profissionais para Planos Alimentares.
+  - Suporte a imagens, tabelas nutricionais e branding.
+
+#### **4. IA Multimodal (OpenAI)** 🧠
+- **Status**: ✅ Ativo
+- **Modelos Conectados**:
+  - **GPT-4 Turbo**: Raciocínio clínico e geração de texto.
+  - **GPT-4 Vision**: Reconhecimento de alimentos e exames.
+  - **Whisper-1**: Transcrição de áudio para prontuários (SOAP).
+
+---
 
 **Por Paciente**:
 - Créditos consumidos
