@@ -34,13 +34,16 @@ export async function POST(req: Request) {
 
         // Map Price ID or Metadata to Plan
         // Ideally pass 'plan' in metadata during checkout creation
-        const planKey = session.metadata.plan?.toUpperCase() || 'PROFESSIONAL';
-        // Defaulting to PROFESSIONAL if missing, but should be explicit.
+        const planKey = session.metadata.plan?.toUpperCase().replace(/\s+/g, '_') || 'PRO';
 
         // Determine credits based on plan
-        let credits = 100; // Default/Starter
-        if (planKey === 'PROFESSIONAL') credits = 500;
-        if (planKey === 'ENTERPRISE') credits = 2000;
+        let credits = 100; // Default
+        let limit = 1000;
+
+        if (planKey === 'BASIC') { credits = 50; limit = 200; }
+        if (planKey === 'PRO') { credits = 500; limit = 5000; }
+        if (planKey === 'PRO_MAX') { credits = 2000; limit = 20000; }
+        if (planKey === 'PRO_MAX_AI') { credits = 5000; limit = 100000; }
 
         await prisma.tenant.update({
             where: {
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
                 ai_credits: {
                     increment: credits // Initial grant
                 },
-                ai_usage_limit: planKey === 'ENTERPRISE' ? 100000 : (planKey === 'PROFESSIONAL' ? 5000 : 1000)
+                ai_usage_limit: limit
             },
         });
     }
@@ -74,19 +77,19 @@ export async function POST(req: Request) {
 
         if (tenant) {
             // Refresh credits for the new month
-            let monthlyCredits = 100;
-            if (tenant.plan === 'PROFESSIONAL') monthlyCredits = 500;
-            if (tenant.plan === 'ENTERPRISE') monthlyCredits = 2000;
+            let monthlyCredits = 50;
+            // @ts-ignore
+            const p = tenant.plan;
+
+            if (p === 'PRO') monthlyCredits = 500;
+            if (p === 'PRO_MAX') monthlyCredits = 2000;
+            if (p === 'PRO_MAX_AI') monthlyCredits = 5000;
 
             await prisma.tenant.update({
                 where: {
                     id: tenant.id,
                 },
                 data: {
-                    // Reset credits or increment? Usually reset for monthly allowance, or increment if rollover.
-                    // Let's assume SET to monthly allowance for now to avoid indefinite accumulation if unused, 
-                    // OR increment if we want to be generous.
-                    // "Recurrent" implies a fresh batch. Let's add them.
                     ai_credits: {
                         increment: monthlyCredits
                     },
@@ -118,11 +121,10 @@ export async function POST(req: Request) {
             },
             data: {
                 subscription_status: 'canceled',
-                plan: 'FREE', // Downgrade to free
-                ai_usage_limit: 100 // Reset limits
+                plan: 'BASIC', // Downgrade to BASIC
+                ai_usage_limit: 200 // Reset limits
             },
         });
     }
-
     return new NextResponse(null, { status: 200 });
 }

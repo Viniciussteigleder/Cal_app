@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Check, Star, Zap, Building2 } from 'lucide-react';
+import { Check, Star, Zap, Building2, Crown, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,33 +12,43 @@ interface PricingCardProps {
     description: string;
     features: string[];
     isPopular?: boolean;
+    highlightColor?: string;
+    icon?: React.ReactNode;
     buttonText: string;
     onSubscribe: () => void;
     isLoading?: boolean;
 }
 
-function PricingCard({ title, price, description, features, isPopular, buttonText, onSubscribe, isLoading }: PricingCardProps) {
+function PricingCard({ title, price, description, features, isPopular, highlightColor, icon, buttonText, onSubscribe, isLoading }: PricingCardProps) {
     return (
-        <Card className={`relative flex flex-col ${isPopular ? 'border-primary shadow-lg scale-105' : 'border-border'}`}>
+        <Card className={`relative flex flex-col h-full ${isPopular ? 'border-2 shadow-xl scale-105 z-10' : 'border border-border'}`} style={isPopular && highlightColor ? { borderColor: highlightColor } : {}}>
             {isPopular && (
                 <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                    <Badge className="bg-primary hover:bg-primary/90">Mais Popular</Badge>
+                    <Badge className="px-4 py-1" style={highlightColor ? { backgroundColor: highlightColor } : {}}>
+                        {title === "Basic" ? "Grátis" : "Recomendado"}
+                    </Badge>
                 </div>
             )}
             <CardHeader>
-                <CardTitle className="text-2xl font-bold">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                            {icon} {title}
+                        </CardTitle>
+                        <CardDescription className="mt-2 text-sm">{description}</CardDescription>
+                    </div>
+                </div>
                 <div className="mt-4">
                     <span className="text-4xl font-bold">{price}</span>
-                    <span className="text-muted-foreground">/mês</span>
+                    {price !== 'Grátis' && <span className="text-muted-foreground">/mês</span>}
                 </div>
             </CardHeader>
             <CardContent className="flex-1">
                 <ul className="space-y-3">
                     {features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm">
-                            <Check className="h-4 w-4 text-green-500" />
-                            {feature}
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                            <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                            <span className="text-muted-foreground">{feature}</span>
                         </li>
                     ))}
                 </ul>
@@ -46,6 +57,7 @@ function PricingCard({ title, price, description, features, isPopular, buttonTex
                 <Button
                     className="w-full"
                     variant={isPopular ? 'default' : 'outline'}
+                    style={isPopular && highlightColor ? { backgroundColor: highlightColor } : {}}
                     onClick={onSubscribe}
                     disabled={isLoading}
                 >
@@ -57,11 +69,15 @@ function PricingCard({ title, price, description, features, isPopular, buttonTex
 }
 
 export default function SubscriptionPage() {
-    // In a real app, you would fetch the current plan from the server component or context
-    const currentPlan = "STARTER"; // Mock
-    const tenantId = "current-tenant-id"; // Mock - would come from session
+    // Mock current plan for demo
+    const currentPlan = "BASIC";
+    const tenantId = "current-tenant-id";
 
     const handleSubscribe = async (priceId: string, planName: string) => {
+        if (!priceId) {
+            console.error("Missing Price ID for", planName);
+            return;
+        }
         try {
             const response = await fetch(`/api/stripe/checkout?priceId=${priceId}&tenantId=${tenantId}&planName=${planName}`);
             const data = await response.json();
@@ -79,73 +95,101 @@ export default function SubscriptionPage() {
     return (
         <div className="container mx-auto py-10 px-4">
             <div className="text-center mb-12">
-                <h1 className="text-3xl font-bold tracking-tight mb-4">Escolha o Plano Ideal para Sua Carreira</h1>
+                <h1 className="text-3xl font-bold tracking-tight mb-4">Planos Flexíveis para Sua Evolução</h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Desbloqueie todo o potencial do NutriPlan com automação avançada e Inteligência Artificial.
+                    Comece grátis e escale com o poder da Inteligência Artificial.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                {/* Starter Plan */}
+            {/* Grid adjusting for 4 items */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-7xl mx-auto items-start">
+
+                {/* BASIC PLAN */}
                 <PricingCard
-                    title="Starter"
-                    price="R$ 49"
-                    description="Para quem está começando a atender."
+                    title="Basic"
+                    price="Grátis"
+                    description="Para experimentar e começar."
+                    icon={<Star className="h-5 w-5 text-gray-500" />}
                     features={[
-                        "Até 20 Pacientes ativos",
-                        "Cálculos Automáticos",
-                        "App do Paciente (Básico)",
-                        "100 Créditos de IA/mês",
+                        "Até 5 Pacientes ativos",
+                        "Cálculos Básicos",
+                        "Acesso limitado ao App",
+                        "Sem IA",
+                        "Suporte Comunitário"
+                    ]}
+                    buttonText="Plano Atual"
+                    onSubscribe={() => { }}
+                />
+
+                {/* PRO PLAN */}
+                <PricingCard
+                    title="PRO"
+                    price="R$ 49"
+                    description="Para nutricionistas autônomos."
+                    icon={<Zap className="h-5 w-5 text-blue-500" />}
+                    features={[
+                        "Até 50 Pacientes",
+                        "App Paciente Completo",
+                        "500 Créditos IA/mês",
+                        "Receitas por IA",
                         "Suporte por Email"
                     ]}
-                    buttonText={currentPlan === "STARTER" ? "Plano Atual" : "Downgrade"}
-                    onSubscribe={() => { }} // Handle downgrade or show active
+                    buttonText="Assinar PRO"
+                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO || '', 'PRO')}
                 />
 
-                {/* Professional Plan */}
+                {/* PRO MAX */}
                 <PricingCard
-                    title="Professional"
-                    price="R$ 197"
-                    description="Para nutricionistas em crescimento."
+                    title="PRO MAX"
+                    price="R$ 97"
+                    description="Para escalar seu atendimento."
                     isPopular={true}
+                    highlightColor="#8b5cf6" // Violet
+                    icon={<Crown className="h-5 w-5 text-white" />}
                     features={[
-                        "Até 100 Pacientes ativos",
-                        "Tudo do Starter",
-                        "500 Créditos de IA/mês",
-                        "IA de Reconhecimento de Fotos (Ilimitado)",
+                        "Até 200 Pacientes",
+                        "Tudo do PRO",
+                        "2.000 Créditos IA/mês",
                         "Gerador de Protocolos",
                         "Análise de Exames",
-                        "Personalização de Cores (White-label parcial)"
+                        "Branding Personalizado"
                     ]}
-                    buttonText="Fazer Upgrade"
-                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO || '', 'PROFESSIONAL')}
+                    buttonText="Assinar PRO MAX"
+                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MAX || '', 'PRO_MAX')}
                 />
 
-                {/* Enterprise Plan (Mapped to PRO MAX) */}
+                {/* PRO MAX AI */}
                 <PricingCard
-                    title="Enterprise"
-                    price="R$ 497"
-                    description="Para clínicas e alta demanda."
+                    title="PRO MAX AI"
+                    price="R$ 197"
+                    description="O poder máximo da tecnologia."
+                    icon={<Bot className="h-5 w-5 text-amber-500" />}
                     features={[
                         "Pacientes Ilimitados",
-                        "Tudo do Professional",
-                        "2.000 Créditos de IA/mês",
-                        "Gestão de Equipe (Múltiplos Nutris)",
-                        "Domínio Personalizado",
-                        "API de Integração",
-                        "Gerente de Conta Dedicado"
+                        "Tudo do PRO MAX",
+                        "5.000 Créditos IA/mês",
+                        "Food Recognition Ilimitado",
+                        "API Access",
+                        "Gerente Dedicado"
                     ]}
-                    buttonText="Falar com Vendas"
-                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MAX || '', 'ENTERPRISE')}
+                    buttonText="Assinar UIltimate"
+                    onSubscribe={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MAX_AI || '', 'PRO_MAX_AI')}
                 />
             </div>
 
-            <div className="mt-16 bg-muted/50 rounded-lg p-8 text-center">
-                <h2 className="text-xl font-semibold mb-2">Precisa de mais créditos de IA?</h2>
+            {/* Explanation of Security Warning */}
+            {/* 
+         NOTE TO DEV: The Vercel warning about NEXT_PUBLIC_ variables is expected. 
+         These keys (Price IDs) are designed to be public identifiers for Stripe Checkout. 
+         They contain no secret data.
+       */}
+
+            <div className="mt-16 bg-muted/50 rounded-lg p-8 text-center max-w-4xl mx-auto">
+                <h2 className="text-xl font-semibold mb-2">Dúvidas sobre os planos?</h2>
                 <p className="text-muted-foreground mb-4">
-                    Você pode comprar pacotes avulsos de créditos a qualquer momento sem mudar de plano.
+                    Nossa equipe está pronta para te ajudar a escolher a melhor opção para sua carreira.
                 </p>
-                <Button variant="outline">Ver Pacotes de Créditos</Button>
+                <Button variant="outline">Falar com Consultor</Button>
             </div>
         </div>
     );
