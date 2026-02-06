@@ -65,3 +65,23 @@ export class StorageService {
 }
 
 export const storageService = new StorageService();
+
+/**
+ * Standalone upload helper used by server actions and API routes.
+ * Builds a tenant/patient-scoped path and returns a simple success/error shape.
+ */
+export async function uploadFile(
+  file: File,
+  bucket: string,
+  tenantId: string,
+  patientId: string
+): Promise<{ success: boolean; url?: string; path?: string; error?: string }> {
+  try {
+    const scopedPath = `${tenantId}/${patientId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const result = await storageService.uploadFile(file, bucket, scopedPath);
+    return { success: true, url: result.url, path: result.path };
+  } catch (error) {
+    console.error('uploadFile helper error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
+  }
+}
