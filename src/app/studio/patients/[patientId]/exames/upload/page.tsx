@@ -1,6 +1,8 @@
 import React from 'react';
 import { UploadForm } from './UploadForm';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ExamUploadPage({
     params,
 }: {

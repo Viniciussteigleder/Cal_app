@@ -3,6 +3,8 @@ import { getDailyLogs } from './actions';
 import { DailyLogTimeline } from './DailyLogTimeline';
 import { getRecipes } from '@/app/studio/recipes/actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DailyLogPage({
     params,
 }: {

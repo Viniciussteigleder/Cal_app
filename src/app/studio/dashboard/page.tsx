@@ -1,5 +1,3 @@
-'use client';
-
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +19,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+
+export const dynamic = 'force-dynamic';
 
 // Simulation Data: "Week 2" Clinical Reality
 const CLINICAL_ALERTS = [

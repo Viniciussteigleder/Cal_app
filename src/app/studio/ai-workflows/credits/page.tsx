@@ -8,6 +8,8 @@ import { Coins, TrendingUp, Zap, BarChart } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AiCreditsPage() {
     const { success, data } = await getAiCreditStats();
 

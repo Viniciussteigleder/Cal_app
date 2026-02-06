@@ -11,6 +11,8 @@ import { ptBR } from 'date-fns/locale';
 import { ProtocolTimeline } from '@/components/studio/protocol-timeline';
 
 // This is the new page to list protocols assigned to a patient
+export const dynamic = 'force-dynamic';
+
 export default async function PatientProtocolsPage({
     params
 }: {

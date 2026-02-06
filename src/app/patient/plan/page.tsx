@@ -5,6 +5,8 @@
 
 import React from 'react';
 import DashboardLayout from "@/components/layout/dashboard-layout";
+
+export const dynamic = 'force-dynamic';
 import { getCurrentPatientId } from '@/app/patient/log/actions';
 import { getActiveProtocol } from '@/app/studio/patients/[patientId]/plano-alimentar/actions';
 import { PlanView } from './PlanView';

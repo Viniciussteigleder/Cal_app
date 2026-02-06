@@ -2,6 +2,8 @@ import React from 'react';
 import { getAiConfigs } from './actions';
 import { AiConfigList } from './AiConfigList';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AiConfigPage() {
     const { success, data } = await getAiConfigs();
 
