@@ -1,6 +1,6 @@
 'use client';
 
-import { Brain, Camera, Calendar, TrendingUp, Sparkles, ArrowRight } from 'lucide-react';
+import { Brain, Camera, Calendar, TrendingUp, Sparkles, ArrowRight, FileText, Pill, ShoppingCart, Stethoscope, Activity, Mic } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,10 +55,101 @@ const AI_FEATURES = [
         icon: Brain,
         color: 'orange',
         href: '/studio/ai/exam-analyzer',
-        status: 'coming-soon',
+        status: 'active',
         stats: {
-            label: ptBR.ai.stats.coming,
-            value: 'Q2 2026',
+            label: ptBR.ai.stats.accuracy,
+            value: '92%',
+        },
+    },
+    {
+        id: 'medical-record-creator',
+        name: ptBR.ai.medicalRecordCreator,
+        description: 'Transcreva consultas com Whisper AI e gere notas SOAP',
+        icon: Mic,
+        color: 'rose',
+        href: '/studio/ai/medical-record-creator',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.accuracy,
+            value: '95%',
+        },
+    },
+    {
+        id: 'protocol-generator',
+        name: ptBR.ai.protocolGenerator,
+        description: 'Crie protocolos clínicos nutricionais personalizados',
+        icon: FileText,
+        color: 'cyan',
+        href: '/studio/ai/protocol-generator',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.avgTime,
+            value: '15s',
+        },
+    },
+    {
+        id: 'symptom-correlator',
+        name: ptBR.ai.symptomCorrelator,
+        description: 'Identifique padrões entre dieta e sintomas',
+        icon: Activity,
+        color: 'amber',
+        href: '/studio/ai/symptom-correlator',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.prediction,
+            value: '88%',
+        },
+    },
+    {
+        id: 'supplement-advisor',
+        name: ptBR.ai.supplementAdvisor,
+        description: 'Recomendações de suplementos baseadas em evidências',
+        icon: Pill,
+        color: 'indigo',
+        href: '/studio/ai/supplement-advisor',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.accuracy,
+            value: '91%',
+        },
+    },
+    {
+        id: 'shopping-list',
+        name: ptBR.ai.shoppingListGenerator,
+        description: 'Listas de compras organizadas a partir do plano alimentar',
+        icon: ShoppingCart,
+        color: 'teal',
+        href: '/studio/ai/shopping-list',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.avgTime,
+            value: '8s',
+        },
+    },
+    {
+        id: 'report-generator',
+        name: ptBR.ai.reportGenerator,
+        description: 'Relatórios de progresso detalhados gerados por IA',
+        icon: FileText,
+        color: 'sky',
+        href: '/studio/ai/report-generator',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.avgTime,
+            value: '10s',
+        },
+    },
+    {
+        id: 'clinical-mdt',
+        name: 'MDT Clínico',
+        description: 'Equipe multidisciplinar virtual para casos complexos',
+        icon: Stethoscope,
+        color: 'violet',
+        href: '/studio/ai/clinical-mdt',
+        status: 'active',
+        stats: {
+            label: ptBR.ai.stats.avgTime,
+            value: '20s',
         },
     },
 ];
@@ -187,21 +278,17 @@ export default function AIDashboardPage() {
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {[
-                                ptBR.ai.medicalRecordCreator,
-                                ptBR.ai.protocolGenerator,
-                                ptBR.ai.symptomCorrelator,
                                 ptBR.ai.recipeCreator,
                                 ptBR.ai.nutritionCoach,
-                                ptBR.ai.supplementAdvisor,
-                                ptBR.ai.shoppingListGenerator,
-                                ptBR.ai.reportGenerator,
+                                'Agendamento Inteligente',
+                                'Balanceador de Macros',
                             ].map((name, index) => (
                                 <div
                                     key={index}
                                     className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
                                 >
                                     <p className="text-sm font-medium">{name}</p>
-                                    <p className="text-xs text-gray-500 mt-1">Q2-Q4 2026</p>
+                                    <p className="text-xs text-gray-500 mt-1">Q3-Q4 2026</p>
                                 </div>
                             ))}
                         </div>

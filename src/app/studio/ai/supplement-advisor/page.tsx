@@ -37,140 +37,61 @@ export default function SupplementAdvisorPage() {
     const [selectedPatient, setSelectedPatient] = useState('1');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisComplete, setAnalysisComplete] = useState(false);
+    const [nutrientGaps, setNutrientGaps] = useState<NutrientGap[]>([]);
+    const [recommendations, setRecommendations] = useState<SupplementRecommendation[]>([]);
 
-    // Mock nutrient gaps data
-    const nutrientGaps: NutrientGap[] = [
-        { nutrient: 'Vitamina D', current: 18, target: 30, unit: 'ng/mL', status: 'low', percentage: 60 },
-        { nutrient: 'Vitamina B12', current: 180, target: 400, unit: 'pg/mL', status: 'low', percentage: 45 },
-        { nutrient: 'Ferro', current: 25, target: 70, unit: 'ng/mL', status: 'critical', percentage: 36 },
-        { nutrient: 'Magnésio', current: 1.8, target: 2.2, unit: 'mg/dL', status: 'low', percentage: 82 },
-        { nutrient: 'Ômega-3', current: 4.5, target: 8, unit: '%', status: 'low', percentage: 56 },
-        { nutrient: 'Zinco', current: 85, target: 100, unit: 'μg/dL', status: 'adequate', percentage: 85 },
-    ];
-
-    // Mock supplement recommendations
-    const recommendations: SupplementRecommendation[] = [
-        {
-            name: 'Vitamina D3',
-            dosage: '2.000 UI/dia',
-            timing: 'Junto com refeição que contenha gordura (almoço ou jantar)',
-            duration: '3 meses, depois reavaliar',
-            benefits: [
-                'Melhora absorção de cálcio',
-                'Fortalece sistema imunológico',
-                'Reduz risco de osteoporose',
-                'Melhora humor e energia',
-            ],
-            warnings: [
-                'Não exceder 4.000 UI/dia sem supervisão médica',
-                'Monitorar níveis sanguíneos a cada 3 meses',
-            ],
-            interactions: [
-                'Pode interagir com medicamentos para pressão alta',
-                'Aumenta absorção de cálcio - cuidado com hipercalcemia',
-            ],
-            estimatedCost: 'R$ 25-40/mês',
-            priority: 'high',
-        },
-        {
-            name: 'Complexo B (com B12 metilada)',
-            dosage: '1 cápsula/dia (B12: 1.000 mcg)',
-            timing: 'Pela manhã, em jejum ou com café da manhã',
-            duration: '6 meses, depois reavaliar',
-            benefits: [
-                'Melhora energia e disposição',
-                'Suporta metabolismo energético',
-                'Importante para saúde neurológica',
-                'Reduz fadiga',
-            ],
-            warnings: [
-                'Pode deixar urina amarelada (normal)',
-                'Vegetarianos/veganos precisam de suplementação contínua',
-            ],
-            interactions: [
-                'Pode reduzir eficácia de alguns antibióticos',
-                'Interage com metformina (diabetes)',
-            ],
-            estimatedCost: 'R$ 30-50/mês',
-            priority: 'high',
-        },
-        {
-            name: 'Ferro Quelado + Vitamina C',
-            dosage: '30 mg de ferro elementar/dia',
-            timing: 'Em jejum ou 2h após refeições, com suco de laranja',
-            duration: '3 meses, depois reavaliar',
-            benefits: [
-                'Corrige anemia ferropriva',
-                'Melhora energia e disposição',
-                'Reduz fadiga',
-                'Melhora concentração',
-            ],
-            warnings: [
-                'Pode causar constipação intestinal',
-                'Pode causar náusea - tomar com alimento se necessário',
-                'Fezes podem ficar escuras (normal)',
-            ],
-            interactions: [
-                'Não tomar junto com cálcio ou laticínios',
-                'Não tomar junto com chá ou café',
-                'Interage com antibióticos - espaçar 2h',
-            ],
-            estimatedCost: 'R$ 35-55/mês',
-            priority: 'high',
-        },
-        {
-            name: 'Magnésio Dimalato',
-            dosage: '300-400 mg/dia',
-            timing: 'À noite, antes de dormir',
-            duration: 'Uso contínuo',
-            benefits: [
-                'Melhora qualidade do sono',
-                'Reduz cãibras musculares',
-                'Ajuda no relaxamento',
-                'Suporta saúde cardiovascular',
-            ],
-            warnings: [
-                'Pode causar diarreia em doses altas',
-                'Começar com dose menor e aumentar gradualmente',
-            ],
-            interactions: [
-                'Pode interagir com antibióticos',
-                'Reduz absorção de alguns medicamentos',
-            ],
-            estimatedCost: 'R$ 40-60/mês',
-            priority: 'medium',
-        },
-        {
-            name: 'Ômega-3 (EPA/DHA)',
-            dosage: '1.000-2.000 mg/dia (EPA+DHA)',
-            timing: 'Junto com refeições',
-            duration: 'Uso contínuo',
-            benefits: [
-                'Reduz inflamação',
-                'Melhora saúde cardiovascular',
-                'Suporta função cerebral',
-                'Melhora perfil lipídico',
-            ],
-            warnings: [
-                'Escolher marca com certificação de pureza',
-                'Pode causar "arroto de peixe" - congelar cápsulas ajuda',
-            ],
-            interactions: [
-                'Pode aumentar risco de sangramento com anticoagulantes',
-                'Cuidado se tomar aspirina regularmente',
-            ],
-            estimatedCost: 'R$ 60-100/mês',
-            priority: 'medium',
-        },
-    ];
-
-    const handleAnalyze = () => {
+    const handleAnalyze = async () => {
         setIsAnalyzing(true);
-        setTimeout(() => {
-            setIsAnalyzing(false);
+
+        try {
+            const response = await fetch('/api/ai/supplement-advisor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ patientId: selectedPatient }),
+            });
+
+            if (!response.ok) throw new Error('Falha na análise');
+
+            const result = await response.json();
+            const aiData = result.data || {};
+
+            const gaps: NutrientGap[] = (aiData.nutrient_gaps || []).map((g: any) => {
+                const current = g.current ?? g.value ?? 0;
+                const target = g.target ?? g.recommended ?? 100;
+                const pct = target > 0 ? Math.round((current / target) * 100) : 0;
+                const severityMap: Record<string, NutrientGap['status']> = { high: 'critical', medium: 'low', low: 'adequate' };
+                return {
+                    nutrient: g.nutrient || g.name,
+                    current,
+                    target,
+                    unit: g.unit || '',
+                    status: severityMap[g.severity] || g.status || 'adequate',
+                    percentage: Math.min(pct, 100),
+                };
+            });
+            setNutrientGaps(gaps);
+
+            const recs: SupplementRecommendation[] = (aiData.recommendations || []).map((r: any) => ({
+                name: r.supplement || r.name,
+                dosage: r.dosage || '',
+                timing: r.timing || '',
+                duration: r.duration || '',
+                benefits: r.benefits || [],
+                warnings: r.warnings || [],
+                interactions: r.interactions || [],
+                estimatedCost: r.estimated_cost_brl ? `R$ ${r.estimated_cost_brl}` : (r.estimatedCost || ''),
+                priority: r.priority || 'medium',
+            }));
+            setRecommendations(recs);
+
             setAnalysisComplete(true);
-            toast.success('Análise de nutrientes concluída!');
-        }, 2000);
+            toast.success(`Análise concluída! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error analyzing supplements:', error);
+            toast.error('Erro na análise de suplementos. Tente novamente.');
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
     const getStatusColor = (status: string) => {

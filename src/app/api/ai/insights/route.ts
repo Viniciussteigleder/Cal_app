@@ -1,43 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-utils";
 
-// Mock insights data
-const MOCK_INSIGHTS = [
-  {
-    type: "success" as const,
-    title: "Ótima consistência!",
-    description: "Você registrou refeições em 5 dos últimos 7 dias. Continue assim!",
-    priority: 1,
-  },
-  {
-    type: "tip" as const,
-    title: "Aumente a proteína",
-    description:
-      "Para seu objetivo de perda de peso, consumir mais proteína ajuda a manter a massa muscular e aumentar a saciedade.",
-    priority: 2,
-  },
-  {
-    type: "success" as const,
-    title: "Sintomas controlados",
-    description:
-      "Seus níveis de desconforto estão baixos. Seu plano alimentar parece estar funcionando bem!",
-    priority: 2,
-  },
-  {
-    type: "info" as const,
-    title: "Protocolo Low FODMAP ativo",
-    description: "Você está seguindo o protocolo Low FODMAP. Lembre-se de seguir as orientações específicas para esta fase.",
-    priority: 2,
-  },
-  {
-    type: "tip" as const,
-    title: "Dica do dia",
-    description:
-      "Beba água ao longo do dia. A hidratação adequada ajuda na digestão e no bem-estar geral.",
-    priority: 4,
-  },
-];
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -257,32 +220,12 @@ export async function GET(request: NextRequest) {
         insights,
       });
     } catch (dbError) {
-      console.log("Banco de dados não disponível, usando dados de demonstração");
+      console.error("Erro ao acessar banco de dados para insights:", dbError);
+      return NextResponse.json(
+        { error: "Não foi possível acessar os dados do paciente. Tente novamente mais tarde." },
+        { status: 503 }
+      );
     }
-
-    // Return mock data if database not available
-    return NextResponse.json({
-      patient: {
-        name: "Maria Silva",
-        goal: "loss",
-      },
-      nutrition: {
-        avgCaloriesPerMeal: 450,
-        avgProteinPerMeal: 28,
-        totalMealsLogged: 12,
-        daysWithMeals: 5,
-      },
-      symptoms: {
-        avgDiscomfort: 2.5,
-        totalLogged: 8,
-        bristolDistribution: {
-          type_3: 2,
-          type_4: 5,
-          type_5: 1,
-        },
-      },
-      insights: MOCK_INSIGHTS,
-    });
   } catch (error) {
     console.error("Erro nos insights de IA:", error);
     return NextResponse.json(

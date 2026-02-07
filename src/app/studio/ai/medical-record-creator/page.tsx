@@ -67,89 +67,87 @@ export default function MedicalRecordCreatorPage() {
         }
     };
 
-    const transcribeAudio = () => {
+    const transcribeAudio = async () => {
         if (!audioBlob) return;
 
         setIsTranscribing(true);
         setTranscriptionProgress(0);
 
-        // Simulate Whisper AI transcription
-        const interval = setInterval(() => {
-            setTranscriptionProgress((prev) => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        // Mock transcription
-                        const mockTranscription = `Paciente Maria Silva, 39 anos, retorno de consulta. 
-            
-Queixa principal: Relata melhora significativa nos sintomas digestivos após início do protocolo FODMAP há 6 semanas. Inchaço abdominal reduziu em aproximadamente 70%. Ainda apresenta desconforto ocasional após consumo de laticínios.
-
-Histórico: Iniciou protocolo FODMAP em 15 de dezembro de 2025. Aderência de 85% ao plano alimentar. Registra refeições regularmente no aplicativo.
-
-Exame físico: Peso atual 68.2kg (perda de 6.5kg desde início). Pressão arterial 120/80 mmHg. Abdômen sem distensão significativa.
-
-Avaliação: Paciente apresenta excelente resposta ao protocolo FODMAP. Sintomas de SII controlados. Perda de peso progressiva e saudável.
-
-Plano: 
-1. Manter protocolo FODMAP fase 2
-2. Iniciar reintrodução gradual de laticínios com baixa lactose
-3. Agendar retorno em 4 semanas
-4. Solicitar hemograma completo e perfil lipídico
-5. Orientar sobre suplementação de vitamina D`;
-
-                        setTranscription(mockTranscription);
-                        setIsTranscribing(false);
-                        toast.success('Transcrição concluída!');
-                    }, 500);
-                    return 100;
-                }
-                return prev + 10;
+        try {
+            // Convert audio blob to base64 data URL for API transport
+            const reader = new FileReader();
+            const audioDataUrl = await new Promise<string>((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(audioBlob);
             });
-        }, 200);
+
+            setTranscriptionProgress(30);
+
+            const response = await fetch('/api/ai/medical-record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'transcribe',
+                    audioUrl: audioDataUrl,
+                    consultationType,
+                    patientId: selectedPatient,
+                }),
+            });
+
+            setTranscriptionProgress(70);
+
+            if (!response.ok) throw new Error('Falha na transcrição');
+
+            const result = await response.json();
+            setTranscriptionProgress(100);
+
+            const text = result.transcription?.text || result.transcription || '';
+            setTranscription(text);
+            toast.success(`Transcrição concluída! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error transcribing audio:', error);
+            toast.error('Erro na transcrição. Tente novamente.');
+        } finally {
+            setIsTranscribing(false);
+        }
     };
 
-    const generateSOAPNote = () => {
+    const generateSOAPNote = async () => {
         if (!transcription) return;
 
-        // Simulate AI SOAP note generation
-        toast.promise(
-            new Promise((resolve) => {
-                setTimeout(() => {
-                    const soap: SOAPNote = {
-                        subjective: `Paciente relata melhora significativa nos sintomas digestivos após início do protocolo FODMAP há 6 semanas. Inchaço abdominal reduziu em aproximadamente 70%. Ainda apresenta desconforto ocasional após consumo de laticínios. Aderência de 85% ao plano alimentar com registro regular de refeições.`,
+        const soapPromise = (async () => {
+            const response = await fetch('/api/ai/medical-record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate-soap',
+                    transcription,
+                    consultationType,
+                    patientId: selectedPatient,
+                }),
+            });
 
-                        objective: `Peso: 68.2kg (perda de 6.5kg desde início do tratamento)
-Pressão arterial: 120/80 mmHg
-Abdômen: Sem distensão significativa à palpação
-Estado geral: Bom, paciente alerta e cooperativa`,
+            if (!response.ok) throw new Error('Falha ao gerar nota SOAP');
 
-                        assessment: `1. Síndrome do Intestino Irritável (SII) - Em melhora com protocolo FODMAP
-2. Intolerância à lactose - Suspeita clínica
-3. Perda de peso progressiva e saudável - 6.5kg em 6 semanas
-4. Boa aderência ao tratamento nutricional`,
+            const result = await response.json();
+            const soapData = result.soapNote || result.data?.soapNote || result.data || {};
 
-                        plan: `1. Manter protocolo FODMAP fase 2 por mais 4 semanas
-2. Iniciar reintrodução gradual de laticínios com baixa lactose (iogurte natural, queijos maturados)
-3. Agendar retorno em 4 semanas para avaliação
-4. Solicitar exames laboratoriais:
-   - Hemograma completo
-   - Perfil lipídico
-   - Vitamina D
-5. Orientar suplementação de vitamina D 2000 UI/dia
-6. Manter registro diário de refeições e sintomas
-7. Encaminhar para nutricionista especialista em SII se necessário`
-                    };
+            const soap: SOAPNote = {
+                subjective: soapData.subjective || soapData.subjetivo || '',
+                objective: soapData.objective || soapData.objetivo || '',
+                assessment: soapData.assessment || soapData.avaliacao || '',
+                plan: soapData.plan || soapData.plano || '',
+            };
 
-                    setSOAPNote(soap);
-                    resolve(soap);
-                }, 2000);
-            }),
-            {
-                loading: 'Gerando nota SOAP com IA...',
-                success: 'Nota SOAP gerada com sucesso!',
-                error: 'Erro ao gerar nota SOAP',
-            }
-        );
+            setSOAPNote(soap);
+            return soap;
+        })();
+
+        toast.promise(soapPromise, {
+            loading: 'Gerando nota SOAP com IA...',
+            success: 'Nota SOAP gerada com sucesso!',
+            error: 'Erro ao gerar nota SOAP',
+        });
     };
 
     const copyToClipboard = (text: string) => {

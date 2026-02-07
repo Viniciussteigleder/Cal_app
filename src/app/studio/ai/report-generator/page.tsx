@@ -49,65 +49,67 @@ export default function ReportGeneratorPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [report, setReport] = useState<Report | null>(null);
 
-    const generateReport = () => {
+    const generateReport = async () => {
         setIsGenerating(true);
 
-        setTimeout(() => {
-            const mockReport: Report = {
+        try {
+            const periodMap: Record<string, string> = { '7': '7 dias', '30': '30 dias', '90': '90 dias' };
+
+            const response = await fetch('/api/ai/report-generator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: selectedPatient,
+                    period: periodMap[reportPeriod] || '90 dias',
+                    reportType,
+                }),
+            });
+
+            if (!response.ok) throw new Error('Falha ao gerar relatório');
+
+            const result = await response.json();
+            const aiData = result.data || {};
+
+            const generatedReport: Report = {
                 patient: {
-                    name: 'Maria Silva',
-                    age: 39,
-                    startDate: '2025-12-01',
-                    duration: 90,
+                    name: aiData.patient?.name || 'Paciente',
+                    age: aiData.patient?.age || 0,
+                    startDate: aiData.patient?.startDate || aiData.summary?.period || new Date().toISOString().slice(0, 10),
+                    duration: Number(reportPeriod) || 90,
                 },
                 summary: {
-                    adherence: 87,
-                    mealsLogged: 245,
-                    weightLoss: 10.3,
-                    goalProgress: 65,
+                    adherence: aiData.summary?.adherence_score ?? aiData.summary?.adherence ?? 0,
+                    mealsLogged: aiData.summary?.meals_logged ?? aiData.summary?.mealsLogged ?? 0,
+                    weightLoss: Math.abs(aiData.summary?.weight_change ?? aiData.summary?.weightLoss ?? 0),
+                    goalProgress: aiData.summary?.overall_progress ?? aiData.summary?.goalProgress ?? 0,
                 },
-                metrics: [
-                    { name: 'Peso', initial: 78.5, current: 68.2, target: 68.0, unit: 'kg', change: -10.3, trend: 'down' },
-                    { name: 'IMC', initial: 28.5, current: 24.8, target: 24.0, unit: '', change: -3.7, trend: 'down' },
-                    { name: 'Circunferência Abdominal', initial: 92, current: 78, target: 75, unit: 'cm', change: -14, trend: 'down' },
-                    { name: 'Gordura Corporal', initial: 32, current: 25, target: 22, unit: '%', change: -7, trend: 'down' },
-                    { name: 'Massa Muscular', initial: 48, current: 51, target: 52, unit: 'kg', change: 3, trend: 'up' },
-                ],
-                achievements: [
-                    'Atingiu 87% de aderência ao plano alimentar - acima da meta de 80%',
-                    'Perdeu 10.3kg em 90 dias - ritmo saudável de 1.1kg/semana',
-                    'Reduziu circunferência abdominal em 14cm',
-                    'Aumentou massa muscular em 3kg',
-                    'Registrou refeições consistentemente por 7 dias seguidos (recorde pessoal)',
-                    'Sintomas de SII reduziram em 70%',
-                ],
-                challenges: [
-                    'Dificuldade em manter hidratação adequada (média de 1.5L/dia, meta 2.5L)',
-                    'Consumo de proteína abaixo da meta em 15% dos dias',
-                    'Picos de compulsão alimentar aos finais de semana (2-3x/mês)',
-                    'Sono irregular afetando recuperação e controle de apetite',
-                ],
-                recommendations: [
-                    'Manter protocolo FODMAP fase 2 por mais 4 semanas',
-                    'Aumentar ingestão de água - usar alarmes no celular como lembrete',
-                    'Incluir mais fontes de proteína nos lanches da tarde',
-                    'Trabalhar estratégias comportamentais para finais de semana com psicólogo',
-                    'Estabelecer rotina de sono mais consistente (22h-6h)',
-                    'Iniciar reintrodução gradual de laticínios com baixa lactose',
-                ],
-                nextSteps: [
-                    'Consulta de acompanhamento em 15/02/2026',
-                    'Solicitar novos exames laboratoriais (hemograma, perfil lipídico, vitamina D)',
-                    'Ajustar meta calórica para fase de manutenção',
-                    'Introduzir treino de força 3x/semana',
-                    'Agendar sessão com psicólogo nutricional',
-                ],
+                metrics: (aiData.metrics || []).map((m: any) => ({
+                    name: m.name || m.metric,
+                    initial: m.initial ?? m.start_value ?? 0,
+                    current: m.current ?? m.end_value ?? 0,
+                    target: m.target ?? m.goal_value ?? 0,
+                    unit: m.unit || '',
+                    change: m.change ?? ((m.current ?? 0) - (m.initial ?? 0)),
+                    trend: m.trend || ((m.change ?? 0) > 0 ? 'up' : (m.change ?? 0) < 0 ? 'down' : 'stable'),
+                })),
+                achievements: (aiData.achievements || []).map((a: any) => typeof a === 'string' ? a : a.description || a.title || ''),
+                challenges: (aiData.challenges || []).map((c: any) => typeof c === 'string' ? c : `${c.title}${c.recommendation ? ' - ' + c.recommendation : ''}`),
+                recommendations: (aiData.recommendations || []).flatMap((r: any) => {
+                    if (typeof r === 'string') return [r];
+                    if (r.items) return r.items as string[];
+                    return [r.description || r.title || ''];
+                }),
+                nextSteps: aiData.next_steps || aiData.nextSteps || [],
             };
 
-            setReport(mockReport);
+            setReport(generatedReport);
+            toast.success(`Relatório gerado com sucesso! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error generating report:', error);
+            toast.error('Erro ao gerar relatório. Tente novamente.');
+        } finally {
             setIsGenerating(false);
-            toast.success('Relatório gerado com sucesso!');
-        }, 2500);
+        }
     };
 
     const exportPDF = () => {
