@@ -8,6 +8,7 @@
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { CLINICAL_MDT_SYSTEM_PROMPT } from '@/lib/ai/prompts/clinical-mdt';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -181,8 +182,8 @@ export class AIService {
             const cost = result.tokensUsed ? (result.tokensUsed / 1000) * getCostPer1k(config.modelName) : 0;
             const executionTimeMs = Date.now() - startTime;
 
-            // Update execution + deduct credits in parallel
-            await Promise.all([
+            // Update execution + deduct credits atomically via transaction
+            await prisma.$transaction([
                 prisma.aIExecution.update({
                     where: { id: executionId },
                     data: {
@@ -197,7 +198,6 @@ export class AIService {
                     where: { id: input.tenantId },
                     data: { ai_credits: { decrement: creditCost } },
                 }),
-                // Log credit transaction
                 prisma.aiCreditTransaction.create({
                     data: {
                         tenant_id: input.tenantId,
@@ -205,10 +205,10 @@ export class AIService {
                         agent_type: input.agentType,
                         credits_used: creditCost,
                         cost_usd: cost,
-                        cost_brl: cost * 5.5,
+                        cost_brl: cost * 5.0,
                         metadata: { executionId, tokensUsed: result.tokensUsed },
                     },
-                }).catch(() => { /* non-blocking */ }),
+                }),
             ]);
 
             return {
@@ -290,6 +290,12 @@ export class AIService {
             },
             clinical_mdt: {
                 modelName: 'gpt-4o', systemPrompt: PROMPTS.clinical_mdt, temperature: 0.2, isActive: true,
+            },
+            appointment_scheduler: {
+                modelName: 'gpt-4o', systemPrompt: PROMPTS.appointment_scheduler || 'Você é um assistente de agendamento. Responda em português (BR).', temperature: 0.5, isActive: true,
+            },
+            content_educator: {
+                modelName: 'gpt-4o', systemPrompt: PROMPTS.content_educator || 'Você é um educador de conteúdo nutricional. Responda em português (BR).', temperature: 0.6, isActive: true,
             },
             default: {
                 modelName: 'gpt-4o', systemPrompt: 'Você é um assistente de nutrição útil. Responda em português (BR).', temperature: 0.7, isActive: true,
@@ -398,7 +404,7 @@ export class AIService {
         const openai = this.requireOpenAI();
 
         const response = await openai.chat.completions.create({
-            model: 'gpt-4-vision-preview',
+            model: 'gpt-4o',
             messages: [
                 {
                     role: 'system',
@@ -407,17 +413,22 @@ export class AIService {
                 {
                     role: 'user',
                     content: [
-                        { type: 'text', text: 'Identifique todos os alimentos nesta imagem e estime as porções em gramas.' },
+                        { type: 'text', text: 'Identifique todos os alimentos nesta imagem e estime as porções em gramas. Retorne apenas JSON válido.' },
                         { type: 'image_url', image_url: { url: input.imageUrl } },
                     ],
                 },
             ],
             max_tokens: 1000,
-            response_format: { type: 'json_object' },
         });
 
         const content = response.choices[0]?.message?.content;
-        const parsed = content ? JSON.parse(content) : { foods: [] };
+        let parsed: any;
+        try {
+            const cleanContent = (content || '').replace(/```json\n?/g, '').replace(/```/g, '').trim();
+            parsed = cleanContent ? JSON.parse(cleanContent) : { foods: [] };
+        } catch {
+            parsed = { foods: [], raw_response: content };
+        }
 
         return {
             data: { recognized_foods: parsed.foods || [], confidence_score: this.avgConfidence(parsed.foods || []) },
@@ -436,7 +447,7 @@ export class AIService {
             messages.push({
                 role: 'user',
                 content: [
-                    { type: 'text', text: `Analise este exame do tipo: ${input.examType || 'geral'}. Extraia todos os biomarcadores com valores, unidades, faixas de referência e status.` },
+                    { type: 'text', text: `Analise este exame do tipo: ${input.examType || 'geral'}. Extraia todos os biomarcadores com valores, unidades, faixas de referência e status. Retorne apenas JSON válido.` },
                     { type: 'image_url', image_url: { url: input.imageUrl || `data:image/png;base64,${input.imageData}` } },
                 ],
             });
@@ -444,16 +455,24 @@ export class AIService {
             messages.push({ role: 'user', content: input.prompt || JSON.stringify(input) });
         }
 
+        // Use gpt-4o for vision - gpt-4-vision-preview is deprecated
+        const modelName = (input.imageUrl || input.imageData) ? 'gpt-4o' : config.modelName;
+
         const response = await openai.chat.completions.create({
-            model: 'gpt-4-vision-preview',
+            model: modelName,
             messages,
             max_tokens: 4000,
-            response_format: { type: 'json_object' },
+            ...(!(input.imageUrl || input.imageData) && { response_format: { type: 'json_object' } }),
         });
 
         const content = response.choices[0]?.message?.content;
         let parsed: any;
-        try { parsed = content ? JSON.parse(content) : {}; } catch { parsed = { raw_response: content }; }
+        try {
+            const cleanContent = (content || '').replace(/```json\n?/g, '').replace(/```/g, '').trim();
+            parsed = cleanContent ? JSON.parse(cleanContent) : {};
+        } catch {
+            parsed = { raw_response: content };
+        }
 
         return { data: parsed, tokensUsed: response.usage?.total_tokens };
     }
