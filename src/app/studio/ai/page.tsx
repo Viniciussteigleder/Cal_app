@@ -1,6 +1,21 @@
 'use client';
 
-import { Brain, Camera, Calendar, TrendingUp, Sparkles, ArrowRight, FileText, Pill, ShoppingCart, Stethoscope, Activity, Mic } from 'lucide-react';
+import {
+  Brain,
+  Camera,
+  Calendar,
+  TrendingUp,
+  Sparkles,
+  ArrowRight,
+  FileText,
+  Pill,
+  ShoppingCart,
+  Stethoscope,
+  Activity,
+  Mic,
+  MessageCircle,
+  ClipboardList,
+} from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-utils";
 
 export async function GET(request: NextRequest) {
@@ -74,163 +75,165 @@ export async function GET(request: NextRequest) {
     // Calculate nutrition averages
     let totalCalories = 0;
     let totalProtein = 0;
-    let mealCount = recentMeals.length;
+    let mealCount = 0;
 
-          totalCalories += (snapshot.nutrients?.energy_kcal || 0) * multiplier;
-          totalProtein += (snapshot.nutrients?.protein_g || 0) * multiplier;
-          totalCarbs += (snapshot.nutrients?.carbs_g || 0) * multiplier;
-          totalFat += (snapshot.nutrients?.fat_g || 0) * multiplier;
-        }
-        mealCount++;
+    for (const meal of recentMeals) {
+      const itemsForMeal = mealItems.filter((item) => item.meal_id === meal.id);
+      if (!itemsForMeal.length) continue;
+
+      for (const item of itemsForMeal) {
+        if (!item.snapshot_id) continue;
+        const snapshot = snapshotMap.get(item.snapshot_id);
+        if (!snapshot) continue;
+
+        const multiplier = item.quantity ?? 1;
+        totalCalories += (snapshot.nutrients?.energy_kcal || 0) * multiplier;
+        totalProtein += (snapshot.nutrients?.protein_g || 0) * multiplier;
       }
 
-      const avgCaloriesPerMeal = mealCount > 0 ? totalCalories / mealCount : 0;
-      const avgProteinPerMeal = mealCount > 0 ? totalProtein / mealCount : 0;
+      mealCount++;
+    }
 
-      // Calculate symptom trends
-      const avgDiscomfort =
-        recentSymptoms.length > 0
-          ? recentSymptoms.reduce(
-              (acc, s) => acc + (s.discomfort_level || 0),
-              0
-            ) / recentSymptoms.length
-          : 0;
+    const avgCaloriesPerMeal = mealCount > 0 ? totalCalories / mealCount : 0;
+    const avgProteinPerMeal = mealCount > 0 ? totalProtein / mealCount : 0;
 
-      const bristolDistribution: Record<string, number> = {};
-      for (const symptom of recentSymptoms) {
-        if (symptom.bristol_scale) {
-          bristolDistribution[symptom.bristol_scale] =
-            (bristolDistribution[symptom.bristol_scale] || 0) + 1;
-        }
+    // Calculate symptom trends
+    const avgDiscomfort =
+      recentSymptoms.length > 0
+        ? recentSymptoms.reduce(
+            (acc, s) => acc + (s.discomfort_level || 0),
+            0
+          ) / recentSymptoms.length
+        : 0;
+
+    const bristolDistribution: Record<string, number> = {};
+    for (const symptom of recentSymptoms) {
+      if (symptom.bristol_scale) {
+        bristolDistribution[symptom.bristol_scale] =
+          (bristolDistribution[symptom.bristol_scale] || 0) + 1;
       }
+    }
 
-      // Generate personalized insights
-      const insights: Array<{
-        type: "success" | "warning" | "info" | "tip";
-        title: string;
-        description: string;
-        priority: number;
-      }> = [];
+    // Generate personalized insights
+    const insights: Array<{
+      type: "success" | "warning" | "info" | "tip";
+      title: string;
+      description: string;
+      priority: number;
+    }> = [];
 
-      // Consistency insight
-      const uniqueDays = new Set(
-        recentMeals.map((m) => new Date(m.date).toDateString())
-      ).size;
-      if (uniqueDays >= 5) {
-        insights.push({
-          type: "success",
-          title: "Ótima consistência!",
-          description: `Você registrou refeições em ${uniqueDays} dos últimos 7 dias. Continue assim!`,
-          priority: 1,
-        });
-      } else if (uniqueDays < 3) {
-        insights.push({
-          type: "tip",
-          title: "Melhore sua consistência",
-          description:
-            "Registrar refeições regularmente ajuda a identificar padrões. Tente registrar pelo menos 1 refeição por dia.",
-          priority: 2,
-        });
-      }
-
-      // Protein insight
-      if (patient.profile?.goal === "loss" && avgProteinPerMeal < 20) {
-        insights.push({
-          type: "tip",
-          title: "Aumente a proteína",
-          description:
-            "Para seu objetivo de perda de peso, consumir mais proteína ajuda a manter a massa muscular e aumentar a saciedade.",
-          priority: 2,
-        });
-      }
-
-      // Symptom trend insight
-      if (avgDiscomfort > 5) {
-        insights.push({
-          type: "warning",
-          title: "Desconforto frequente",
-          description: `Sua média de desconforto é ${avgDiscomfort.toFixed(1)}/10. Considere conversar com seu nutricionista sobre ajustes na dieta.`,
-          priority: 1,
-        });
-      } else if (avgDiscomfort < 3 && recentSymptoms.length > 5) {
-        insights.push({
-          type: "success",
-          title: "Sintomas controlados",
-          description:
-            "Seus níveis de desconforto estão baixos. Seu plano alimentar parece estar funcionando bem!",
-          priority: 2,
-        });
-      }
-
-      // Bristol scale insight
-      const type4Count = bristolDistribution["type_4"] || 0;
-      const totalBristol = Object.values(bristolDistribution).reduce(
-        (a, b) => a + b,
-        0
-      );
-      if (totalBristol > 5 && type4Count / totalBristol > 0.5) {
-        insights.push({
-          type: "success",
-          title: "Trânsito intestinal saudável",
-          description:
-            "A maioria dos seus registros indica um trânsito intestinal ideal (Tipo 4).",
-          priority: 3,
-        });
-      }
-
-      // Protocol-specific insights
-      if (patient.protocol_instances.length > 0) {
-        const protocol = patient.protocol_instances[0].protocol;
-        insights.push({
-          type: "info",
-          title: `Protocolo ${protocol.name} ativo`,
-          description: `Você está seguindo o protocolo ${protocol.name}. Lembre-se de seguir as orientações específicas para esta fase.`,
-          priority: 2,
-        });
-      }
-
-      // Hydration tip (general)
+    // Consistency insight
+    const uniqueDays = new Set(
+      recentMeals.map((m) => new Date(m.date).toDateString())
+    ).size;
+    if (uniqueDays >= 5) {
+      insights.push({
+        type: "success",
+        title: "Ótima consistência!",
+        description: `Você registrou refeições em ${uniqueDays} dos últimos 7 dias. Continue assim!`,
+        priority: 1,
+      });
+    } else if (uniqueDays < 3) {
       insights.push({
         type: "tip",
-        title: "Dica do dia",
+        title: "Melhore sua consistência",
         description:
-          "Beba água ao longo do dia. A hidratação adequada ajuda na digestão e no bem-estar geral.",
-        priority: 4,
+          "Registrar refeições regularmente ajuda a identificar padrões. Tente registrar pelo menos 1 refeição por dia.",
+        priority: 2,
       });
-
-      // Sort by priority
-      insights.sort((a, b) => a.priority - b.priority);
-
-      return NextResponse.json({
-        patient: {
-          name: patient.user?.name || "Desconhecido",
-          goal: patient.profile?.goal || "maintain",
-        },
-        nutrition: {
-          avgCaloriesPerMeal: Math.round(avgCaloriesPerMeal),
-          avgProteinPerMeal: Math.round(avgProteinPerMeal),
-          totalMealsLogged: mealCount,
-          daysWithMeals: uniqueDays,
-        },
-        symptoms: {
-          avgDiscomfort: Math.round(avgDiscomfort * 10) / 10,
-          totalLogged: recentSymptoms.length,
-          bristolDistribution,
-        },
-        insights,
-      });
-    } catch (dbError) {
-      console.error("Erro ao acessar banco de dados para insights:", dbError);
-      return NextResponse.json(
-        { error: "Não foi possível acessar os dados do paciente. Tente novamente mais tarde." },
-        { status: 503 }
-      );
     }
-  } catch (error) {
-    console.error("Erro nos insights de IA:", error);
+
+    // Protein insight
+    if (profile?.goal === "loss" && avgProteinPerMeal < 20) {
+      insights.push({
+        type: "tip",
+        title: "Aumente a proteína",
+        description:
+          "Para seu objetivo de perda de peso, consumir mais proteína ajuda a manter a massa muscular e aumentar a saciedade.",
+        priority: 2,
+      });
+    }
+
+    // Symptom trend insight
+    if (avgDiscomfort > 5) {
+      insights.push({
+        type: "warning",
+        title: "Desconforto frequente",
+        description: `Sua média de desconforto é ${avgDiscomfort.toFixed(1)}/10. Considere conversar com seu nutricionista sobre ajustes na dieta.`,
+        priority: 1,
+      });
+    } else if (avgDiscomfort < 3 && recentSymptoms.length > 5) {
+      insights.push({
+        type: "success",
+        title: "Sintomas controlados",
+        description:
+          "Seus níveis de desconforto estão baixos. Seu plano alimentar parece estar funcionando bem!",
+        priority: 2,
+      });
+    }
+
+    // Bristol scale insight
+    const type4Count = bristolDistribution["type_4"] || 0;
+    const totalBristol = Object.values(bristolDistribution).reduce(
+      (a, b) => a + b,
+      0
+    );
+    if (totalBristol > 5 && type4Count / totalBristol > 0.5) {
+      insights.push({
+        type: "success",
+        title: "Trânsito intestinal saudável",
+        description:
+          "A maioria dos seus registros indica um trânsito intestinal ideal (Tipo 4).",
+        priority: 3,
+      });
+    }
+
+    // Protocol-specific insights
+    if (protocolInstances.length > 0) {
+      const protocol = protocolInstances[0].protocol;
+      insights.push({
+        type: "info",
+        title: `Protocolo ${protocol.name} ativo`,
+        description: `Você está seguindo o protocolo ${protocol.name}. Lembre-se de seguir as orientações específicas para esta fase.`,
+        priority: 2,
+      });
+    }
+
+    // Hydration tip (general)
+    insights.push({
+      type: "tip",
+      title: "Dica do dia",
+      description:
+        "Beba água ao longo do dia. A hidratação adequada ajuda na digestão e no bem-estar geral.",
+      priority: 4,
+    });
+
+    // Sort by priority
+    insights.sort((a, b) => a.priority - b.priority);
+
+    return NextResponse.json({
+      patient: {
+        name: patient.user?.name || "Desconhecido",
+        goal: profile?.goal || "maintain",
+      },
+      nutrition: {
+        avgCaloriesPerMeal: Math.round(avgCaloriesPerMeal),
+        avgProteinPerMeal: Math.round(avgProteinPerMeal),
+        totalMealsLogged: mealCount,
+        daysWithMeals: uniqueDays,
+      },
+      symptoms: {
+        avgDiscomfort: Math.round(avgDiscomfort * 10) / 10,
+        totalLogged: recentSymptoms.length,
+        bristolDistribution,
+      },
+      insights,
+    });
+  } catch (dbError) {
+    console.error("Erro ao acessar banco de dados para insights:", dbError);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 }
+      { error: "Não foi possível acessar os dados do paciente. Tente novamente mais tarde." },
+      { status: 503 }
     );
   }
 }

@@ -85,7 +85,7 @@ export async function GET() {
         });
 
         // Calculate Deep Health Metrics
-        let upfCounts = { inNatura: 0, processed: 0, ultraProcessed: 0, total: 0 };
+        const upfCounts = { inNatura: 0, processed: 0, ultraProcessed: 0, total: 0 };
         let totalProteinQuality = 0;
         let proteinGramsWithQuality = 0;
         let totalUpfScore = 0;

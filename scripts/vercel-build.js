@@ -22,18 +22,29 @@ function run(command, args, options = {}) {
   return true;
 }
 
-console.log(`${ANSI_GREEN}Starting Vercel build...${ANSI_RESET}`);
-
-// Always generate Prisma Client
-console.log(`${ANSI_YELLOW}Running prisma generate...${ANSI_RESET}`);
-run('npx', ['prisma', 'generate']);
-
 const vercelEnv = process.env.VERCEL_ENV;
 const databaseUrl = process.env.DATABASE_URL;
 const migrateOnPreview = process.env.MIGRATE_ON_PREVIEW === 'true';
 
 const isProduction = vercelEnv === 'production';
 const shouldMigrate = isProduction || (vercelEnv === 'preview' && migrateOnPreview);
+
+// Ensure Prisma has a connection string even for demo/preview builds
+if (!databaseUrl) {
+  const placeholderDb =
+    'postgresql://placeholder:placeholder@localhost:5432/placeholder';
+  process.env.DATABASE_URL = placeholderDb;
+  process.env.DIRECT_URL = process.env.DIRECT_URL || placeholderDb;
+  console.log(
+    `${ANSI_YELLOW}DATABASE_URL not set. Using placeholder for prisma generate (no migrations will run).${ANSI_RESET}`
+  );
+}
+
+console.log(`${ANSI_GREEN}Starting Vercel build...${ANSI_RESET}`);
+
+// Always generate Prisma Client
+console.log(`${ANSI_YELLOW}Running prisma generate...${ANSI_RESET}`);
+run('npx', ['prisma', 'generate']);
 
 if (shouldMigrate) {
   if (!databaseUrl) {

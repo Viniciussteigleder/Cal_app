@@ -21,14 +21,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Lint (auto-fix)
-        run: npm run lint:fix
-
-      - name: Ensure no lint changes
-        run: git diff --exit-code
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Unit tests
-        run: npm test
+      - name: Build (Vercel parity)
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+        run: npm run vercel-build

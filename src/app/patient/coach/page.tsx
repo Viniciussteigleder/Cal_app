@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, FormEvent } from 'react';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { MessageCircle, Send, Bot, User, Sparkles, TrendingUp, Heart, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { useChat } from '@ai-sdk/react';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -114,9 +113,14 @@ export default function NutritionCoachChatbotPage() {
         }
     };
 
-    const handleQuickQuestion = (question: string) => {
-        setInput(question);
-    };
+  const handleQuickQuestion = (question: string) => {
+        setInputMessage(question);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleSendMessage();
+  };
 
     const getMessageIcon = (type?: string) => {
         switch (type) {
@@ -218,7 +222,7 @@ export default function NutritionCoachChatbotPage() {
                                 </div>
                             ))}
 
-                            {isLoading && (
+                            {isTyping && (
                                 <div className="flex gap-3">
                                     <Avatar className="h-8 w-8 bg-emerald-100">
                                         <AvatarFallback>
@@ -266,7 +270,7 @@ export default function NutritionCoachChatbotPage() {
                                 placeholder="Digite sua pergunta..."
                                 className="flex-1"
                             />
-                            <Button type="submit" disabled={isLoading || !input.trim()} size="icon">
+                            <Button type="submit" disabled={isTyping || !inputMessage.trim()} size="icon">
                                 <Send className="h-4 w-4" />
                             </Button>
                         </div>
