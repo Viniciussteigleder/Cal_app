@@ -126,7 +126,7 @@ export default function OwnerLoginPage() {
                         ))}
                     </div>
                     <p className="text-sm text-slate-500 italic">
-                        "Integridade e escalabilidade em um só lugar."
+                        &quot;Integridade e escalabilidade em um só lugar.&quot;
                     </p>
                 </div>
             </div>
