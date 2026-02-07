@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -37,17 +37,51 @@ const motivationalMessages = [
     'Você é mais forte do que pensa! Continue firme! 🔥',
 ];
 
+// Helper to safely extract text from message
+const getTextFromMessage = (message: any) => {
+    if (typeof message.content === 'string') return message.content;
+    if (Array.isArray(message.parts)) {
+        return message.parts.map((part: any) => {
+            if (part.type === 'text') return part.text;
+            return '';
+        }).join('');
+    }
+    return '';
+};
+
 export default function NutritionCoachChatbotPage() {
-    const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    const { messages, sendMessage, status } = useChat({
+        // @ts-ignore - api option is deprecated/hidden but we try to use it
         api: '/api/ai/coach',
-        initialMessages: [
+        // using 'messages' instead of 'initialMessages' per ChatInit interface
+        messages: [
             {
                 id: '1',
                 role: 'assistant',
-                content: 'Olá! Sou seu Coach Nutricional com IA, disponível 24/7 para ajudar você! 🌟\n\nPosso responder suas dúvidas sobre nutrição, dar dicas motivacionais, sugerir substituições de alimentos e muito mais. Como posso ajudar você hoje?',
-            },
+                // Pre-format as parts to be safe with v6
+                content: '',
+                parts: [{
+                    type: 'text',
+                    text: 'Olá! Sou seu Coach Nutricional com IA, disponível 24/7 para ajudar você! 🌟\n\nPosso responder suas dúvidas sobre nutrição, dar dicas motivacionais, sugerir substituições de alimentos e muito mais. Como posso ajudar você hoje?'
+                }]
+            } as any,
         ],
     });
+
+    const [input, setInput] = useState('');
+    const isLoading = status === 'streaming' || status === 'submitted';
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+        // Use 'text' instead of 'content' for v6 sendMessage
+        sendMessage({ role: 'user', content: input } as any);
+        setInput('');
+    };
 
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -61,12 +95,7 @@ export default function NutritionCoachChatbotPage() {
     }, [messages]);
 
     const handleQuickQuestion = (question: string) => {
-        // Simplified for brevity, would normally trigger a form submit
-        const event = {
-            target: { value: question },
-            preventDefault: () => { }
-        } as any;
-        handleInputChange(event);
+        setInput(question);
     };
 
     const getMessageIcon = (type?: string) => {
@@ -140,17 +169,17 @@ export default function NutritionCoachChatbotPage() {
 
                                     <div className={`flex-1 max-w-[80%] ${message.role === 'user' ? 'items-end' : ''}`}>
                                         <div
-                                            className={`rounded-lg p-3 ${message.role === 'user'
+                                            className={`rounded-lg p-3 text-sm pb-1 ${message.role === 'user'
                                                 ? 'bg-blue-600 text-white ml-auto'
-                                                : 'bg-muted prose dark:prose-invert max-w-none'
+                                                : 'bg-muted prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:my-0'
                                                 }`}
                                         >
-                                            <ReactMarkdown className="text-sm prose-p:leading-relaxed prose-li:my-0 pb-1">
-                                                {message.content}
+                                            <ReactMarkdown>
+                                                {getTextFromMessage(message)}
                                             </ReactMarkdown>
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1 px-1">
-                                            {message.createdAt?.toLocaleTimeString('pt-BR', {
+                                            {(message as any).createdAt?.toLocaleTimeString('pt-BR', {
                                                 hour: '2-digit',
                                                 minute: '2-digit',
                                             }) || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

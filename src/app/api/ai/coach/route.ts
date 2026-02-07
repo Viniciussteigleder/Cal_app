@@ -70,7 +70,7 @@ export async function POST(req: Request) {
             }
         });
 
-        return result.toTextStreamResponse();
+        return result.toDataStreamResponse();
     } catch (error: any) {
         console.error('Coach API Error:', error);
         return new Response(JSON.stringify({ error: error.message }), {
