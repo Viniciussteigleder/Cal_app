@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, CheckCircle2, ShieldAlert, Settings, Users, FileText, Brain, Activity, ArrowRight, LayoutDashboard, UserCog, Database, Lock, Search, Building2, ShieldCheck, Sparkles, BookOpen, ClipboardList, MessageSquare } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldAlert, Settings, Users, FileText, Brain, Activity, ArrowRight, LayoutDashboard, UserCog, Database, Lock, Search, Building2, ShieldCheck, Sparkles, BookOpen, ClipboardList, MessageSquare, Server } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function AppDescriptionPage() {
@@ -48,7 +48,7 @@ export default function AppDescriptionPage() {
     { id: 'casos-praticos', label: '4. Casos Práticos', icon: Activity },
     { id: 'impacto-mudancas', label: '5. Impacto de Mudanças', icon: ArrowRight },
     { id: 'infraestrutura', label: '6. Infraestrutura (Live)', icon: Database },
-    { id: 'monitoramento', label: '7. Monitoramento', icon: LayoutDashboard },
+    { id: 'monitoramento', label: '7. Monitoramento Contínuo', icon: LayoutDashboard },
     { id: 'faq', label: '8. FAQ & Glossário', icon: Brain },
   ];
 
@@ -93,8 +93,8 @@ export default function AppDescriptionPage() {
         {/* Header */}
         <div className="bg-gradient-to-br from-emerald-900/20 to-emerald-600/10 rounded-xl p-8 border border-emerald-500/20">
           <h1 className="text-4xl font-bold tracking-tight mb-4">Como o NutriPlan Funciona</h1>
-          <p className="text-lg text-muted-foreground max-w-3xl">
-            Guia oficial para App Owners e Administradores. Governe a plataforma com segurança, configure regras de IA e monitore a qualidade clínica (v2.1).
+          <p className="text-lg text-muted-foreground max-w-4xl leading-relaxed">
+            Manual executivo para Owners e Admins. Explica, de ponta a ponta, como configurar governança, operar o motor de regras, medir risco clínico e monitorar a saúde da plataforma (release v2.1). Use este fluxo para acelerar onboarding de times novos, reduzir incidentes e comprovar aderência clínica para auditorias internas e externas.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export default function AppDescriptionPage() {
             <Settings className="h-6 w-6 text-emerald-500" />
             Configuração Inicial
           </h2>
-          <p className="text-muted-foreground">Checklist de funcionalidades que você deve configurar antes de convidar nutricionistas.</p>
+          <p className="text-muted-foreground">Checklist de funcionalidades que você deve configurar antes de convidar nutricionistas. Ordem recomendada: permissões → tenants → IA → integridade → bases.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
@@ -132,6 +132,21 @@ export default function AppDescriptionPage() {
               </Card>
             ))}
           </div>
+
+          <div className="grid md:grid-cols-3 gap-3 bg-muted/30 border border-dashed border-emerald-200 rounded-lg p-4">
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-emerald-600">Passo 1 — Segurança</p>
+              <p className="text-sm text-muted-foreground">Crie pelo menos 1 Admin e 1 Nutricionista de teste. Ative MFA opcional no fluxo de login.</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-emerald-600">Passo 2 — Tenants</p>
+              <p className="text-sm text-muted-foreground">Cadastre a clínica principal e valide se o domínio de email está correto para convites automáticos.</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-emerald-600">Passo 3 — IA & Dados</p>
+              <p className="text-sm text-muted-foreground">Selecione o modelo base, defina limites de custo diário e carregue a base oficial de alimentos antes de liberar produção.</p>
+            </div>
+          </div>
         </section>
 
         {/* 2. Role Model Section */}
@@ -141,6 +156,7 @@ export default function AppDescriptionPage() {
             Modelo de Interação
           </h2>
           <p className="text-muted-foreground">Entenda o fluxo de responsabilidades entre os três perfis da plataforma.</p>
+          <p className="text-sm text-muted-foreground">Regra simples: Owner define políticas, Nutricionista executa com autonomia dentro das guardrails, Paciente só vê o que foi aprovado. Qualquer conflito segue a cadeia Owner → Nutricionista → Paciente (top-down).</p>
 
           <Card>
             <CardContent className="pt-6">
@@ -204,7 +220,7 @@ export default function AppDescriptionPage() {
           <Card className="overflow-hidden">
             <CardHeader className="bg-muted/50">
               <CardTitle className="text-base">Ciclo de Validação Automática</CardTitle>
-              <CardDescription>O sistema valida cada alimento adicionado contra o perfil do paciente em &lt; 200ms.</CardDescription>
+              <CardDescription>O sistema valida cada alimento adicionado contra o perfil do paciente em &lt; 200ms. Fontes: regras globais do Owner, prontuário do paciente, base nutricional oficial e alertas de IA.</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid gap-4 md:grid-cols-3">
@@ -245,6 +261,27 @@ export default function AppDescriptionPage() {
                     <br /><br />
                     <strong>Exemplos:</strong> Alimentos saudáveis, substituições inteligentes sugeridas.
                   </p>
+                </div>
+              </div>
+
+              <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                <div className="p-3 rounded-lg border bg-background/60">
+                  <p className="font-semibold text-foreground mb-1">Ordem de checagem</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Alergênicos críticos (Hard Stop)</li>
+                    <li>Interações medicamentosas registradas</li>
+                    <li>Condições crônicas + protocolos ativos</li>
+                    <li>Preferências/filosofias alimentares</li>
+                    <li>Macros e objetivos do plano</li>
+                  </ol>
+                </div>
+                <div className="p-3 rounded-lg border bg-background/60">
+                  <p className="font-semibold text-foreground mb-1">Logs gerados</p>
+                  <p>Cada decisão grava: regra acionada, severidade, item avaliado, sugestão de substituição e tempo de resposta.</p>
+                </div>
+                <div className="p-3 rounded-lg border bg-background/60">
+                  <p className="font-semibold text-foreground mb-1">Como testar rápido</p>
+                  <p>Use o simulador em <code>/owner/integrity</code> com 3 alimentos problemáticos e verifique se bloqueio/alerta aparece conforme esperado.</p>
                 </div>
               </div>
             </CardContent>
@@ -547,7 +584,65 @@ export default function AppDescriptionPage() {
           </div>
         </section>
 
-        {/* 6. FAQ Section */}
+        {/* 7. Monitoramento Contínuo */}
+        <section id="monitoramento" className="space-y-6 scroll-mt-24">
+          <h2 className="text-2xl font-bold flex items-center gap-2 pb-2 border-b">
+            <LayoutDashboard className="h-6 w-6 text-sky-500" />
+            Monitoramento Contínuo
+          </h2>
+          <p className="text-muted-foreground">Acompanhe saúde operacional, custos de IA e risco clínico em tempo real.</p>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-red-500" /> Risco Clínico</CardTitle>
+                <CardDescription>Alertas críticos por paciente e por clínica.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p><strong>Métrica chave:</strong> % de planos com Hard Stop nas últimas 24h.</p>
+                <p><strong>SLA:</strong> &lt; 2% de planos bloqueados sem revisão em 1h.</p>
+                <p><strong>Ação:</strong> abrir detalhe → corrigir item → registrar motivo.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><Brain className="h-4 w-4 text-emerald-500" /> Custos de IA</CardTitle>
+                <CardDescription>Uso por agente, modelo e tenant.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p><strong>Limite recomendado:</strong> budget diário por tenant com alerta em 80%.</p>
+                <p><strong>Red Flags:</strong> spikes de tokens por sessão &gt; 3x média.</p>
+                <p><strong>Mitigação:</strong> reduzir contexto, ativar cache ou mudar para modelo mais barato.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><Server className="h-4 w-4 text-cyan-500" /> Saúde da Plataforma</CardTitle>
+                <CardDescription>Uptime e filas de jobs.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p><strong>Disponibilidade alvo:</strong> 99.5% semanal.</p>
+                <p><strong>Latência alvo:</strong> &lt; 400ms p95 em /api/plan.</p>
+                <p><strong>Observabilidade:</strong> logs estruturados em /owner/integrity + métricas no dashboard interno.</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="bg-muted/40 border rounded-lg p-4 text-sm text-muted-foreground">
+            <p className="font-semibold text-foreground mb-2">Runbook rápido</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Verifique painel de incidentes em <code>/owner/integrity</code>.</li>
+              <li>Confirme escopo: qual tenant, qual paciente, qual agente.</li>
+              <li>Repita a ação no modo simulação; salve o log.</li>
+              <li>Abra ticket interno com timestamp + ID do log.</li>
+              <li>Comunique clínica afetada se o incidente impactar produção.</li>
+            </ol>
+          </div>
+        </section>
+
+        {/* 8. FAQ Section */}
         <section id="faq" className="space-y-6 scroll-mt-24 pb-20">
           <h2 className="text-2xl font-bold flex items-center gap-2 pb-2 border-b">
             <Brain className="h-6 w-6 text-pink-500" />
