@@ -20,6 +20,7 @@ const DEFAULT_AGENTS = [
     { id: 'report_generator', name: 'Gerador de Relatórios', defaultSystem: 'Você é um analista de dados clínicos que cria relatórios detalhados...' },
     { id: 'appointment_scheduler', name: 'Agendador de Consultas', defaultSystem: 'Você é um assistente administrativo eficiente...' },
     { id: 'content_educator', name: 'Educador de Conteúdo', defaultSystem: 'Você é um professor de nutrição didático e claro...' },
+    { id: 'clinical_mdt', name: 'MDT Clínico', defaultSystem: 'Você é o NutriPlan Nutrition Collab...' },
 ];
 
 export async function getAiConfigs() {

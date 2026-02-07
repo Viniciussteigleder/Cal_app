@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
-import { executeAIAction } from '@/app/studio/ai/actions';
+import { recommendSupplementsAction } from './actions';
 
 interface NutrientGap {
     nutrient: string;
@@ -46,9 +46,7 @@ export default function SupplementAdvisorPage() {
     const handleAnalyze = async () => {
         setIsAnalyzing(true);
         try {
-            const result = await executeAIAction('supplement_advisor', {
-                patientId: selectedPatient
-            });
+            const result = await recommendSupplementsAction(selectedPatient);
 
             if (!result.success) {
                 throw new Error(result.error);

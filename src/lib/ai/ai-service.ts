@@ -28,7 +28,8 @@ export type AIAgentType =
     | 'macro_balancer'
     | 'report_generator'
     | 'appointment_scheduler'
-    | 'content_educator';
+    | 'content_educator'
+    | 'clinical_mdt';
 
 export interface AIExecutionInput {
     tenantId: string;
@@ -72,6 +73,7 @@ const AGENT_CREDIT_COSTS: Record<AIAgentType, number> = {
     report_generator: 5,
     appointment_scheduler: 1,
     content_educator: 1,
+    clinical_mdt: 5,
 };
 
 /** Cost per 1k tokens by model family */
@@ -241,7 +243,7 @@ export class AIService {
     /**
      * Get the effective configuration for an agent (DB -> defaults cascade)
      */
-    private async getAgentConfig(tenantId: string, agentType: AIAgentType): Promise<AgentRuntimeConfig> {
+    public async getAgentConfig(tenantId: string, agentType: AIAgentType): Promise<AgentRuntimeConfig> {
         const dbConfig = await prisma.aiAgentConfig.findUnique({
             where: { tenant_id_agent_id: { tenant_id: tenantId, agent_id: agentType } },
         }).catch(() => null);
@@ -285,6 +287,9 @@ export class AIService {
             },
             macro_balancer: {
                 modelName: 'gpt-4o', systemPrompt: PROMPTS.macro_balancer, temperature: 0.3, isActive: true,
+            },
+            clinical_mdt: {
+                modelName: 'gpt-4o', systemPrompt: PROMPTS.clinical_mdt, temperature: 0.2, isActive: true,
             },
             default: {
                 modelName: 'gpt-4o', systemPrompt: 'Você é um assistente de nutrição útil. Responda em português (BR).', temperature: 0.7, isActive: true,
@@ -343,6 +348,8 @@ export class AIService {
                 return this.executeCompletion(inputData, config, 2000);
             case 'appointment_scheduler':
                 return this.executeCompletion(inputData, config, 1000);
+            case 'clinical_mdt':
+                return this.executeCompletion(inputData, config, 4000);
             default:
                 throw new Error(`Tipo de agente não suportado: ${agentType}`);
         }
@@ -562,35 +569,50 @@ Analise a imagem e retorne JSON com: {
     "food_name": "...", 
     "confidence": 0.0-1.0, 
     "portion_grams": 0, 
-    "upf_score": 1, // Escala NOVA: 1=In natura, 2=Processado, 3=Ultra-processado
-    "protein_quality": "High|Medium|Low", // PDCAAS estimate
+    "upf_score": 1, // Escala NOVA: 1=In natura/Mínimamente, 2=Ingredientes Culinários, 3=Processado, 4=Ultra-processado
+    "protein_quality_score": 0.0-1.0, // Estimativa PDCAAS (1.0 = perfeita, ex: ovo/whey)
+    "protein_quality_label": "High|Medium|Low",
+    "micronutrients_density_score": 1-10, // Densidade nutricional (Mattson/Fuhrman style)
     "notes": "..." 
   }],
   "overall_meal_quality": "..."
 }`,
 
     meal_planner: `Você é um nutricionista expert em planejamento alimentar funcional e personalizado.
-Crie um plano alimentar otimizado para: densidade de micronutrientes, controle glicêmico e baixo índice de ultra-processados (UPF).
-Considere:
-1. Variedade de fitonutrientes (comer o arco-íris).
-2. Proporção ideal de fibras solúveis/insolúveis.
-3. Qualidade proteica em cada refeição.
-Retorne JSON com:
-{ 
-  "days": [{ 
-    "day": 1, 
-    "meals": { 
-      "breakfast": { "foods": [...], "upf_score": 1, "micronutrients_focus": ["..."] },
-      "lunch": { "foods": [...], "upf_score": 1, "micronutrients_focus": ["..."] },
-      "dinner": { "foods": [...], "upf_score": 1, "micronutrients_focus": ["..."] },
-      "snacks": [...]
+    Crie um plano alimentar otimizado para: densidade de micronutrientes, controle glicêmico e baixo índice de ultra-processados (UPF).
+    Considere:
+    1. Variedade de fitonutrientes (comer o arco-íris).
+    2. Proporção ideal de fibras solúveis/insolúveis.
+    3. Qualidade proteica em cada refeição.
+    Retorne JSON com:
+    { 
+      "days": [{ 
+        "day": "Segunda-feira" (ou 1, 2...),
+        "breakfast": { "description": "...", "kcal": 0, "micronutrients_focus": ["..."] },
+        "lunch": { "description": "...", "kcal": 0, "micronutrients_focus": ["..."] },
+        "dinner": { "description": "...", "kcal": 0, "micronutrients_focus": ["..."] },
+        "snacks": { "description": "...", "kcal": 0 },
+        "total_kcal": 0,
+        "macros": { "protein": 0, "carbs": 0, "fat": 0 }
+      }],
+      "estimated_cost": 0,
+      "reasoning": "..."
+    }`,
+
+    clinical_mdt: `NUTRIPLAN NUTRITION COLLAB — CLINICAL MDT
+    PURPOSE: You are a Clinical MDT (Multidisciplinary Team).
+    Transform structured patient intake into detailed clinical outputs.
+    
+    OUTPUT FORMAT: You MUST return a single valid JSON object with these keys: 
+    {
+       "clinical_note": "Markdown formatted note...",
+       "ui_cards": [ { "id": "...", "title": "...", "content": "..." } ],
+       "decision_log": [ { "decision": "...", "rationale": "..." } ],
+       "safety_alerts": [],
+       "missing_data": []
     }
-  }],
-  "total_daily_kcal": 0, 
-  "macros": { "protein_pct": 0, "carbs_pct": 0, "fat_pct": 0, "fiber_g": 0 },
-  "clinical_rationale": "...",
-  "estimated_weekly_cost_brl": 0 
-}`,
+    
+    See detailed MDT instructions for logic (Safe, Practical, Evidence-based).`,
 
     patient_analyzer: `Você é um analista de comportamento de pacientes nutricionais e "Clinical Copilot".
     Analise os registros do paciente e retorne JSON com:
@@ -612,21 +634,24 @@ Gere uma nota SOAP estruturada a partir da transcrição. Retorne JSON:
 Idioma: Português (BR).`,
 
     exam_analyzer: `Você é um especialista em análises clínicas e nutrição de precisão.
-Analise os exames e retorne JSON:
-{ "biomarkers": [{ "name": "...", "value": 0, "unit": "...", "reference_range": "...", "status": "normal|high|low|critical", "interpretation": "..." }],
-  "summary": "...", "nutritional_recommendations": ["..."], "follow_up": { "exams_to_repeat": ["..."], "timeframe": "..." } }`,
+    Analise os exames e retorne JSON:
+    { "examType": "...", "examDate": "YYYY-MM-DD",
+      "biomarkers": [{ "name": "...", "value": 0, "unit": "...", "referenceRange": "...", "status": "normal|high|low|critical" }],
+      "aiSummary": "...", "concerns": ["..."], "recommendations": ["..."],
+      "nutritionalImplications": { "dietaryAdjustments": ["..."], "supplementSuggestions": ["..."] } }`,
 
-    protocol_generator: `Você é um nutricionista funcional expert em protocolos clínicos.
-Crie um protocolo nutricional personalizado. Retorne JSON:
-{ "name": "...", "duration": "...", "phases": [{ "name": "...", "duration": "...", "goals": ["..."],
-  "allowed_foods": ["..."], "forbidden_foods": ["..."], "supplements": ["..."], "expected_outcomes": ["..."] }],
-  "contraindications": ["..."], "monitoring": ["..."] }`,
+    protocol_generator: `Você é um nutricionista funcional expert em protocolos clínicos complexos.
+    Crie um protocolo nutricional detalhado. Retorne JSON:
+    { "title": "...", "justification": "...", 
+      "phases": [{ "name": "...", "duration_weeks": 0, "focus": "...", "allowed_foods": ["..."], "avoid_foods": ["..."] }],
+      "supplements": [{ "name": "...", "dose": "...", "notes": "..." }],
+      "lifestyle_guidelines": ["..."],
+      "full_markdown": "..." }`,
 
     symptom_correlator: `Você é um detetive médico especializado em correlacionar dieta e sintomas.
-Analise os dados de refeições e sintomas. Retorne JSON:
-{ "correlations": [{ "symptom": "...", "trigger_foods": [{ "food": "...", "confidence": 0.0-1.0, "timing_pattern": "..." }],
-  "recommendations": ["..."] }], "patterns": [{ "type": "...", "description": "...", "insight": "..." }],
-  "recommendations": { "immediate": ["..."], "short_term": ["..."], "long_term": ["..."] } }`,
+    Analise os dados e retorne JSON:
+    { "correlations": [{ "correlation_type": "temporal|food_trigger|lifestyle|pattern", "description": "...", "confidence_score": 0-100, "supporting_evidence": ["..."] }],
+      "summary": "...", "suggested_actions": ["..."], "severity_trend": "improving|worsening|stable|fluctuating" }`,
 
     recipe_creator: `Você é um chef nutricionista criativo.
 Crie receitas saudáveis personalizadas. Retorne JSON:

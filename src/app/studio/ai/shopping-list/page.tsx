@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
-import { executeAIAction } from '@/app/studio/ai/actions';
+import { generateShoppingListAction } from './actions';
 
 interface ShoppingItem {
     id: string;
@@ -42,10 +42,7 @@ export default function ShoppingListGeneratorPage() {
         setIsGenerating(true);
 
         try {
-            const result = await executeAIAction('shopping_list_generator', {
-                patientId: selectedPatient,
-                mealPlanId: selectedMealPlan
-            });
+            const result = await generateShoppingListAction(selectedPatient, selectedMealPlan);
 
             if (!result.success) throw new Error(result.error);
 

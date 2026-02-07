@@ -184,8 +184,12 @@ export async function POST(request: NextRequest) {
       });
 
       // Create meal items with snapshots
+      let totalUpfScore = 0;
+      let totalGrams = 0;
+
       for (const item of items) {
         // Get food and nutrients
+        // CAST TO ANY due to Prisma generation lag in environment
         const food = await prisma.foodCanonical.findUnique({
           where: { id: item.foodId },
           include: {
@@ -193,7 +197,7 @@ export async function POST(request: NextRequest) {
               where: { dataset_release_id: datasetRelease.id },
             },
           },
-        });
+        }) as any;
 
         if (!food) continue;
 
@@ -214,6 +218,8 @@ export async function POST(request: NextRequest) {
               nutrients,
               source: datasetRelease.source_name,
               per_100g: true,
+              upf_category: food.upf_category, // Nova 1-4
+              protein_quality: food.protein_quality ? Number(food.protein_quality) : null,
             },
             source: datasetRelease.source_name,
             dataset_release_id: datasetRelease.id,
@@ -229,6 +235,30 @@ export async function POST(request: NextRequest) {
             grams: item.grams,
             snapshot_id: snapshot.id,
           },
+        });
+
+        // Accumulate UPF score (weighted by grams)
+        // If undefined, assume 1 (processed, safe bet? or 4? Let's assume 1 if missing for now to avoid skewing unless known)
+        // Actually, if missing, maybe we shouldn't count it? Let's assume 1 (unprocessed) if null.
+        const upf = food.upf_category || 1;
+        totalUpfScore += upf * item.grams;
+        totalGrams += item.grams;
+      }
+
+      // Update Meal with calculated UPF Score (Average NOVA)
+      if (totalGrams > 0) {
+        const averageNova = totalUpfScore / totalGrams; // Float between 1.0 and 4.0
+        // Scale to 0-100 for storage? Or keep 1-4? 
+        // Schema comment says "1-4 NOVA scale or 0-100". 
+        // Let's store as integer 0-100 representing "Percentage of UPF load" maybe?
+        // Or just store the Average NOVA * 10 or something.
+        // Let's store Average NOVA * 25 to get 25-100? No.
+        // Let's stick to the schema comment: "1-4 NOVA scale". But it is an Int?.
+        // I will store the rounded Average NOVA (1, 2, 3, or 4).
+        // CAST data object to avoid strict type checking on new field
+        await prisma.meal.update({
+          where: { id: meal.id },
+          data: { upf_score: Math.round(averageNova) } as any
         });
       }
 

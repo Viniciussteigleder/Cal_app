@@ -84,6 +84,71 @@ export async function GET() {
           },
         });
 
+        // Calculate Deep Health Metrics
+        let upfCounts = { inNatura: 0, processed: 0, ultraProcessed: 0, total: 0 };
+        let totalProteinQuality = 0;
+        let proteinGramsWithQuality = 0;
+        let totalUpfScore = 0;
+
+        for (const meal of todayMeals) {
+          for (const item of meal.items) {
+            const snapshot = item.snapshot.snapshot_json as {
+              upf_category?: number;
+              protein_quality?: number;
+              nutrients: { protein_g: number };
+            };
+            const grams = Number(item.grams);
+
+            // UPF Distribution
+            const nova = snapshot.upf_category || 1; // Default to 1 if missing
+            if (nova === 1) upfCounts.inNatura += grams;
+            else if (nova === 4) upfCounts.ultraProcessed += grams;
+            else upfCounts.processed += grams;
+            upfCounts.total += grams;
+
+            // Protein Quality (Weighted by protein content)
+            if (snapshot.protein_quality) {
+              const protein = (snapshot.nutrients.protein_g || 0) * (grams / 100);
+              if (protein > 0) {
+                totalProteinQuality += snapshot.protein_quality * protein;
+                proteinGramsWithQuality += protein;
+              }
+            }
+
+            totalUpfScore += nova * grams;
+          }
+        }
+
+        const avgNova = upfCounts.total > 0 ? totalUpfScore / upfCounts.total : 1;
+
+        // Calculate percentages
+        const upfDistribution = {
+          inNatura: upfCounts.total > 0 ? Math.round((upfCounts.inNatura / upfCounts.total) * 100) : 0,
+          processed: upfCounts.total > 0 ? Math.round((upfCounts.processed / upfCounts.total) * 100) : 0,
+          ultraProcessed: upfCounts.total > 0 ? Math.round((upfCounts.ultraProcessed / upfCounts.total) * 100) : 0,
+        };
+
+        // Heuristic Scores
+        // Density: Inversely related to NOVA and positively to variety (mocked variety as consistent high)
+        const micronutrientDensity = Math.min(10, Math.max(0, 10 - (avgNova * 1.5) + (totalProtein / targetCalories * 100)));
+
+        // Protein Quality
+        const avgPDCAAS = proteinGramsWithQuality > 0 ? totalProteinQuality / proteinGramsWithQuality : 1;
+        const proteinQuality = avgPDCAAS >= 0.9 ? "High" : avgPDCAAS >= 0.7 ? "Medium" : "Low";
+
+        // Inflammatory Score (0-100, lower is better)
+        // Heavily weighted by Ultra Processed % and total Sugar (assumed from carbs surplus/NOVA)
+        const inflammatoryScore = Math.min(100, Math.round(
+          (upfDistribution.ultraProcessed * 0.8) + (avgNova * 5)
+        ));
+
+        const deepHealth = {
+          upfDistribution,
+          micronutrientDensity: Number(micronutrientDensity.toFixed(1)),
+          proteinQuality,
+          inflammatoryScore
+        };
+
         return NextResponse.json({
           profile: profile ? {
             name: session.name,
@@ -108,6 +173,7 @@ export async function GET() {
             daysThisWeek: weekMeals.length,
             streak: weekMeals.length,
           },
+          deepHealth, // Added new field
         });
       }
     } catch (dbError) {
@@ -147,7 +213,7 @@ function calculateTDEE(profile: {
   const height = Number(profile.height_cm);
   const age = Math.floor(
     (Date.now() - new Date(profile.birth_date).getTime()) /
-      (365.25 * 24 * 60 * 60 * 1000)
+    (365.25 * 24 * 60 * 60 * 1000)
   );
 
   // Fórmula Mifflin-St Jeor

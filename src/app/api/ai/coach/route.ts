@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import { getSupabaseClaims } from '@/lib/supabase/claims';
+import { getSupabaseClaims } from '@/lib/auth';
 import { aiService } from '@/lib/ai/ai-service';
 
 import { prisma } from '@/lib/prisma';
@@ -21,14 +21,15 @@ export async function POST(req: Request) {
         const config = await aiService.getAgentConfig(claims.tenant_id, 'nutrition_coach');
 
         const result = streamText({
-            model: openai(config.model || 'gpt-4-turbo'),
+            model: openai(config.modelName || 'gpt-4-turbo'),
             messages,
             system: config.systemPrompt || "Você é um nutricionista clínico sênior atuando como 'Coach Nutricional'. Seja motivador, empático e informativo.",
             temperature: config.temperature || 0.7,
             onFinish: async ({ usage, text }) => {
                 try {
                     const creditCost = 1; // Nutrition Coach cost
-                    const cost = (usage.totalTokens / 1000) * 0.005; // Approx cost
+                    const totalTokens = usage?.totalTokens || 0;
+                    const cost = (totalTokens / 1000) * 0.005; // Approx cost
 
                     await prisma.$transaction([
                         // Create execution record
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
                                 input_data: { messages: messages.slice(-1) },
                                 output_data: { text },
                                 status: 'completed',
-                                tokens_used: usage.totalTokens,
+                                tokens_used: totalTokens,
                                 cost,
                                 execution_time_ms: 0, // Not easily trackable in stream callback
                             },
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
                                 credits_used: creditCost,
                                 cost_usd: cost,
                                 cost_brl: cost * 5.5,
-                                metadata: { tokensUsed: usage.totalTokens },
+                                metadata: { tokensUsed: totalTokens },
                             },
                         })
                     ]);
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
             }
         });
 
-        return result.toDataStreamResponse();
+        return result.toTextStreamResponse();
     } catch (error: any) {
         console.error('Coach API Error:', error);
         return new Response(JSON.stringify({ error: error.message }), {

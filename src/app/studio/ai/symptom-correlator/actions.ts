@@ -1,13 +1,9 @@
-
 'use server';
 
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { recordAiUsage } from '@/lib/ai/usage';
 import { getSupabaseClaims } from '@/lib/auth';
-import { getAgentConfig } from '@/lib/ai-config';
+import { executeAIAction } from '@/app/studio/ai/actions';
 
 // 1. Zod Schemas
 const SymptomCorrelationSchema = z.object({
@@ -47,51 +43,30 @@ export async function runSymptomCorrelation(patientId: string) {
     }
 
     try {
-        // 2. Dynamic Config
-        const config = await getAgentConfig('symptom_correlator');
-
-        // 3. AI Execution
-        const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy' });
-
-        const { object, usage } = await generateObject({
-            model: openai(config.model),
-            schema: SymptomAnalysisResultSchema,
-            temperature: config.temperature,
-            system: config.systemPrompt,
-            messages: [{
-                role: 'user',
-                content: `Analyze these patient logs for correlations.
-                Symptoms: ${JSON.stringify(symptoms.map(s => ({ d: s.logged_at, s: s.symptoms, v: s.discomfort_level })))}
-                Notes: ${JSON.stringify(notes.map(n => ({ d: n.timestamp, t: n.entry_type, c: n.content })))}
-                `
-            }]
+        const result = await executeAIAction('symptom_correlator', {
+            symptomsData: symptoms.map(s => ({ d: s.logged_at, s: s.symptoms, v: s.discomfort_level })),
+            notesData: notes.map(n => ({ d: n.timestamp, t: n.entry_type, c: n.content }))
         });
 
-        // 4. Billing
-        await recordAiUsage({
-            tenantId: claims.tenant_id,
-            nutritionistId: claims.user_id,
-            patientId,
-            agentType: 'symptom_correlator',
-            creditsUsed: 1,
-            costUsd: (usage.totalTokens || 0) * (5 / 1000000), // Approx text cost
-            costBrl: (usage.totalTokens || 0) * (5 / 1000000) * 5.5,
-            metadata: { symptomsCount: symptoms.length }
-        });
+        if (!result.success) {
+            throw new Error(result.error);
+        }
 
-        // Return structured data serialized (or formatted text if UI expects string)
-        // Looking at the client component (SymptomCorrelatorClient), it expects `string | null` for `result`.
-        // Ideally we update the client to accept the object, but for now let's return the summary + formatted correlations.
+        const data = (result as any).data;
+        // Format as expected by client (string)
+        // The prompt returns { correlations: [], summary: "", ... }
+        let markdownOutput = (data.summary || "Análise concluída.") + "\n\n### Correlações Identificadas:\n";
 
-        let markdownOutput = object.summary + "\n\n### Correlações Identificadas:\n";
-        object.correlations.forEach(c => {
-            markdownOutput += `- **${c.correlation_type} (${c.confidence_score}%)**: ${c.description}\n`;
-        });
+        if (data.correlations && Array.isArray(data.correlations)) {
+            data.correlations.forEach((c: any) => {
+                markdownOutput += `- **${c.correlation_type} (${c.confidence_score}%)**: ${c.description}\n`;
+            });
+        }
 
         return { success: true, data: markdownOutput };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Symptom Correlation Error:", error);
-        return { success: false, error: 'Falha na análise de IA.' };
+        return { success: false, error: error.message || 'Falha na análise de IA.' };
     }
 }

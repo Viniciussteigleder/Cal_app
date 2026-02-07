@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
+import { recognizeFoodAction } from './actions';
 
 interface RecognizedFood {
     food_name: string;
@@ -47,27 +48,20 @@ export default function FoodRecognitionPage() {
         setResult(null);
 
         try {
-            const response = await fetch('/api/ai/food-recognition', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    imageUrl: reader.result, // In production, use uploaded URL
-                    patientId: 'current-patient-id', // Get from context
-                    tenantId: 'current-tenant-id', // Get from context
-                }),
-            });
+            // Check if reader.result is string
+            if (typeof reader.result !== 'string') return;
 
-            const data = await response.json();
+            const response = await recognizeFoodAction(reader.result);
 
-            if (data.success) {
-                setResult(data.data);
-                setRecognitionId(data.recognitionId);
+            if (response.success) {
+                setResult(response.data);
+                // setRecognitionId(data.recognitionId); // Action doesn't return ID directly yet, maybe in future
                 toast.success('Alimentos reconhecidos com sucesso!');
             } else {
-                toast.error(data.error || 'Falha ao reconhecer alimentos');
+                toast.error(response.error || 'Falha ao reconhecer alimentos');
             }
+
+
         } catch (error) {
             console.error('Recognition error:', error);
             toast.error('Falha ao analisar imagem');

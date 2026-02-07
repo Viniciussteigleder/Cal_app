@@ -1,13 +1,9 @@
-
 'use server';
 
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { recordAiUsage } from '@/lib/ai/usage';
 import { getSupabaseClaims } from '@/lib/auth';
-import { getAgentConfig } from '@/lib/ai-config';
+import { executeAIAction } from '@/app/studio/ai/actions';
 
 // 1. Zod Schemas
 const ProtocolPhaseSchema = z.object({
@@ -28,6 +24,14 @@ const ProtocolSchema = z.object({
 });
 
 export async function generateProtocolAction(patientId: string, protocolType: string, customRequest: string) {
+    // Auth is handled by executeAIAction (or we can keep it here to fetch user data if needed, but the AI action will re-fetch it)
+    // Actually, `executeAIAction` needs `inputData`.
+    // The previous implementation fetched `conditions` and `profile` from DB using `prisma`.
+    // I can pass `patientId` to `executeAIAction` and let the AI Service handle fetching context OR I can fetch it here and pass it as context.
+    // The previous implementation fetched context here.
+    // I will refactor `AIService` to fetch context based on `patientId` if provided, OR pass the context string.
+    // Let's pass the context string as inputData.
+
     const claims = await getSupabaseClaims();
     if (!claims) return { success: false, error: 'Unauthorized' };
 
@@ -42,46 +46,21 @@ export async function generateProtocolAction(patientId: string, protocolType: st
     `;
 
     try {
-        // 2. Dynamic Config
-        // Note: Assuming 'protocol_generator' is the agent ID in valid config list
-        const config = await getAgentConfig('protocol_generator'); // Will fallback to default if not in DB
-
-        // 3. AI Execution
-        const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy' });
-
-        const { object, usage } = await generateObject({
-            model: openai(config.model),
-            schema: ProtocolSchema,
-            temperature: config.temperature,
-            system: config.systemPrompt || "You are an expert clinical nutritionist.",
-            messages: [{
-                role: 'user',
-                content: `Create a ${protocolType} protocol.
-                Context: ${context}
-                Request: ${customRequest}
-                
-                Provide structured phases and a full markdown version.`
-            }]
+        const result = await executeAIAction('protocol_generator', {
+            protocolType,
+            customRequest,
+            patientContext: context
         });
 
-        // 4. Billing
-        await recordAiUsage({
-            tenantId: claims.tenant_id,
-            nutritionistId: claims.user_id,
-            patientId,
-            agentType: 'protocol_generator',
-            creditsUsed: 2,
-            costUsd: (usage.totalTokens || 0) * (10 / 1000000),
-            costBrl: (usage.totalTokens || 0) * (10 / 1000000) * 5.5,
-            metadata: { protocolType }
-        });
+        if (!result.success) {
+            throw new Error(result.error);
+        }
 
-        // Return the full object so the client can display markdown AND save structured data
-        return { success: true, data: object };
+        return { success: true, data: (result as any).data };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Protocol Gen Error:", error);
-        return { success: false, error: 'Failed to generate protocol.' };
+        return { success: false, error: error.message || 'Failed to generate protocol.' };
     }
 }
 

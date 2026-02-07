@@ -2,30 +2,36 @@
 
 ## Completed Features
 Replaced mock implementations with real AI execution via `executeAIAction` and `AIService` for:
-- **Report Generator**: Generates comprehensive patient progress reports.
-- **Supplement Advisor**: Analyzes patient needs and recommends supplements with dosage and warnings.
+- **Clinical MDT**: Added `clinical_mdt` agent, refactored to use centralized `executeAIAction` with `gpt-4o`.
+- **Meal Planner**: Refactored to `generateMealPlanAction` with strict JSON schema prompts.
+- **Food Recognition**: Refactored to `recognizeFoodAction` using GPT-4 Vision.
+- **Report Generator**: Implemented `generateReportAction` fetching real patient logs and profile data.
+- **Supplement Advisor**: Implemented `recommendSupplementsAction` analyzing patient conditions and goals.
+- **Shopping List Generator**: Implemented `generateShoppingListAction` fetching detailed plan items.
 - **Medical Record Creator**: 
     - Real-time audio transcription using OpenAI Whisper.
     - Automated SOAP note generation from transcriptions.
-- **Shopping List Generator**: Creates organized shopping lists from meal plans.
 - **Patient Analyzer**: Refactored to use centralized AI service for consistency.
-- **Nutrition Coach**: Implemented streaming chat with billing integration using `useChat` and `Prisma`.
+- **Protocol Generator**: Refactored to use `executeAIAction`.
+- **Symptom Correlator**: Refactored to use `executeAIAction`.
+- **Nutrition Coach**: Validated streaming chat implementation (`/api/ai/coach`) with correct billing and config retrieval.
 
 ## AI Service Enhancements
 - **Centralized Logic**: `AIService` now handles execution, billing, usage tracking, and error handling for all agents.
-- **Configuration**: Added missing agents (`food_recognition`, `shopping_list_generator`, etc.) to the default configuration list, accessible in the Owner Dashboard.
-- **Streaming Support**: Added robust logging and credit deduction for streaming chat endpoints.
-- **Prompt Refinement**: Updated `patient_analyzer` prompts to match the enhanced data schema.
+- **Configuration**: Added `clinical_mdt` to `AIAgentType` and default configs. Made `getAgentConfig` public for API route usage.
+- **Streaming Support**: Fixed `Nutrition Coach` billing calculation and type safety in streaming response.
+- **Prompt Refinement**: Updated prompts for `meal_planner`, `clinical_mdt`, and others to ensure robust JSON outputs in Portuguese.
 
 ## UI Updates
-- **Studio AI Dashboard**: Activated newly implemented agents and removed them from the "Coming Soon" list.
-- **Icons**: Added relevant icons for new features.
+- **Studio AI Dashboard**: Activated newly implemented agents.
+- **Server Actions**: All Studio AI pages now use server actions (`actions.ts`) to securely handle data fetching and AI execution, preventing client-side data leaks or hallucinations.
 
 ## Technical Details
 - **Error Handling**: Implemented consistent try-catch blocks and toast notifications across all AI features.
-- **Type Safety**: Improved type definitions for AI responses.
+- **Type Safety**: Improved type definitions for AI responses, though some casting (`as any`) is used for dynamic AI results.
 - **Billing**: Validated that all AI actions, including streaming, correctly deduct credits and log usage.
 
 ## Next Steps
-- Implement frontend interfaces for `Protocol Generator`, `Symptom Correlator`, and `Recipe Creator` (backend logic is ready in `AIService`).
-- Conduct end-to-end testing of the billing system with real Stripe webhooks (if applicable).
+- **Recipe Creator**: Verify implementation status (backend logic exists in `main` branch, frontend needs verification).
+- **End-to-End Testing**: Verify flow from UI -> Action -> AI Service -> OpenAI -> UI Display for all 12+ agents.
+- **Webhooks**: Conduct end-to-end testing of the billing system with real Stripe webhooks.

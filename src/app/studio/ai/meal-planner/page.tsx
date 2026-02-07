@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { ptBR } from '@/i18n/pt-BR';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
+import { generateMealPlanAction } from './actions';
 
 interface MealPlanDay {
     day: string;
@@ -148,33 +149,23 @@ export default function MealPlannerPage() {
         setResult(null);
 
         try {
-            const response = await fetch('/api/ai/meal-planner', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    patientId: 'current-patient-id',
-                    tenantId: 'current-tenant-id',
-                    targetKcal,
-                    macroSplit,
-                    preferences: selectedPreferences,
-                    allergies: selectedAllergies,
-                    conditions: selectedConditions,
-                    includeFoods,
-                    excludeFoods,
-                    customCondition,
-                    daysCount,
-                }),
+            const response = await generateMealPlanAction({
+                targetKcal,
+                macroSplit,
+                preferences: selectedPreferences,
+                allergies: selectedAllergies,
+                conditions: selectedConditions,
+                includeFoods,
+                excludeFoods,
+                customCondition,
+                daysCount,
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                setResult(data.data);
+            if (response.success) {
+                setResult(response.data);
                 toast.success('Plano alimentar gerado com sucesso!');
             } else {
-                toast.error(data.error || 'Falha ao gerar plano alimentar');
+                toast.error(response.error || 'Falha ao gerar plano alimentar');
             }
         } catch (error) {
             console.error('Generation error:', error);

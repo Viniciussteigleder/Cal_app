@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
-import { executeAIAction } from '@/app/studio/ai/actions';
+import { generateReportAction } from './actions';
 
 interface ProgressMetric {
     name: string;
@@ -54,11 +54,7 @@ export default function ReportGeneratorPage() {
         setIsGenerating(true);
 
         try {
-            const result = await executeAIAction('report_generator', {
-                patientId: selectedPatient,
-                period: reportPeriod,
-                reportType: reportType
-            });
+            const result = await generateReportAction(selectedPatient, reportPeriod, reportType);
 
             if (!result.success) {
                 throw new Error(result.error);

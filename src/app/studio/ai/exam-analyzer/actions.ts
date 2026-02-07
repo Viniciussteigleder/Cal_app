@@ -1,18 +1,11 @@
-
 'use server';
 
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { recordAiUsage } from '@/lib/ai/usage';
-import { getSupabaseClaims } from '@/lib/auth';
-import { getAgentConfig } from '@/lib/ai-config';
-
-// ... (keep imports)
+import { executeAIAction } from '@/app/studio/ai/actions';
 
 export async function analyzeExamAction(formData: FormData) {
-    const claims = await getSupabaseClaims();
-    if (!claims) return { success: false, error: 'Unauthorized' };
+    // Auth is handled by executeAIAction
+
 
     const file = formData.get('file') as File;
     const examType = formData.get('examType') as string;
@@ -23,54 +16,35 @@ export async function analyzeExamAction(formData: FormData) {
     }
 
     try {
-        // ... (existing logic: convert to base64)
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const base64Image = buffer.toString('base64');
         const mimeType = file.type;
-        const dataUrl = `data:${mimeType};base64,${base64Image}`;
+        const dataUrl = `data:${mimeType};base64,${base64Image}`; // Wait, AIService expects 'imageData' as base64 or 'imageUrl'. 
+        // In Step 155, AIService executeExamAnalyzer logic:
+        // if (input.imageUrl || input.imageData) { ... 
+        // { type: 'image_url', image_url: { url: input.imageUrl || `data:image/png;base64,${input.imageData}` } }
+        // So if I pass 'imageData' it assumes PNG base64? 
+        // Wait, `data:image/png;base64,${input.imageData}`. If input.imageData is full data URL it will break.
+        // It prepends prefix. So input.imageData should be raw base64.
+        // But my mimetype might not be png. 
+        // Let's pass `imageUrl` as the full data URL.
 
-        // 2. Get Configuration
-        const config = await getAgentConfig('exam_analyzer');
-
-        // 3. Initialize OpenAI Client
-        const openai = createOpenAI({
-            apiKey: process.env.OPENAI_API_KEY || 'dummy',
+        const result = await executeAIAction('exam_analyzer', {
+            imageUrl: `data:${mimeType};base64,${base64Image}`,
+            examType,
+            examDate
         });
 
-        // 4. Call AI with Structured Output
-        const { object, usage } = await generateObject({
-            model: openai(config.model), // e.g., 'gpt-4o'
-            schema: ExamAnalysisSchema,
-            temperature: config.temperature,
-            system: config.systemPrompt,
-            messages: [
-                {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: `Analyze this medical exam image. Expected exam type: ${examType}. Date context: ${examDate}. Extract all visible values and provide nutritional analysis.` },
-                        { type: 'image', image: dataUrl },
-                    ],
-                },
-            ],
-        });
+        if (!result.success) {
+            throw new Error(result.error);
+        }
 
-        // 5. Record Usage (Billing)
-        await recordAiUsage({
-            tenantId: claims.tenant_id,
-            nutritionistId: claims.user_id,
-            agentType: 'exam_analyzer',
-            creditsUsed: 1,
-            costUsd: (usage.totalTokens || 0) * (10 / 1000000), // Approx vision cost
-            costBrl: (usage.totalTokens || 0) * (10 / 1000000) * 5.5,
-            metadata: { examType }
-        });
+        return { success: true, data: result.data };
 
-        return { success: true, data: object };
-
-    } catch (error) {
+    } catch (error: any) {
         console.error('Exam Analysis Error:', error);
-        return { success: false, error: 'Failed to analyze exam. Please ensure the image is clear.' };
+        return { success: false, error: error.message || 'Failed to analyze exam.' };
     }
 }
 const BiomarkerSchema = z.object({
