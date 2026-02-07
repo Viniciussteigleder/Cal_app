@@ -11,36 +11,37 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  User,
-  Stethoscope,
-  Shield,
-  Sparkles,
   ShieldCheck,
+  Sparkles,
+  MessageCircle,
   Wand2,
   TrendingUp,
 } from "lucide-react";
 
-const DEMO_ACCOUNTS = [
+const patientHighlights = [
   {
-    email: "patient@demo.nutriplan.com",
-    role: "Paciente",
-    description: "Acompanhe sua alimentação e sintomas",
-    icon: User,
-    color: "emerald",
+    title: "Feedback diário com IA clínica",
+    description: "Receba sugestões personalizadas sobre refeições, sintomas e sinais vitais.",
+    icon: Sparkles,
+    tone: "from-emerald-100 to-emerald-50 text-emerald-600",
   },
   {
-    email: "nutri@demo.nutriplan.com",
-    role: "Nutricionista",
-    description: "Gerencie pacientes e protocolos",
-    icon: Stethoscope,
-    color: "blue",
+    title: "Comunicação direta com o nutricionista",
+    description: "Converse, envie fotos e ajuste planos em segundos.",
+    icon: MessageCircle,
+    tone: "from-blue-100 to-blue-50 text-blue-600",
   },
   {
-    email: "owner@demo.nutriplan.com",
-    role: "Administrador",
-    description: "Administre clínicas e usuários",
-    icon: Shield,
-    color: "slate",
+    title: "Progresso visível",
+    description: "Visualize evolução e encerramento de metas semanais.",
+    icon: TrendingUp,
+    tone: "from-slate-100 to-slate-50 text-slate-700",
+  },
+  {
+    title: "Segurança clínica",
+    description: "Dados criptografados e auditáveis a qualquer momento.",
+    icon: ShieldCheck,
+    tone: "from-orange-100 to-orange-50 text-orange-600",
   },
 ];
 
@@ -79,14 +80,9 @@ export default function LoginPage() {
     }
   };
 
-  const selectDemoAccount = (account: typeof DEMO_ACCOUNTS[0]) => {
-    setEmail(account.email);
-    setError("");
-  };
-
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_circle_at_10%_-10%,rgba(16,185,129,0.15),transparent),radial-gradient(900px_circle_at_90%_10%,rgba(59,130,246,0.12),transparent),linear-gradient(180deg,#f8fafc,rgba(248,250,252,0.85))] px-4 py-10">
-      <div className="mx-auto w-full max-w-6xl grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
+      <div className="mx-auto w-full max-w-6xl grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
         <div className="space-y-8">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-200">
@@ -94,42 +90,54 @@ export default function LoginPage() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">NutriPlan</p>
-              <h1 className="text-3xl font-bold text-slate-900">Acesso inteligente</h1>
+              <h1 className="text-3xl font-bold text-slate-900">Acesso do Paciente</h1>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-lg">
-            Entre no painel e acompanhe cada paciente com insights de IA, planos dinâmicos e comunicação
-            instantanea. Tudo em um só lugar.
+            Entre no aplicativo, consulte orientações clínicas e mantenha seu plano atualizado com
+            acompanhamento humano e IA ativa.
           </p>
+
           <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              { icon: Wand2, title: "Automacao real", desc: "Menos tarefas, mais estrategia" },
-              { icon: ShieldCheck, title: "Seguranca", desc: "Dados clinicos protegidos" },
-              { icon: TrendingUp, title: "Resultados", desc: "Adesao e evolucao visiveis" },
-              { icon: Sparkles, title: "IA ativa", desc: "Sugestoes todos os dias" },
-            ].map((item) => (
-              <div key={item.title} className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm">
+            {patientHighlights.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <div
+                    className={`h-10 w-10 rounded-xl bg-gradient-to-br ${item.tone} flex items-center justify-center shadow-sm`}
+                  >
                     <item.icon className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    <p className="text-xs text-muted-foreground">{item.description}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <Link href="/" className="text-sm text-slate-500 hover:text-emerald-600 transition-colors inline-flex items-center">
-            ← Voltar para a pagina inicial
-          </Link>
+
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-900">Precisa acessar o portal administrativo?</p>
+              <Sparkles className="text-emerald-500 h-5 w-5" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Use a autenticação dedicada do Owner Portal —{" "}
+              <Link href="/owner/login" className="font-semibold text-emerald-600">
+                clicar para entrar como Owner
+              </Link>
+              .
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/70 shadow-2xl p-8">
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-white/70 shadow-2xl p-8">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Bem-vindo de volta</h2>
-            <p className="text-slate-500 mt-1">Entre na sua conta para continuar</p>
+            <h2 className="text-2xl font-bold text-slate-900">Entre na sua jornada NutriPlan</h2>
+            <p className="text-slate-500 mt-1">Use seu e-mail e senha para continuar.</p>
           </div>
 
           {error && (
@@ -192,7 +200,7 @@ export default function LoginPage() {
                 await supabase.auth.signInWithOAuth({
                   provider: "google",
                   options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/auth/callback?next=/patient/dashboard`,
                   },
                 });
               }}
@@ -203,61 +211,15 @@ export default function LoginPage() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Continuar com Google
+              Entrar com Google
             </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-500 font-medium">Ou selecione um perfil demo</span>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              {DEMO_ACCOUNTS.map((account) => {
-                const Icon = account.icon;
-                const isSelected = email === account.email;
-                return (
-                  <button
-                    key={account.email}
-                    type="button"
-                    onClick={() => selectDemoAccount(account)}
-                    disabled={isLoading}
-                    className={`w-full p-3 text-left rounded-lg border transition-all disabled:opacity-50 ${isSelected
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-slate-200 hover:bg-slate-50"
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${account.color === "emerald"
-                            ? "bg-emerald-100 text-emerald-600"
-                            : account.color === "blue"
-                              ? "bg-blue-100 text-blue-600"
-                              : "bg-slate-100 text-slate-600"
-                          }`}
-                      >
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900 text-sm">{account.role}</p>
-                        <p className="text-xs text-slate-500">{account.description}</p>
-                      </div>
-                      {isSelected && (
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">Selecionado</span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="pt-2 text-center">
-              <Link href="/owner/login" className="text-xs font-semibold text-slate-400 hover:text-emerald-600 transition-colors uppercase tracking-widest">
-                Acesso Owner Portal →
+            <p className="text-center text-xs text-muted-foreground">
+              Ainda não tem conta? Entre em contato com seu nutricionista ou solicite o convite em{" "}
+              <Link href="mailto:support@nutriplan.com" className="font-semibold text-emerald-600">
+                support@nutriplan.com
               </Link>
-            </div>
+              .
+            </p>
           </div>
         </div>
       </div>

@@ -41,6 +41,33 @@ export default function LandingPage() {
     setShowAuthModal(true);
   };
 
+  const loginPaths = [
+    {
+      title: "Nutri",
+      description: "Portal completo para nutricionistas e equipes clínicas.",
+      href: "/nutri/login",
+      action: "Entrar no Estúdio",
+      tone: "from-emerald-500 to-emerald-700",
+      badge: "Profissionais",
+    },
+    {
+      title: "Paciente",
+      description: "Acompanhamento diário com IA e comunicação dedicada.",
+      href: "/login",
+      action: "Acessar Paciente",
+      tone: "from-blue-500 to-blue-700",
+      badge: "Suporte",
+    },
+    {
+      title: "App Owner",
+      description: "Governança cross-tenant para auditar e configurar toda a plataforma.",
+      href: "/owner/login",
+      action: "Abrir Portal",
+      tone: "from-slate-800 to-slate-900",
+      badge: "Admins",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_circle_at_10%_-10%,rgba(16,185,129,0.15),transparent),radial-gradient(900px_circle_at_90%_10%,rgba(59,130,246,0.12),transparent),linear-gradient(180deg,#f8fafc,rgba(248,250,252,0.8))] text-foreground selection:bg-emerald-100">
       <div className="pointer-events-none fixed inset-0 opacity-40 [background-image:radial-gradient(rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:24px_24px]" />
@@ -188,6 +215,31 @@ export default function LandingPage() {
                 <ArrowRight className="h-4 w-4 text-slate-400" />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-16">
+        <div className="max-w-6xl mx-auto bg-white/80 border border-slate-100 shadow-lg rounded-[2.5rem] p-10 relative overflow-hidden">
+          <div className="absolute -top-8 -right-12 w-64 h-64 rounded-full bg-emerald-100/80 blur-3xl" />
+          <div className="relative z-10 text-center mb-10">
+            <p className="text-sm uppercase tracking-[0.4em] text-emerald-600 font-semibold">Entradas Seguras</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mt-3">Escolha o caminho certo para acessar</h2>
+            <p className="text-sm text-muted-foreground mt-2">Cada papel tem um fluxo próprio — selecione sua rotina.</p>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6 relative z-10">
+            {loginPaths.map((item) => (
+              <Link key={item.title} href={item.href}>
+                <div className="h-full rounded-3xl border border-slate-200 p-6 bg-white shadow-sm hover:shadow-xl transition-shadow cursor-pointer flex flex-col">
+                  <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-slate-400">{item.badge}</span>
+                  <h3 className="text-2xl font-black text-slate-900 mt-4">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-3 flex-1">{item.description}</p>
+                  <div className={`mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${item.tone} px-4 py-2 text-white text-sm font-semibold uppercase tracking-[0.3em]`}>
+                    {item.action} <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
