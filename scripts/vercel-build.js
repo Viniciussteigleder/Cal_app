@@ -13,8 +13,13 @@ function run(command, args, options = {}) {
   });
 
   if (result.status !== 0) {
+    if (options.allowFailure) {
+      console.warn(`${ANSI_YELLOW}Command failed (non-fatal): ${command} ${args.join(' ')}${ANSI_RESET}`);
+      return false;
+    }
     process.exit(result.status ?? 1);
   }
+  return true;
 }
 
 console.log(`${ANSI_GREEN}Starting Vercel build...${ANSI_RESET}`);
@@ -38,7 +43,10 @@ if (shouldMigrate) {
 
   const label = isProduction ? 'production' : 'preview';
   console.log(`${ANSI_YELLOW}Running prisma migrate deploy (${label})...${ANSI_RESET}`);
-  run('npx', ['prisma', 'migrate', 'deploy']);
+  const migrated = run('npx', ['prisma', 'migrate', 'deploy'], { allowFailure: true });
+  if (!migrated) {
+    console.warn(`${ANSI_YELLOW}Migration failed — DB may be paused or unreachable. Build continues.${ANSI_RESET}`);
+  }
 } else {
   console.log(`${ANSI_YELLOW}Skipping prisma migrate deploy (VERCEL_ENV=${vercelEnv || 'unknown'})${ANSI_RESET}`);
 }
