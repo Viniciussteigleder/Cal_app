@@ -47,6 +47,7 @@ const MealPlanResponseSchema = z.object({
  * Generate a personalized meal plan using AI (Unified Architecture)
  */
 export async function POST(request: NextRequest) {
+    let execution: { id: string } | null = null;
     try {
         const supabase = await createSupabaseServerClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -77,13 +78,17 @@ export async function POST(request: NextRequest) {
         const agentConfig = await getAgentConfig('meal_planner');
 
         // 3. Initialize OpenAI
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({ error: 'Provedor de IA não configurado' }, { status: 503 });
+        }
+
         const openai = createOpenAI({
-            apiKey: process.env.OPENAI_API_KEY || 'dummy',
+            apiKey: process.env.OPENAI_API_KEY,
         });
 
         // Track execution start
         const startTime = Date.now();
-        const execution = await prisma.aIExecution.create({
+        execution = await prisma.aIExecution.create({
             data: {
                 tenant_id: tenantId,
                 model_id: agentConfig.model,
@@ -119,8 +124,8 @@ export async function POST(request: NextRequest) {
         const cost = (tokensUsed / 1000) * 0.005; // gpt-4o pricing
         const creditCost = 5; // meal_planner costs 5 credits
 
-        // 5. Track execution completion + deduct credits in parallel
-        await Promise.all([
+        // 5. Track execution completion + deduct credits atomically
+        await prisma.$transaction([
             prisma.aIExecution.update({
                 where: { id: execution.id },
                 data: {
@@ -143,10 +148,10 @@ export async function POST(request: NextRequest) {
                     agent_type: 'meal_planner',
                     credits_used: creditCost,
                     cost_usd: cost,
-                    cost_brl: cost * 5.5,
+                    cost_brl: cost * 5.0,
                     metadata: { executionId: execution.id, tokensUsed, daysCount, targetKcal },
                 },
-            }).catch(() => { /* non-blocking */ }),
+            }),
         ]);
 
         // 6. Save to DB (Legacy support via Supabase)
@@ -184,6 +189,13 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('Unified Meal Planner Error:', error);
+        // Mark execution as failed if it was created
+        if (execution?.id) {
+            await prisma.aIExecution.update({
+                where: { id: execution.id },
+                data: { status: 'failed', error_message: error instanceof Error ? error.message : 'Unknown error' },
+            }).catch(() => {});
+        }
         return NextResponse.json(
             { error: 'Failed to generate meal plan' },
             { status: 500 }
