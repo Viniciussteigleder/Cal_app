@@ -1,47 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Mock AI Credits database
-const mockCredits = new Map();
-const mockTransactions = new Map();
+import { getRequestClaims } from '@/lib/claims';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const nutritionistId = searchParams.get('nutritionistId');
-        const type = searchParams.get('type'); // 'balance' or 'transactions'
-
-        if (!nutritionistId) {
-            return NextResponse.json(
-                { error: 'Nutritionist ID is required' },
-                { status: 400 }
-            );
+        const claims = await getRequestClaims();
+        if (!claims) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get('type'); // 'balance' or 'transactions'
+
         if (type === 'balance') {
-            // Get current balance
-            const balance = mockCredits.get(nutritionistId) || {
-                nutritionistId,
-                balance: 1000, // Starting balance
-                totalPurchased: 1000,
-                totalUsed: 0,
-                lastUpdated: new Date().toISOString(),
-            };
+            const tenant = await prisma.tenant.findUnique({
+                where: { id: claims.tenant_id },
+                select: { ai_credits: true, ai_usage_limit: true, ai_enabled: true },
+            });
+
+            if (!tenant) {
+                return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 });
+            }
+
+            const totals = await prisma.aiCreditTransaction.aggregate({
+                where: { tenant_id: claims.tenant_id },
+                _sum: { credits_used: true },
+            });
 
             return NextResponse.json({
                 success: true,
-                balance: balance.balance,
-                totalPurchased: balance.totalPurchased,
-                totalUsed: balance.totalUsed,
-                lastUpdated: balance.lastUpdated,
+                balance: tenant.ai_credits,
+                totalUsed: totals._sum.credits_used || 0,
+                usageLimit: tenant.ai_usage_limit,
+                aiEnabled: tenant.ai_enabled,
+                lastUpdated: new Date().toISOString(),
             });
         }
 
         // Get transactions
-        const transactions = Array.from(mockTransactions.values())
-            .filter((tx: any) => tx.nutritionistId === nutritionistId)
-            .sort((a: any, b: any) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+        const transactions = await prisma.aiCreditTransaction.findMany({
+            where: { tenant_id: claims.tenant_id },
+            orderBy: { created_at: 'desc' },
+            take: 50,
+            select: {
+                id: true,
+                agent_type: true,
+                credits_used: true,
+                cost_brl: true,
+                metadata: true,
+                created_at: true,
+            },
+        });
 
         return NextResponse.json({
             success: true,
@@ -59,81 +68,52 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const {
-            nutritionistId,
-            transactionType,
-            agentType,
-            creditsAmount,
-            costBrl,
-            metadata,
-        } = body;
+        const claims = await getRequestClaims();
+        if (!claims) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
 
-        if (!nutritionistId || !transactionType || !creditsAmount) {
+        const body = await request.json();
+        const { transactionType, creditsAmount } = body;
+
+        if (!transactionType || !creditsAmount) {
             return NextResponse.json(
-                { error: 'Nutritionist ID, transaction type, and credits amount are required' },
+                { error: 'Transaction type and credits amount are required' },
                 { status: 400 }
             );
         }
 
-        // Validate transaction type
-        const validTypes = ['purchase', 'usage', 'refund'];
+        const validTypes = ['purchase', 'refund'];
         if (!validTypes.includes(transactionType)) {
             return NextResponse.json(
-                { error: 'Invalid transaction type' },
+                { error: 'Invalid transaction type. Only purchase and refund allowed via API.' },
                 { status: 400 }
             );
         }
 
-        // Get current balance
-        let creditRecord = mockCredits.get(nutritionistId) || {
-            nutritionistId,
-            balance: 1000,
-            totalPurchased: 1000,
-            totalUsed: 0,
-        };
+        // Update tenant credits atomically
+        const tenant = await prisma.tenant.update({
+            where: { id: claims.tenant_id },
+            data: { ai_credits: { increment: creditsAmount } },
+            select: { ai_credits: true },
+        });
 
-        // Calculate new balance
-        let newBalance = creditRecord.balance;
-        if (transactionType === 'purchase' || transactionType === 'refund') {
-            newBalance += creditsAmount;
-            creditRecord.totalPurchased += creditsAmount;
-        } else if (transactionType === 'usage') {
-            if (newBalance < creditsAmount) {
-                return NextResponse.json(
-                    { error: 'Insufficient credits' },
-                    { status: 400 }
-                );
-            }
-            newBalance -= creditsAmount;
-            creditRecord.totalUsed += creditsAmount;
-        }
-
-        // Update balance
-        creditRecord.balance = newBalance;
-        creditRecord.lastUpdated = new Date().toISOString();
-        mockCredits.set(nutritionistId, creditRecord);
-
-        // Create transaction record
-        const transaction = {
-            id: Date.now().toString(),
-            nutritionistId,
-            transactionType,
-            agentType: agentType || null,
-            creditsAmount,
-            costBrl: costBrl || 0,
-            balanceAfter: newBalance,
-            metadata: metadata || {},
-            createdAt: new Date().toISOString(),
-        };
-
-        mockTransactions.set(transaction.id, transaction);
+        // Log the transaction
+        const transaction = await prisma.aiCreditTransaction.create({
+            data: {
+                tenant_id: claims.tenant_id,
+                nutritionist_id: claims.user_id,
+                agent_type: transactionType,
+                credits_used: -creditsAmount,
+                cost_brl: 0,
+                metadata: { type: transactionType, manual: true },
+            },
+        });
 
         return NextResponse.json({
             success: true,
-            transaction,
-            newBalance,
-            message: 'Transaction completed successfully',
+            transaction: { id: transaction.id, type: transactionType, amount: creditsAmount },
+            newBalance: tenant.ai_credits,
         });
     } catch (error) {
         console.error('Error processing AI credits transaction:', error);
