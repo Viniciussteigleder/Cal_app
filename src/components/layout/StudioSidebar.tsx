@@ -16,7 +16,8 @@ import {
     ScrollText,
     ClipboardList,
     BarChart,
-    BookOpen
+    BookOpen,
+    BrainCircuit
 } from 'lucide-react';
 
 interface Module {
@@ -65,6 +66,14 @@ export function StudioSidebar({ patientId, currentPhase = 3 }: StudioSidebarProp
             icon: TestTube,
             href: `/studio/patients/${patientId}/exames`,
             phase: 1,
+        },
+        {
+            id: 'analyzer',
+            label: 'Clinical Copilot',
+            icon: BrainCircuit,
+            href: `/studio/patients/${patientId}/analyzer`,
+            phase: 1,
+            badge: 'AI',
         },
         {
             id: 'stats',

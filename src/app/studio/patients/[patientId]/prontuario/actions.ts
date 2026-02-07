@@ -143,47 +143,44 @@ export async function toggleProntuarioTask(entryId: string, patientId: string, t
     }
 }
 
+// 1. Refactor to use unified AI Service
+import { aiService } from '@/lib/ai/ai-service';
+
 export async function processConsultationAudio(formData: FormData) {
     try {
+        const claims = await getSupabaseClaims();
+        if (!claims) throw new Error('Unauthorized');
+
         const file = formData.get('file') as File;
         if (!file) {
             return { success: false, error: 'No file provided' };
         }
 
-        // 1. Transcribe
-        const { text } = await transcribeAudio(file);
-        if (!text) {
-            return { success: false, error: 'Transcription failed' };
+        // Execute AI Agent for Transcription & SOAP Note
+        const result = await aiService.execute({
+            agentType: 'medical_record_creator',
+            tenantId: claims.tenant_id,
+            userId: claims.user_id,
+            inputData: {
+                action: 'transcribe',
+                audioFile: file
+            }
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to process audio via AI Service');
         }
-
-        // 2. Summarize
-        const summaryPrompt = `
-      Analise a seguinte transcrição de uma consulta nutricional:
-      "${text}"
-      
-      Gere um resumo clínico estruturado contendo:
-      - Queixas principais
-      - Hábitos alimentares relatados
-      - Histórico clínico/sintomas
-      - Metas do paciente
-      
-      Mantenha o tom profissional e objetivo.
-    `;
-
-        const { content: summary } = await generateChatCompletion(
-            "Você é um assistente de IA especializado em nutrição clínica. Seu objetivo é ajudar nutricionistas a resumir consultas.",
-            summaryPrompt
-        );
 
         return {
             success: true,
             data: {
-                transcription: text,
-                summary: summary || 'Não foi possível gerar o resumo.',
+                transcription: result.data.transcription || "Transcrição não disponível", // Fallback if agent behavior varies
+                summary: result.data.soapNote ? JSON.stringify(result.data.soapNote, null, 2) : "Resumo não disponível", // Adapting response structure
             }
         };
-    } catch (error) {
+
+    } catch (error: any) {
         console.error('Error processing audio:', error);
-        return { success: false, error: 'Failed to process audio' };
+        return { success: false, error: error.message || 'Failed to process audio' };
     }
 }
