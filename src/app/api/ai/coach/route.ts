@@ -14,8 +14,15 @@ export async function POST(req: Request) {
             return new Response('Unauthorized', { status: 401 });
         }
 
-        const { messages } = await req.json();
-        const lastMessage = messages[messages.length - 1];
+        const body = await req.json();
+        const { messages } = body;
+
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return new Response(JSON.stringify({ error: 'Messages array is required' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
 
         // Get config for nutrition coach
         const config = await aiService.getAgentConfig(claims.tenant_id, 'nutrition_coach');
@@ -59,7 +66,7 @@ export async function POST(req: Request) {
                                 agent_type: 'nutrition_coach',
                                 credits_used: creditCost,
                                 cost_usd: cost,
-                                cost_brl: cost * 5.5,
+                                cost_brl: cost * 5.0,
                                 metadata: { tokensUsed: totalTokens },
                             },
                         })

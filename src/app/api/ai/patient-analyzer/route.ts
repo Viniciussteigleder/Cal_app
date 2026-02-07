@@ -24,11 +24,20 @@ export async function POST(request: NextRequest) {
 
         // Parse request body
         const body = await request.json();
-        const { patientId, tenantId } = body;
+        const { patientId } = body;
+        // Derive tenantId from auth, not request body (security)
+        const tenantId = user.app_metadata?.tenant_id as string;
 
-        if (!patientId || !tenantId) {
+        if (!patientId) {
             return NextResponse.json(
-                { error: 'Missing required fields: patientId, tenantId' },
+                { error: 'Missing required field: patientId' },
+                { status: 400 }
+            );
+        }
+
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: 'No tenant found for user' },
                 { status: 400 }
             );
         }

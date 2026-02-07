@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { prisma as singletonPrisma } from "@/lib/prisma";
 
-export const prisma = new PrismaClient();
+// Re-export the singleton prisma client to avoid duplicate connections
+export const prisma = singletonPrisma;
 
 export type TransactionClient = Omit<
   PrismaClient,

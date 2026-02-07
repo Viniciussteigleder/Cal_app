@@ -83,10 +83,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Only OWNER and TENANT_ADMIN can manage credits
+        if (!['OWNER', 'TENANT_ADMIN'].includes(claims.role)) {
+            return NextResponse.json(
+                { error: 'Acesso restrito a administradores.' },
+                { status: 403 }
+            );
+        }
+
         const validTypes = ['purchase', 'refund'];
         if (!validTypes.includes(transactionType)) {
             return NextResponse.json(
                 { error: 'Invalid transaction type. Only purchase and refund allowed via API.' },
+                { status: 400 }
+            );
+        }
+
+        if (typeof creditsAmount !== 'number' || creditsAmount <= 0) {
+            return NextResponse.json(
+                { error: 'Credits amount must be a positive number.' },
                 { status: 400 }
             );
         }

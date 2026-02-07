@@ -23,11 +23,20 @@ export async function POST(request: NextRequest) {
 
         // Parse request body
         const body = await request.json();
-        const { imageUrl, patientId, tenantId } = body;
+        const { imageUrl, patientId } = body;
+        // Derive tenantId from auth, not request body (security)
+        const tenantId = user.app_metadata?.tenant_id as string;
 
-        if (!imageUrl || !patientId || !tenantId) {
+        if (!imageUrl || !patientId) {
             return NextResponse.json(
-                { error: 'Missing required fields: imageUrl, patientId, tenantId' },
+                { error: 'Missing required fields: imageUrl, patientId' },
+                { status: 400 }
+            );
+        }
+
+        if (!tenantId) {
+            return NextResponse.json(
+                { error: 'No tenant found for user' },
                 { status: 400 }
             );
         }
@@ -58,7 +67,7 @@ export async function POST(request: NextRequest) {
                 patient_id: patientId,
                 image_url: imageUrl,
                 recognized_foods: result.data.recognized_foods,
-                ai_model_version: 'gpt-4-vision-preview',
+                ai_model_version: 'gpt-4o',
                 confidence_score: result.data.confidence_score,
                 user_confirmed: false,
             })

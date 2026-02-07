@@ -35,7 +35,7 @@ export async function GET(
 
         if (patient.tenant_id !== claims.tenant_id) {
             console.warn(`Tenant mismatch in API: User ${claims.tenant_id} -> Patient ${patient.tenant_id}`);
-            // return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
         // Map to the shape expected by PatientContext
