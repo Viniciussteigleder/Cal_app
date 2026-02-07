@@ -1,13 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, CheckCircle2, ShieldAlert, Settings, Users, FileText, Brain, Activity, ArrowRight, LayoutDashboard, UserCog, Database, Lock, Search, Building2, ShieldCheck, Sparkles, BookOpen, ClipboardList, MessageSquare, Server } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldAlert, Settings, Users, FileText, Brain, Activity, ArrowRight, LayoutDashboard, UserCog, Database, Building2, ShieldCheck, Sparkles, BookOpen, MessageSquare, Server } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function AppDescriptionPage() {
@@ -329,14 +326,14 @@ export default function AppDescriptionPage() {
                         <li className="flex gap-3 items-start p-2 bg-background rounded border">
                           <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0" />
                           <div>
-                            <span className="font-medium text-foreground">Detectou "Leite Integral"</span>
-                            <p className="text-xs text-muted-foreground mt-1">Exibiu alerta e sugeriu substituição por "Leite Zero Lactose" ou "Leite de Amêndoas".</p>
+                            <span className="font-medium text-foreground">Detectou &quot;Leite Integral&quot;</span>
+                            <p className="text-xs text-muted-foreground mt-1">Exibiu alerta e sugeriu substituição por &quot;Leite Zero Lactose&quot; ou &quot;Leite de Amêndoas&quot;.</p>
                           </div>
                         </li>
                         <li className="flex gap-3 items-start p-2 bg-background rounded border">
                           <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0" />
                           <div>
-                            <span className="font-medium text-foreground">Detectou "Cebola"</span>
+                            <span className="font-medium text-foreground">Detectou &quot;Cebola&quot;</span>
                             <p className="text-xs text-muted-foreground mt-1">Exibiu alerta FODMAP Alto e sugeriu usar apenas a parte verde da cebolinha.</p>
                           </div>
                         </li>
@@ -375,14 +372,14 @@ export default function AppDescriptionPage() {
                         <li className="flex gap-3 items-start p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200">
                           <ShieldAlert className="h-5 w-5 text-red-500 shrink-0" />
                           <div>
-                            <span className="font-bold text-red-700 dark:text-red-400">BLOQUEIO: "Camarão"</span>
+                            <span className="font-bold text-red-700 dark:text-red-400">BLOQUEIO: &quot;Camarão&quot;</span>
                             <p className="text-xs text-red-600/80 mt-1">Ação impedida pelo sistema devido risco de anafilaxia.</p>
                           </div>
                         </li>
                         <li className="flex gap-3 items-start p-2 bg-background rounded border">
                           <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0" />
                           <div>
-                            <span className="font-medium text-foreground">Detectou "Arroz Branco"</span>
+                            <span className="font-medium text-foreground">Detectou &quot;Arroz Branco&quot;</span>
                             <p className="text-xs text-muted-foreground mt-1">Sugeriu troca por carbo de baixo índice glicêmico (Quinoa/Integral).</p>
                           </div>
                         </li>
@@ -422,13 +419,13 @@ export default function AppDescriptionPage() {
                           <Sparkles className="h-5 w-5 text-emerald-500 shrink-0" />
                           <div>
                             <span className="font-bold text-emerald-700 dark:text-emerald-400">Dica Inteligente</span>
-                            <p className="text-xs text-emerald-600/80 mt-1">"Combinação excelente! A Vitamina C da laranja aumentará a absorção do ferro do espinafre."</p>
+                          <p className="text-xs text-emerald-600/80 mt-1">Combinação excelente! A Vitamina C da laranja aumentará a absorção do ferro do espinafre.</p>
                           </div>
                         </li>
                         <li className="flex gap-3 items-start p-2 bg-background rounded border">
                           <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0" />
                           <div>
-                            <span className="font-medium text-foreground">Detectou "Chá Preto" no almoço</span>
+                            <span className="font-medium text-foreground">Detectou &quot;Chá Preto&quot; no almoço</span>
                             <p className="text-xs text-muted-foreground mt-1">Alerta: Taninos inibem absorção de ferro. Evite próximo às refeições.</p>
                           </div>
                         </li>
@@ -659,8 +656,8 @@ export default function AppDescriptionPage() {
                   <p className="text-sm text-muted-foreground">Sim. Vá em Datasets e use a importação CSV. O sistema validará colunas (Calorias, Proteínas, etc.) e vinculará automaticamente.</p>
                 </div>
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-sm text-foreground">O que significa "Microbiota Intestinal"?</h4>
-                  <p className="text-sm text-muted-foreground">É o termo científico correto para "flora intestinal". Usamos apenas esta terminologia para manter o padrão clínico profissional.</p>
+                  <h4 className="font-semibold text-sm text-foreground">O que significa &quot;Microbiota Intestinal&quot;?</h4>
+                  <p className="text-sm text-muted-foreground">É o termo científico correto para &quot;flora intestinal&quot;. Usamos apenas esta terminologia para manter o padrão clínico profissional.</p>
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-semibold text-sm text-foreground">O NutriPlan faz diagnósticos médicos?</h4>
@@ -694,7 +691,7 @@ export default function AppDescriptionPage() {
                       <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                       Motor de Regras
                     </dt>
-                    <dd className="text-sm text-muted-foreground pl-4 mt-1 border-l-2 ml-1">O "cérebro" da segurança. Valida cada interação em tempo real contra as regras que você configura.</dd>
+                    <dd className="text-sm text-muted-foreground pl-4 mt-1 border-l-2 ml-1">O cérebro da segurança. Valida cada interação em tempo real contra as regras que você configura.</dd>
                   </div>
                 </dl>
               </CardContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,9 +145,9 @@ export default function AdminLoginPage() {
 
         {/* Back link */}
         <div className="mt-6 text-center">
-          <a href="/" className="text-sm text-slate-500 hover:text-purple-400 transition-colors">
+          <Link href="/" className="text-sm text-slate-500 hover:text-purple-400 transition-colors">
             ← Voltar para a página inicial
-          </a>
+          </Link>
         </div>
       </div>
     </div>
