@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, X, ArrowRight, Flame, Droplets, Moon, Check, Search, Loader2, Utensils, Activity, ChevronRight, Zap } from "lucide-react";
+import { Plus, X, ArrowRight, Flame, Droplets, Moon, Check, Search, Loader2, Utensils, Activity, ChevronRight, Zap, Sparkles } from "lucide-react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

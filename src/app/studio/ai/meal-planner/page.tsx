@@ -459,7 +459,7 @@ export default function MealPlannerPage() {
                                 <CardContent className="flex flex-col items-center justify-center py-16">
                                     <Sparkles className="w-16 h-16 text-gray-400 mb-4" />
                                     <p className="text-muted-foreground text-center">
-                                        Configure os parâmetros e clique em "Gerar Plano Alimentar" para começar
+                                        Configure os parâmetros e clique em &quot;Gerar Plano Alimentar&quot; para começar
                                     </p>
                                 </CardContent>
                             </Card>

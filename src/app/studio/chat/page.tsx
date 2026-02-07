@@ -85,7 +85,6 @@ export default function AIChatPage() {
     if (selectedPatient) {
       const patientCase = MOCK_PATIENT_CASES.find(c => c.patientId === selectedPatient);
       if (patientCase && patientCase.chatHistory.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMessages(patientCase.chatHistory.map(m => ({
           ...m,
           patientContext: patientCase.patientName,

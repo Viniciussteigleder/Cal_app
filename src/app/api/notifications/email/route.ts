@@ -73,10 +73,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            messageId: (result as any).data?.id || (result as any).id,
+            messageId: result?.data?.id || (result as unknown as { id?: string })?.id,
             message: 'Email sent successfully',
-            simulated: (result as any).simulated || false
+            simulated: (result as unknown as { simulated?: boolean })?.simulated || false
         });
     } catch (error) {
         console.error('Error sending email:', error);

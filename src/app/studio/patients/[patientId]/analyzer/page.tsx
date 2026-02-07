@@ -73,7 +73,7 @@ export default function ClinicalAnalyzerPage({ params }: { params: { patientId: 
                         </div>
                         <h3 className="text-lg font-semibold text-slate-900">Nenhuma análise gerada ainda</h3>
                         <p className="text-slate-500 max-w-sm mt-2">
-                            Selecione um período e clique em "Executar Análise" para que a IA processe os dados de refeições, sintomas e evolução do paciente.
+                            Selecione um período e clique em &quot;Executar Análise&quot; para que a IA processe os dados de refeições, sintomas e evolução do paciente.
                         </p>
                     </CardContent>
                 </Card>

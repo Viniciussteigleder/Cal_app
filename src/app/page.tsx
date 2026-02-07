@@ -377,7 +377,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-3xl font-black mb-4">IA Clínica de Elite</h3>
                   <p className="text-slate-300 text-lg">
-                    "O NutriPlan não apenas rastreia; ele pensa como um nutricionista sênior, avisando você sobre riscos que passariam despercebidos."
+                    &quot;O NutriPlan não apenas rastreia; ele pensa como um nutricionista sênior, avisando você sobre riscos que passariam despercebidos.&quot;
                   </p>
                   <div className="mt-8 flex items-center gap-3">
                     <div className="h-1 rounded-full bg-emerald-500 w-12" />

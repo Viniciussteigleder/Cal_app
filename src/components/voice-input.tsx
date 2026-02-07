@@ -220,14 +220,13 @@ export function VoiceInput({
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-      if (!SpeechRecognition) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsSupported(false);
-        return;
-      }
+    if (!SpeechRecognition) {
+      setIsSupported(false);
+      return;
+    }
 
       const recognition = new SpeechRecognition();
       recognition.continuous = true;

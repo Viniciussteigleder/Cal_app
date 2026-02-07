@@ -332,7 +332,7 @@ export default function ClinicalMDTPage() {
                         ) : (
                             <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
                                 <Activity className="w-12 h-12 mb-4 opacity-20" />
-                                <p>Preencha os dados na aba "Dados do Caso" para iniciar a análise.</p>
+                                <p>Preencha os dados na aba &quot;Dados do Caso&quot; para iniciar a análise.</p>
                             </div>
                         )}
                     </TabsContent>

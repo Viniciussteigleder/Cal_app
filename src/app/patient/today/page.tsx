@@ -127,9 +127,8 @@ export default function TodayPage() {
       return (aH * 60 + aM) - (bH * 60 + bM);
     });
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTimelineItems(items);
-  }, []);
+  setTimelineItems(items);
+}, []);
 
   const getTimelineIcon = (type: string) => {
     switch (type) {

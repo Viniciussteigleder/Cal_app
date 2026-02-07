@@ -52,7 +52,7 @@ export function ExamsListView({ uploads, patientId }: { uploads: any[], patientI
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {uploads.length === 0 && (
                     <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-lg">
-                        Nenhum exame cadastrado. Clique em "Novo Exame" para começar.
+                        Nenhum exame cadastrado. Clique em &quot;Novo Exame&quot; para começar.
                     </div>
                 )}
 

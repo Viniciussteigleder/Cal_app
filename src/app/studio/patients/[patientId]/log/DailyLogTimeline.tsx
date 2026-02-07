@@ -439,7 +439,7 @@ function renderLogContent(log: LogEntry) {
                         {c.symptoms?.map((s: string) => <Badge key={s} variant="outline" className="bg-background/50 border-red-200">{s}</Badge>)}
                     </div>
                     {c.severity && <div className="text-xs">Intensidade: {c.severity}/10</div>}
-                    {c.note && <div className="text-xs italic mt-1">"{c.note}"</div>}
+                    {c.note && <div className="text-xs italic mt-1">&quot;{c.note}&quot;</div>}
                 </div>
             );
         default:

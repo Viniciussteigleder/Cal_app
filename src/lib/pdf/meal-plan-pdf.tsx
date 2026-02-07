@@ -84,7 +84,7 @@ interface Meal {
     items: MealItem[];
 }
 
-interface MealPlanProps {
+export interface MealPlanProps {
     patientName: string;
     date: string;
     planData: {

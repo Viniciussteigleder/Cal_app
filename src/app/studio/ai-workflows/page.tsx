@@ -312,7 +312,7 @@ export default function AIWorkflowCanvasPage() {
                     {executionLog.length === 0 ? (
                         <div className="text-center py-8 text-gray-500">
                             <p className="text-sm">Nenhuma execução ainda</p>
-                            <p className="text-xs mt-1">Clique em "Executar Workflow"</p>
+                            <p className="text-xs mt-1">Clique em &quot;Executar Workflow&quot;</p>
                         </div>
                     ) : (
                         <div className="space-y-3">

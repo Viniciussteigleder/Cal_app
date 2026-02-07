@@ -171,7 +171,7 @@ export function PatientAnalyzerClient({ patients }: { patients: Patient[] }) {
                         <CardContent className="flex flex-col items-center justify-center py-16">
                             <Brain className="w-16 h-16 text-gray-400 mb-4" />
                             <p className="text-muted-foreground text-center">
-                                Selecione um paciente e clique em "Executar Análise" para ver os relatórios.
+                                Selecione um paciente e clique em &quot;Executar Análise&quot; para ver os relatórios.
                             </p>
                         </CardContent>
                     </Card>
