@@ -24,20 +24,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get symptom logs with linked meals
+    // Get symptom logs (without broken `correlations` include)
     const symptomLogs = await prisma.symptomLog.findMany({
       where: { patient_id: targetPatientId },
-      include: {
-        correlations: {
-          include: {
-            meal: {
-              include: {
-                items: { include: { snapshot: true } },
-              },
-            },
-          },
-        },
-      },
       orderBy: { logged_at: "desc" },
       take: 50,
     });
@@ -45,12 +34,37 @@ export async function GET(request: NextRequest) {
     // Get all meals for this patient
     const meals = await prisma.meal.findMany({
       where: { patient_id: targetPatientId },
-      include: {
-        items: { include: { snapshot: true } },
-      },
       orderBy: { date: "desc" },
       take: 100,
     });
+
+    // Get meal items and snapshots as separate queries
+    const mealIds = meals.map((m) => m.id);
+    const mealItems = mealIds.length > 0
+      ? await prisma.mealItem.findMany({
+          where: { meal_id: { in: mealIds } },
+        })
+      : [];
+
+    const snapshotIds = [...new Set(mealItems.map((i) => i.snapshot_id))];
+    const snapshots = snapshotIds.length > 0
+      ? await prisma.foodSnapshot.findMany({
+          where: { id: { in: snapshotIds } },
+        })
+      : [];
+    const snapshotMap = new Map(snapshots.map((s) => [s.id, s]));
+
+    // Group items by meal for easy lookup
+    const itemsByMeal = new Map<string, Array<{ food_name: string }>>();
+    for (const item of mealItems) {
+      const snapshot = snapshotMap.get(item.snapshot_id);
+      const snapshotData = snapshot?.snapshot_json as { name?: string } | null;
+      const foodName = snapshotData?.name || "Unknown";
+
+      const list = itemsByMeal.get(item.meal_id) || [];
+      list.push({ food_name: foodName });
+      itemsByMeal.set(item.meal_id, list);
+    }
 
     // Analyze patterns
     const foodSymptomCounts: Record<
@@ -70,9 +84,9 @@ export async function GET(request: NextRequest) {
       });
 
       for (const meal of relevantMeals) {
-        for (const item of meal.items) {
-          const snapshot = item.snapshot.snapshot_json as { name?: string };
-          const foodName = snapshot.name || "Unknown";
+        const foods = itemsByMeal.get(meal.id) || [];
+        for (const food of foods) {
+          const foodName = food.food_name;
 
           if (!foodSymptomCounts[foodName]) {
             foodSymptomCounts[foodName] = {
@@ -91,9 +105,9 @@ export async function GET(request: NextRequest) {
 
     // Count total occurrences of each food
     for (const meal of meals) {
-      for (const item of meal.items) {
-        const snapshot = item.snapshot.snapshot_json as { name?: string };
-        const foodName = snapshot.name || "Unknown";
+      const foods = itemsByMeal.get(meal.id) || [];
+      for (const food of foods) {
+        const foodName = food.food_name;
 
         if (!foodSymptomCounts[foodName]) {
           foodSymptomCounts[foodName] = {
@@ -156,10 +170,10 @@ export async function GET(request: NextRequest) {
     }
 
     const peakHours = hourlyPatterns
-      .map((count, hour) => ({ hour, count }))
-      .sort((a, b) => b.count - a.count)
+      .map((count: number, hour: number) => ({ hour, count }))
+      .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
       .slice(0, 3)
-      .map((h) => ({
+      .map((h: { hour: number; count: number }) => ({
         hour: h.hour,
         label: `${h.hour}:00 - ${h.hour + 1}:00`,
         count: h.count,

@@ -1,67 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Mock database for AI agent configurations
-const mockConfigs = new Map();
-
-// Default configurations
-const defaultConfigs = [
-    {
-        id: 'meal-planner',
-        name: 'Planejador de Refeições',
-        description: 'Cria planos alimentares personalizados',
-        status: 'active',
-        prompt: {
-            system: 'Você é um nutricionista especialista com 20 anos de experiência.',
-            userTemplate: 'Crie um plano alimentar para {{patient_name}} com {{target_calories}} calorias.',
-            variables: ['patient_name', 'target_calories', 'restrictions', 'goals'],
-        },
-        model: {
-            provider: 'openai',
-            modelName: 'gpt-4-turbo-preview',
-            temperature: 0.7,
-            maxTokens: 2000,
-        },
-        role: {
-            persona: 'Nutricionista experiente e empático',
-            expertise: ['Planejamento alimentar', 'Nutrição clínica'],
-            tone: 'professional',
-        },
-        costControl: {
-            maxCostPerExecution: 0.10,
-            dailyBudget: 20.00,
-            monthlyBudget: 500.00,
-            alertThreshold: 0.80,
-        },
-        updatedAt: new Date().toISOString(),
-    },
-];
-
-// Initialize with defaults
-defaultConfigs.forEach(config => {
-    mockConfigs.set(config.id, config);
-});
+import { getRequestClaims } from '@/lib/claims';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
     try {
+        const claims = await getRequestClaims();
+        if (!claims) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
         const agentId = searchParams.get('agentId');
 
         if (agentId) {
-            const config = mockConfigs.get(agentId);
-            if (!config) {
-                return NextResponse.json(
-                    { error: 'Agent configuration not found' },
-                    { status: 404 }
-                );
-            }
-            return NextResponse.json({
-                success: true,
-                config,
+            const config = await prisma.aiAgentConfig.findUnique({
+                where: { tenant_id_agent_id: { tenant_id: claims.tenant_id, agent_id: agentId } },
             });
+
+            if (!config) {
+                return NextResponse.json({
+                    success: true,
+                    config: { agent_id: agentId, is_active: true, model_name: 'gpt-4o', temperature: 0.7 },
+                    isDefault: true,
+                });
+            }
+
+            return NextResponse.json({ success: true, config });
         }
 
-        // Return all configurations
-        const configs = Array.from(mockConfigs.values());
+        const configs = await prisma.aiAgentConfig.findMany({
+            where: { tenant_id: claims.tenant_id },
+            orderBy: { agent_id: 'asc' },
+        });
+
         return NextResponse.json({
             success: true,
             configs,
@@ -78,35 +49,39 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
+        const claims = await getRequestClaims();
+        if (!claims) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
+
         const body = await request.json();
-        const { agentId, ...updates } = body;
+        const { agentId, modelName, systemPrompt, temperature, isActive } = body;
 
         if (!agentId) {
-            return NextResponse.json(
-                { error: 'Agent ID is required' },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
         }
 
-        const existingConfig = mockConfigs.get(agentId);
-        if (!existingConfig) {
-            return NextResponse.json(
-                { error: 'Agent configuration not found' },
-                { status: 404 }
-            );
-        }
-
-        const updatedConfig = {
-            ...existingConfig,
-            ...updates,
-            updatedAt: new Date().toISOString(),
-        };
-
-        mockConfigs.set(agentId, updatedConfig);
+        const config = await prisma.aiAgentConfig.upsert({
+            where: { tenant_id_agent_id: { tenant_id: claims.tenant_id, agent_id: agentId } },
+            update: {
+                ...(modelName !== undefined && { model_name: modelName }),
+                ...(systemPrompt !== undefined && { system_prompt: systemPrompt }),
+                ...(temperature !== undefined && { temperature }),
+                ...(isActive !== undefined && { is_active: isActive }),
+            },
+            create: {
+                tenant_id: claims.tenant_id,
+                agent_id: agentId,
+                model_name: modelName || 'gpt-4o',
+                system_prompt: systemPrompt || '',
+                temperature: temperature ?? 0.7,
+                is_active: isActive ?? true,
+            },
+        });
 
         return NextResponse.json({
             success: true,
-            config: updatedConfig,
+            config,
             message: 'Configuration updated successfully',
         });
     } catch (error) {
@@ -120,8 +95,13 @@ export async function PUT(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const claims = await getRequestClaims();
+        if (!claims) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
+
         const body = await request.json();
-        const { agentId, action, ...data } = body;
+        const { agentId, action } = body;
 
         if (!agentId || !action) {
             return NextResponse.json(
@@ -130,65 +110,44 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const config = mockConfigs.get(agentId);
-        if (!config) {
-            return NextResponse.json(
-                { error: 'Agent configuration not found' },
-                { status: 404 }
-            );
-        }
-
         switch (action) {
-            case 'test':
-                // Test the agent with sample input
-                const testResult = {
-                    success: true,
-                    response: 'Mock AI response for testing',
-                    tokensUsed: 150,
-                    cost: 0.0045,
-                    responseTime: 2.3,
-                };
-                return NextResponse.json({
-                    success: true,
-                    testResult,
+            case 'toggle': {
+                const existing = await prisma.aiAgentConfig.findUnique({
+                    where: { tenant_id_agent_id: { tenant_id: claims.tenant_id, agent_id: agentId } },
                 });
 
-            case 'toggle':
-                // Toggle agent status
-                const newStatus = config.status === 'active' ? 'inactive' : 'active';
-                const toggledConfig = {
-                    ...config,
-                    status: newStatus,
-                    updatedAt: new Date().toISOString(),
-                };
-                mockConfigs.set(agentId, toggledConfig);
-                return NextResponse.json({
-                    success: true,
-                    config: toggledConfig,
-                    message: `Agent ${newStatus === 'active' ? 'activated' : 'deactivated'}`,
+                const config = await prisma.aiAgentConfig.upsert({
+                    where: { tenant_id_agent_id: { tenant_id: claims.tenant_id, agent_id: agentId } },
+                    update: { is_active: !(existing?.is_active ?? true) },
+                    create: {
+                        tenant_id: claims.tenant_id,
+                        agent_id: agentId,
+                        model_name: 'gpt-4o',
+                        is_active: false,
+                        temperature: 0.7,
+                    },
                 });
 
-            case 'reset':
-                // Reset to default configuration
-                const defaultConfig = defaultConfigs.find(c => c.id === agentId);
-                if (defaultConfig) {
-                    mockConfigs.set(agentId, { ...defaultConfig });
-                    return NextResponse.json({
-                        success: true,
-                        config: defaultConfig,
-                        message: 'Configuration reset to defaults',
-                    });
-                }
-                return NextResponse.json(
-                    { error: 'Default configuration not found' },
-                    { status: 404 }
-                );
+                return NextResponse.json({
+                    success: true,
+                    config,
+                    message: `Agent ${config.is_active ? 'activated' : 'deactivated'}`,
+                });
+            }
+
+            case 'reset': {
+                await prisma.aiAgentConfig.deleteMany({
+                    where: { tenant_id: claims.tenant_id, agent_id: agentId },
+                });
+
+                return NextResponse.json({
+                    success: true,
+                    message: 'Configuration reset to defaults',
+                });
+            }
 
             default:
-                return NextResponse.json(
-                    { error: 'Invalid action' },
-                    { status: 400 }
-                );
+                return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }
     } catch (error) {
         console.error('Error processing AI config action:', error);
