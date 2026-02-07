@@ -534,76 +534,92 @@ export default function LandingPage() {
       </section>
 
       {/* Plans */}
-      <section id="plans" className="py-24 px-6">
+      <section id="plans" className="py-24 px-6 bg-slate-50/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Planos para cada fase</h2>
-            <p className="text-lg text-muted-foreground mt-3">
-              Comece agora e evolua conforme sua clínica cresce.
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">Planos para cada fase</h2>
+            <p className="text-xl text-muted-foreground mt-4 max-w-2xl mx-auto">
+              Seja você um profissional começando ou uma clínica escalando, temos o motor de IA certo para você.
             </p>
           </div>
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-4 gap-6">
             {[
               {
-                name: "Essential",
+                name: "Basic",
                 price: "R$ 0",
-                description: "Base sólida para começar a acompanhar pacientes.",
-                features: ["Cadastro de pacientes", "Registro de refeições", "Chat essencial"],
+                description: "Para experimentar e começar.",
+                features: ["Até 5 Pacientes ativos", "Cálculos Básicos", "Acesso limitado ao App", "Sem IA", "Suporte Comunitário"],
               },
               {
-                name: "Growth AI",
-                price: "R$ 199",
-                description: "IA aplicada ao dia a dia clínico com escala.",
-                features: ["Automação com IA", "Relatórios semanais", "Alertas preditivos"],
+                name: "PRO",
+                price: "R$ 49",
+                description: "Para nutricionistas autônomos.",
+                features: ["Até 50 Pacientes", "App Paciente Completo", "500 Créditos IA/mês", "Receitas por IA", "Suporte por Email"],
+              },
+              {
+                name: "PRO MAX",
+                price: "R$ 97",
+                description: "Para escalar seu atendimento.",
+                features: ["Até 200 Pacientes", "Tudo do PRO", "2.000 Créditos IA/mês", "Gerador de Protocolos", "Análise de Exames", "Branding Personalizado"],
                 highlight: true,
               },
               {
-                name: "Clinic Plus",
-                price: "R$ 499",
-                description: "Para equipes, unidades e operação avançada.",
-                features: ["Multi-profissionais", "IA prescritiva", "Suporte dedicado"],
+                name: "PRO MAX AI",
+                price: "R$ 197",
+                description: "O poder máximo da tecnologia.",
+                features: ["Pacientes Ilimitados", "Tudo do PRO MAX", "5.000 Créditos IA/mês", "Food Recognition Ilimitado", "API Access", "Gerente Dedicado"],
               },
             ].map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-3xl border p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 ${plan.highlight
-                  ? "border-emerald-300 bg-emerald-50/70 shadow-emerald-200/40"
-                  : "border-slate-100 bg-white/80"
+                className={`relative rounded-3xl border p-6 flex flex-col transition-all duration-300 hover:-translate-y-2 ${plan.highlight
+                  ? "border-emerald-300 bg-white shadow-[0_20px_40px_-15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/20"
+                  : "border-slate-200 bg-white/60 hover:bg-white hover:shadow-xl"
                   }`}
               >
                 {plan.highlight && (
-                  <div className="absolute -top-4 left-6 rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1 shadow">
-                    Mais escolhido
+                  <div className="absolute -top-4 left-6 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 shadow-lg shadow-emerald-200">
+                    Mais Escolhido
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
-                <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
-                <div className="mt-6 text-3xl font-bold text-slate-900">
-                  {plan.price}
-                  <span className="text-sm font-medium text-muted-foreground">/mês</span>
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1 h-8">{plan.description}</p>
                 </div>
-                <div className="mt-6 space-y-3">
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-slate-900">{plan.price}</span>
+                    <span className="text-sm font-medium text-muted-foreground">/mês</span>
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-3 mb-8">
                   {plan.features.map((feature) => (
-                    <div key={feature} className="flex items-center gap-3 text-sm text-slate-700">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      {feature}
+                    <div key={feature} className="flex items-start gap-2 text-sm text-slate-700">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span className="leading-tight">{feature}</span>
                     </div>
                   ))}
                 </div>
+
                 <Button
-                  className={`mt-8 w-full rounded-full ${plan.highlight
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className={`w-full rounded-2xl h-12 font-bold transition-all ${plan.highlight
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-100"
                     : "bg-slate-900 hover:bg-slate-800 text-white"
                     }`}
                   onClick={openSignup}
                 >
-                  Começar agora
+                  {plan.price === "R$ 0" ? "Começar Grátis" : "Assinar Agora"}
                 </Button>
               </div>
             ))}
           </div>
-          <div className="mt-10 text-center text-sm text-muted-foreground">
-            Sem fidelidade. Cancele quando quiser. Atualize ou faça downgrade a qualquer momento.
+          <div className="mt-12 text-center">
+            <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+              Teste qualquer plano por 7 dias grátis. Cancele quando quiser.
+            </p>
           </div>
         </div>
       </section>

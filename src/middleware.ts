@@ -10,9 +10,9 @@ const rateLimit = new Map<string, { count: number; resetTime: number }>();
 const redis = process.env.UPSTASH_REDIS_REST_URL ? Redis.fromEnv() : null;
 const limiter = redis
   ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(100, '1 m'),
-    })
+    redis,
+    limiter: Ratelimit.slidingWindow(100, '1 m'),
+  })
   : null;
 
 export async function middleware(request: NextRequest) {
@@ -39,7 +39,6 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      request.ip ||
       'unknown';
 
     if (limiter) {
@@ -116,7 +115,12 @@ export async function middleware(request: NextRequest) {
         return unauthorized;
       }
       const url = request.nextUrl.clone();
-      url.pathname = '/login';
+      // Redirect to specific login pages based on path
+      if (isOwnerPath) {
+        url.pathname = '/owner/login';
+      } else {
+        url.pathname = '/login';
+      }
       const redirect = NextResponse.redirect(url);
       applySecurityHeaders(redirect);
       return redirect;
@@ -124,7 +128,7 @@ export async function middleware(request: NextRequest) {
 
     if (isOwnerPath && session.role !== 'OWNER') {
       const url = request.nextUrl.clone();
-      url.pathname = '/login';
+      url.pathname = '/owner/login';
       const redirect = NextResponse.redirect(url);
       applySecurityHeaders(redirect);
       return redirect;

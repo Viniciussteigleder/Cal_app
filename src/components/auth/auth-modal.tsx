@@ -491,7 +491,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
             variant="outline"
             onClick={() => handleSocialLogin("google")}
             disabled={isLoading}
-            className="w-full h-12 justify-center gap-3 border-slate-200 hover:bg-slate-50"
+            className="w-full h-12 justify-center gap-3 border-slate-200 hover:bg-slate-50 rounded-xl font-semibold"
           >
             <GoogleIcon />
             Continuar com Google
