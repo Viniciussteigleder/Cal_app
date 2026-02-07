@@ -18,6 +18,10 @@ const limiter = redis
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   let rateLimitHeaders: Record<string, string> | null = null;
+  const isPublicAuthPath =
+    pathname === '/login' ||
+    pathname === '/owner/login' ||
+    pathname.startsWith('/auth/callback');
 
   const applySecurityHeaders = (res: NextResponse) => {
     res.headers.set('X-DNS-Prefetch-Control', 'on');
@@ -103,7 +107,7 @@ export async function middleware(request: NextRequest) {
   const isStudioPath = pathname.startsWith('/studio');
   const isPatientPath = pathname.startsWith('/patient');
 
-  if (isOwnerPath || isStudioPath || isPatientPath) {
+  if (!isPublicAuthPath && (isOwnerPath || isStudioPath || isPatientPath)) {
     const session = await verifySessionCookieValueEdge(request.cookies.get('np_session')?.value);
     if (!session) {
       if (pathname.startsWith('/api/')) {

@@ -4,11 +4,31 @@ import { cookies } from "next/headers";
 import { createSessionCookieValue, type SessionPayload } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
+function resolveRedirectPath(role: string, requestedNext?: string | null) {
+    let next = (requestedNext ?? "").trim();
+
+    // Normalize and guard
+    if (next && !next.startsWith("/")) next = `/${next}`;
+    if (next === "/owner") next = "/owner/tenants";
+    if (next === "/studio") next = "/studio/dashboard";
+    if (next === "/patient") next = "/patient/dashboard";
+    if (next === "/owner/login" || next === "/login") next = "";
+
+    // Prevent role-mismatched redirects
+    if (next && role !== "OWNER" && next.startsWith("/owner")) next = "";
+    if (next && role === "PATIENT" && next.startsWith("/studio")) next = "";
+
+    if (next) return next;
+
+    if (role === "OWNER") return "/owner/tenants";
+    if (role === "TENANT_ADMIN" || role === "TEAM") return "/studio/dashboard";
+    return "/patient/dashboard";
+}
+
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
-    // if "next" is in param, use it as the redirect URL
-    const next = searchParams.get("next") ?? "/patient/dashboard";
+    const requestedNext = searchParams.get("next");
 
     if (code) {
         const supabase = await createSupabaseServerClient();
@@ -83,11 +103,7 @@ export async function GET(request: Request) {
                 });
 
                 // Determine redirect based on role if not specified
-                let redirectPath = next;
-                if (!searchParams.get("next")) {
-                    if (user.role === "OWNER") redirectPath = "/owner/tenants";
-                    else if (user.role === "TENANT_ADMIN" || user.role === "TEAM") redirectPath = "/studio/dashboard";
-                }
+                const redirectPath = resolveRedirectPath(user.role as string, requestedNext);
 
                 return NextResponse.redirect(`${origin}${redirectPath}`);
             }
