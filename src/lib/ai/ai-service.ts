@@ -226,7 +226,7 @@ export class AIService {
                 await prisma.aIExecution.update({
                     where: { id: executionId },
                     data: { status: 'failed', error_message: errorMessage, execution_time_ms: executionTimeMs },
-                }).catch(() => {});
+                }).catch(() => { });
             }
 
             return {
@@ -549,14 +549,41 @@ export class AIService {
 // ============================================================================
 
 const PROMPTS: Record<string, string> = {
-    food_recognition: `Você é um expert em nutrição especializado em reconhecimento de alimentos.
-Analise a imagem e retorne JSON com: { "foods": [{ "food_name": "...", "confidence": 0.0-1.0, "portion_grams": 0, "notes": "..." }] }`,
+    food_recognition: `Você é um expert em nutrição clínica e visão computacional.
+Analise a imagem e retorne JSON com: { 
+  "foods": [{ 
+    "food_name": "...", 
+    "confidence": 0.0-1.0, 
+    "portion_grams": 0, 
+    "upf_score": 1, // Escala NOVA: 1=In natura, 2=Processado, 3=Ultra-processado
+    "protein_quality": "High|Medium|Low", // PDCAAS estimate
+    "notes": "..." 
+  }],
+  "overall_meal_quality": "..."
+}`,
 
-    meal_planner: `Você é um nutricionista expert em planejamento alimentar personalizado.
-Crie um plano alimentar detalhado. Retorne JSON com:
-{ "days": [{ "day": 1, "meals": { "breakfast": {...}, "lunch": {...}, "dinner": {...}, "snacks": [...] } }],
-  "total_daily_kcal": 0, "macros": { "protein_pct": 0, "carbs_pct": 0, "fat_pct": 0 },
-  "estimated_weekly_cost_brl": 0, "reasoning": "..." }`,
+    meal_planner: `Você é um nutricionista expert em planejamento alimentar funcional e personalizado.
+Crie um plano alimentar otimizado para: densidade de micronutrientes, controle glicêmico e baixo índice de ultra-processados (UPF).
+Considere:
+1. Variedade de fitonutrientes (comer o arco-íris).
+2. Proporção ideal de fibras solúveis/insolúveis.
+3. Qualidade proteica em cada refeição.
+Retorne JSON com:
+{ 
+  "days": [{ 
+    "day": 1, 
+    "meals": { 
+      "breakfast": { "foods": [...], "upf_score": 1, "micronutrients_focus": ["..."] },
+      "lunch": { "foods": [...], "upf_score": 1, "micronutrients_focus": ["..."] },
+      "dinner": { "foods": [...], "upf_score": 1, "micronutrients_focus": ["..."] },
+      "snacks": [...]
+    }
+  }],
+  "total_daily_kcal": 0, 
+  "macros": { "protein_pct": 0, "carbs_pct": 0, "fat_pct": 0, "fiber_g": 0 },
+  "clinical_rationale": "...",
+  "estimated_weekly_cost_brl": 0 
+}`,
 
     patient_analyzer: `Você é um analista de comportamento de pacientes nutricionais.
 Analise os dados e retorne JSON:

@@ -38,15 +38,16 @@
     /* UI Elements */
     --muted: 210 40% 96.1%;
     /* Slate 100 */
-    --muted-foreground: 215 16% 47%;
-    /* Slate 400 approx */
+    --muted-foreground: 215 16% 40%;
+    /* Darkened from 47% for WCAG 4.5:1 on background */
 
     --accent: 150 86% 90%;
     /* Emerald Light */
-    --accent-foreground: 161 94% 30%;
+    --accent-foreground: 161 94% 28%;
+    /* Darkened from 30% for accessibility */
 
-    --destructive: 0 84.2% 60.2%;
-    /* Error #EF4444 */
+    --destructive: 0 84.2% 55%;
+    /* Adjusted for vibrant but safe red */
     --destructive-foreground: 0 0% 98%;
 
     --border: 214.3 31.8% 91.4%;

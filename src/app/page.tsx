@@ -78,36 +78,29 @@ export default function LandingPage() {
           <div className="space-y-8 animate-in slide-in-from-left-6 duration-700">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide shadow-sm">
               <Sparkles className="h-3 w-3" />
-              IA para nutricionistas e pacientes
+              O Futuro da Nutrição Clínica Escalável
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-slate-900 leading-[1.05]">
-              Nutrição clínica que
-              <span className="text-emerald-600"> escala</span> resultados com IA.
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.05]">
+              Atenda <span className="text-emerald-600">3x Mais</span> Pacientes Sem Perder a Qualidade.
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
-              O NutriPlan conecta pacientes, nutricionistas e dados em tempo real. Planos inteligentes,
-              análise automática de refeições e acompanhamento contínuo para mais adesão e evolução.
+            <p className="text-lg md:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
+              NutriPlan é o motor de eficiência para clínicas que querem crescer. Automatize prontuários,
+              analise refeições em segundos e recupere 10+ horas da sua semana com nossa IA clínica.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
                 size="lg"
-                className="h-14 px-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 text-lg transition-transform hover:scale-[1.02] active:scale-95"
+                className="h-16 px-10 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-200 text-xl font-bold transition-transform hover:scale-[1.02] active:scale-95"
                 onClick={openSignup}
               >
-                Criar conta grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 rounded-full border-slate-200 text-slate-700 hover:bg-white hover:text-emerald-700 text-lg"
-                onClick={openSignup}
-              >
-                Agendar demo
-                <PlayCircle className="ml-2 h-5 w-5" />
+                Escalar Minha Clínica Agora
+                <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
             </div>
+            <p className="text-sm text-slate-500 font-medium">
+              ✓ Comece grátis • Sem cartão de crédito • Setup em 2 minutos
+            </p>
 
             <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -241,12 +234,12 @@ export default function LandingPage() {
                 acionáveis para decisões clínicas mais rápidas.
               </p>
               <div className="space-y-4">
-              {[
-                "Análise automática de refeições por foto, voz ou texto",
-                "Ajuste inteligente de macros com base no progresso do paciente",
-                "Alertas preditivos de adesão com intervenção sugerida",
-                "Resumo semanal com insights clínicos e tendências",
-              ].map((item) => (
+                {[
+                  "Análise Vision AI: Identifica UPF (Ultra-processados) e qualidade proteica instantaneamente",
+                  "Ajuste Preditivo: Algoritmos que antecipam queda de adesão e sugerem intervenções",
+                  "Fricção Zero: Registro por voz ou foto que economiza 15 minutos por paciente/dia",
+                  "Inteligência Clínica: Correlação automática entre sintomas, sono e dieta",
+                ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
                     <div className="mt-1 h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center">
                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
@@ -426,34 +419,33 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid lg:grid-cols-3 gap-8">
-              {[
-                {
-                  name: "Essential",
-                  price: "R$ 0",
-                  description: "Base sólida para começar a acompanhar pacientes.",
-                  features: ["Cadastro de pacientes", "Registro de refeições", "Chat essencial"],
-                },
-                {
-                  name: "Growth AI",
-                  price: "R$ 199",
-                  description: "IA aplicada ao dia a dia clínico com escala.",
-                  features: ["Automação com IA", "Relatórios semanais", "Alertas preditivos"],
-                  highlight: true,
-                },
-                {
-                  name: "Clinic Plus",
-                  price: "R$ 499",
-                  description: "Para equipes, unidades e operação avançada.",
-                  features: ["Multi-profissionais", "IA prescritiva", "Suporte dedicado"],
-                },
-              ].map((plan) => (
+            {[
+              {
+                name: "Essential",
+                price: "R$ 0",
+                description: "Base sólida para começar a acompanhar pacientes.",
+                features: ["Cadastro de pacientes", "Registro de refeições", "Chat essencial"],
+              },
+              {
+                name: "Growth AI",
+                price: "R$ 199",
+                description: "IA aplicada ao dia a dia clínico com escala.",
+                features: ["Automação com IA", "Relatórios semanais", "Alertas preditivos"],
+                highlight: true,
+              },
+              {
+                name: "Clinic Plus",
+                price: "R$ 499",
+                description: "Para equipes, unidades e operação avançada.",
+                features: ["Multi-profissionais", "IA prescritiva", "Suporte dedicado"],
+              },
+            ].map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-3xl border p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 ${
-                  plan.highlight
-                    ? "border-emerald-300 bg-emerald-50/70 shadow-emerald-200/40"
-                    : "border-slate-100 bg-white/80"
-                }`}
+                className={`relative rounded-3xl border p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 ${plan.highlight
+                  ? "border-emerald-300 bg-emerald-50/70 shadow-emerald-200/40"
+                  : "border-slate-100 bg-white/80"
+                  }`}
               >
                 {plan.highlight && (
                   <div className="absolute -top-4 left-6 rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1 shadow">
@@ -475,11 +467,10 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <Button
-                  className={`mt-8 w-full rounded-full ${
-                    plan.highlight
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      : "bg-slate-900 hover:bg-slate-800 text-white"
-                  }`}
+                  className={`mt-8 w-full rounded-full ${plan.highlight
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-slate-900 hover:bg-slate-800 text-white"
+                    }`}
                   onClick={openSignup}
                 >
                   Começar agora
