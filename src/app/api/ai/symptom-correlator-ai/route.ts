@@ -15,24 +15,32 @@ export async function POST(request: NextRequest) {
     const since = startDate ? new Date(startDate) : new Date(Date.now() - daysBack * 86400000);
     const until = endDate ? new Date(endDate) : new Date();
 
-    // Fetch real symptom and meal data from DB
-    const [dailyLogs, mealPhotos] = await Promise.all([
+    // Fetch real symptom and meal data from DB using correct field names
+    const [dailyLogs, symptomLogs, mealPhotos] = await Promise.all([
         prisma.dailyLogEntry.findMany({
-            where: { patient_id: patientId, log_date: { gte: since, lte: until } },
-            orderBy: { log_date: 'asc' },
-            select: { log_date: true, notes: true, energy_level: true, symptoms: true, mood: true },
+            where: { patient_id: patientId, timestamp: { gte: since, lte: until } },
+            orderBy: { timestamp: 'asc' },
+            select: { timestamp: true, entry_type: true, content: true },
+        }),
+        prisma.symptomLog.findMany({
+            where: { patient_id: patientId, logged_at: { gte: since, lte: until } },
+            orderBy: { logged_at: 'asc' },
+            select: { logged_at: true, symptoms: true, discomfort_level: true, bristol_scale: true, notes: true },
         }),
         prisma.mealPhoto.findMany({
-            where: { patient_id: patientId, photo_date: { gte: since, lte: until } },
-            orderBy: { photo_date: 'asc' },
-            select: { photo_date: true, meal_type: true, ai_analysis: true, notes: true },
+            where: { patient_id: patientId, captured_at: { gte: since, lte: until } },
+            orderBy: { captured_at: 'asc' },
+            select: { captured_at: true, ai_analysis: true },
         }),
     ]);
 
     const dataContext = [
         dailyLogs.length
-            ? `Registros diários (${dailyLogs.length} dias):\n${JSON.stringify(dailyLogs)}`
+            ? `Registros diários (${dailyLogs.length} entradas):\n${JSON.stringify(dailyLogs)}`
             : 'Sem registros diários disponíveis.',
+        symptomLogs.length
+            ? `Registros de sintomas (${symptomLogs.length} entradas):\n${JSON.stringify(symptomLogs)}`
+            : 'Sem registros de sintomas disponíveis.',
         mealPhotos.length
             ? `Fotos de refeições com análise AI (${mealPhotos.length}):\n${JSON.stringify(mealPhotos)}`
             : 'Sem fotos de refeições disponíveis.',

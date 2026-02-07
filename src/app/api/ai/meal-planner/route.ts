@@ -1,11 +1,10 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAgentConfig } from '@/lib/ai-config';
-import { recordAiUsage } from '@/lib/ai/usage';
+import { prisma } from '@/lib/prisma';
 
 // 1. Define Zod Schemas
 const MacroSchema = z.object({
@@ -44,7 +43,7 @@ const MealPlanResponseSchema = z.object({
 
 /**
  * POST /api/ai/meal-planner
- * 
+ *
  * Generate a personalized meal plan using AI (Unified Architecture)
  */
 export async function POST(request: NextRequest) {
@@ -82,6 +81,18 @@ export async function POST(request: NextRequest) {
             apiKey: process.env.OPENAI_API_KEY || 'dummy',
         });
 
+        // Track execution start
+        const startTime = Date.now();
+        const execution = await prisma.aIExecution.create({
+            data: {
+                tenant_id: tenantId,
+                model_id: agentConfig.model,
+                agent_type: 'meal_planner',
+                input_data: { patientId, targetKcal, macroSplit, preferences, restrictions, daysCount },
+                status: 'running',
+            },
+        });
+
         // 4. Generate Object (Safe!)
         const { object, usage } = await generateObject({
             model: openai(agentConfig.model),
@@ -97,26 +108,48 @@ export async function POST(request: NextRequest) {
                     Preferences: ${preferences.join(', ')}.
                     Restrictions: ${restrictions.join(', ')}.
                     Patient ID: ${patientId}.
-                    
+
                     Ensure variety and cultural appropriateness for Brazil.`
                 }
             ]
         });
 
-        // 5. Track Usage
-        await recordAiUsage({
-            tenantId: tenantId,
-            nutritionistId: user.id,
-            patientId: patientId,
-            agentType: 'meal_planner',
-            creditsUsed: 1,
-            costUsd: (usage.totalTokens || 0) * (10 / 1000000),
-            costBrl: (usage.totalTokens || 0) * (10 / 1000000) * 5.5,
-            metadata: { daysCount, targetKcal }
-        });
+        const executionTimeMs = Date.now() - startTime;
+        const tokensUsed = usage.totalTokens || 0;
+        const cost = (tokensUsed / 1000) * 0.005; // gpt-4o pricing
+        const creditCost = 5; // meal_planner costs 5 credits
 
-        // 6. Save to DB (Legacy support)
-        // We still save to AIMealPlan table for record keeping
+        // 5. Track execution completion + deduct credits in parallel
+        await Promise.all([
+            prisma.aIExecution.update({
+                where: { id: execution.id },
+                data: {
+                    output_data: object as any,
+                    tokens_used: tokensUsed,
+                    execution_time_ms: executionTimeMs,
+                    cost,
+                    status: 'completed',
+                },
+            }),
+            prisma.tenant.update({
+                where: { id: tenantId },
+                data: { ai_credits: { decrement: creditCost } },
+            }),
+            prisma.aiCreditTransaction.create({
+                data: {
+                    tenant_id: tenantId,
+                    nutritionist_id: user.id,
+                    patient_id: patientId,
+                    agent_type: 'meal_planner',
+                    credits_used: creditCost,
+                    cost_usd: cost,
+                    cost_brl: cost * 5.5,
+                    metadata: { executionId: execution.id, tokensUsed, daysCount, targetKcal },
+                },
+            }).catch(() => { /* non-blocking */ }),
+        ]);
+
+        // 6. Save to DB (Legacy support via Supabase)
         const { data: mealPlanRecord, error: dbError } = await supabase
             .from('AIMealPlan')
             .insert({
@@ -145,6 +178,8 @@ export async function POST(request: NextRequest) {
             success: true,
             data: object,
             mealPlanId: mealPlanRecord?.id,
+            executionId: execution.id,
+            creditsUsed: creditCost,
         });
 
     } catch (error) {
@@ -158,11 +193,6 @@ export async function POST(request: NextRequest) {
 
 // Keep GET for compatibility
 export async function GET(request: NextRequest) {
-    // ... existing GET implementation logic or import from a shared helper
-    // For simplicity, just rewriting the essential parts logic here as the previous file had it.
-    // In a real refactor, move GET logic to a separate handler or keep it if I'm only modifying POST.
-    // I will assume I need to rewrite it since I'm overwriting the file.
-
     try {
         const supabase = await createSupabaseServerClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();

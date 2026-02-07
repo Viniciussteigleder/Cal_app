@@ -10,12 +10,19 @@ export async function POST(request: NextRequest) {
         return Response.json({ error: 'Patient ID is required' }, { status: 400 });
     }
 
-    // Fetch real exam results from DB
+    // Fetch real exam results from DB using correct field names
     const examResults = await prisma.examResultExtracted.findMany({
         where: { patient_id: patientId },
-        orderBy: { extracted_at: 'desc' },
+        orderBy: { created_at: 'desc' },
         take: 20,
-        select: { biomarker_name: true, value: true, unit: true, reference_range: true, status: true, extracted_at: true },
+        select: {
+            raw_name: true,
+            value: true,
+            unit: true,
+            reference_range: true,
+            is_abnormal: true,
+            created_at: true,
+        },
     });
 
     const examContext = examResults.length

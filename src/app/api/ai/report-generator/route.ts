@@ -15,30 +15,42 @@ export async function POST(request: NextRequest) {
     const since = new Date();
     since.setDate(since.getDate() - daysBack);
 
-    const [patient, dailyLogs, anthropometry] = await Promise.all([
+    const [patient, profile, dailyLogs, anthropometry] = await Promise.all([
         prisma.patient.findUnique({
             where: { id: patientId },
-            select: { full_name: true, date_of_birth: true, goals: true },
+            include: { user: true },
+        }),
+        prisma.patientProfile.findUnique({
+            where: { patient_id: patientId },
+            select: { birth_date: true, goal: true, current_weight_kg: true, target_weight_kg: true },
         }),
         prisma.dailyLogEntry.findMany({
-            where: { patient_id: patientId, log_date: { gte: since } },
-            orderBy: { log_date: 'asc' },
-            select: { log_date: true, weight_kg: true, water_ml: true, energy_level: true, sleep_hours: true, notes: true },
+            where: { patient_id: patientId, timestamp: { gte: since } },
+            orderBy: { timestamp: 'asc' },
+            select: { timestamp: true, entry_type: true, content: true },
         }),
         prisma.anthropometryRecord.findMany({
             where: { patient_id: patientId, measured_at: { gte: since } },
             orderBy: { measured_at: 'asc' },
-            select: { measured_at: true, weight_kg: true, body_fat_pct: true, muscle_mass_kg: true, waist_cm: true, hip_cm: true, bmi: true },
+            select: { measured_at: true, weight_kg: true, height_cm: true, measurements: true },
         }),
     ]);
+
+    const patientName = patient?.user?.name || 'Paciente';
 
     const prompt = [
         `Gere um relatório de progresso ${reportType || 'completo'} para o paciente.`,
         `Período: ${period || '90 dias'}`,
-        patient ? `Paciente: ${patient.full_name}` : null,
-        patient?.goals ? `Objetivos: ${JSON.stringify(patient.goals)}` : null,
-        dailyLogs.length ? `Registros diários (${dailyLogs.length} dias): ${JSON.stringify(dailyLogs.slice(-30))}` : 'Sem registros diários.',
-        anthropometry.length ? `Antropometria (${anthropometry.length} medições): ${JSON.stringify(anthropometry)}` : 'Sem dados antropométricos.',
+        `Paciente: ${patientName}`,
+        profile?.goal ? `Objetivo: ${profile.goal}` : null,
+        profile?.current_weight_kg ? `Peso atual: ${profile.current_weight_kg} kg` : null,
+        profile?.target_weight_kg ? `Peso alvo: ${profile.target_weight_kg} kg` : null,
+        dailyLogs.length
+            ? `Registros diários (${dailyLogs.length} entradas): ${JSON.stringify(dailyLogs.slice(-30))}`
+            : 'Sem registros diários.',
+        anthropometry.length
+            ? `Antropometria (${anthropometry.length} medições): ${JSON.stringify(anthropometry)}`
+            : 'Sem dados antropométricos.',
     ].filter(Boolean).join('\n');
 
     return executeAIRoute('report_generator', {
