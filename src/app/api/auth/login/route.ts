@@ -109,17 +109,21 @@ export async function POST(request: NextRequest) {
             redirect,
           });
         }
+
+        // If user exists but password is wrong, don't fall back to demo: return invalid creds
+        return NextResponse.json(
+          { error: "Email ou senha incorretos" },
+          { status: 401 }
+        );
       }
     } catch (dbError) {
       console.log("Database authentication failed or unavailable:", dbError);
     }
 
-    // 2. Check Mock Users (Fallback for Dev/Demo only)
-    // Only available in development environment OR if explicit demo login flag is set
-    const isDev = process.env.NODE_ENV !== "production";
+    // 2. Check Mock Users (Fallback only when explicitly enabled)
     const isDemoEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true";
 
-    if (isDev || isDemoEnabled) {
+    if (isDemoEnabled) {
       const demoPassword = getDemoPassword();
       if (!demoPassword) {
         return NextResponse.json(
