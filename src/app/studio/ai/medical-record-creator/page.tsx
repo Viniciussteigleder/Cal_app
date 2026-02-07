@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
+import { executeAIAction, transcribeAction } from '@/app/studio/ai/actions';
 
 interface SOAPNote {
     subjective: string;
@@ -67,87 +68,62 @@ export default function MedicalRecordCreatorPage() {
         }
     };
 
-    const transcribeAudio = () => {
+    const transcribeAudio = async () => {
         if (!audioBlob) return;
 
         setIsTranscribing(true);
         setTranscriptionProgress(0);
 
-        // Simulate Whisper AI transcription
-        const interval = setInterval(() => {
-            setTranscriptionProgress((prev) => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        // Mock transcription
-                        const mockTranscription = `Paciente Maria Silva, 39 anos, retorno de consulta. 
-            
-Queixa principal: Relata melhora significativa nos sintomas digestivos após início do protocolo FODMAP há 6 semanas. Inchaço abdominal reduziu em aproximadamente 70%. Ainda apresenta desconforto ocasional após consumo de laticínios.
+        try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'consultation.webm');
 
-Histórico: Iniciou protocolo FODMAP em 15 de dezembro de 2025. Aderência de 85% ao plano alimentar. Registra refeições regularmente no aplicativo.
+            // Simulate progress while uploading/processing
+            const progressInterval = setInterval(() => {
+                setTranscriptionProgress(p => p < 90 ? p + 5 : p);
+            }, 500);
 
-Exame físico: Peso atual 68.2kg (perda de 6.5kg desde início). Pressão arterial 120/80 mmHg. Abdômen sem distensão significativa.
+            const result = await transcribeAction(formData);
+            clearInterval(progressInterval);
+            setTranscriptionProgress(100);
 
-Avaliação: Paciente apresenta excelente resposta ao protocolo FODMAP. Sintomas de SII controlados. Perda de peso progressiva e saudável.
+            if (!result.success) throw new Error(result.error);
 
-Plano: 
-1. Manter protocolo FODMAP fase 2
-2. Iniciar reintrodução gradual de laticínios com baixa lactose
-3. Agendar retorno em 4 semanas
-4. Solicitar hemograma completo e perfil lipídico
-5. Orientar sobre suplementação de vitamina D`;
-
-                        setTranscription(mockTranscription);
-                        setIsTranscribing(false);
-                        toast.success('Transcrição concluída!');
-                    }, 500);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 200);
+            setTranscription(result.data.text);
+            toast.success('Transcrição concluída!');
+        } catch (error: any) {
+            toast.error(error.message || 'Erro na transcrição');
+        } finally {
+            setIsTranscribing(false);
+        }
     };
 
-    const generateSOAPNote = () => {
+    const generateSOAPNote = async () => {
         if (!transcription) return;
 
-        // Simulate AI SOAP note generation
         toast.promise(
-            new Promise((resolve) => {
-                setTimeout(() => {
-                    const soap: SOAPNote = {
-                        subjective: `Paciente relata melhora significativa nos sintomas digestivos após início do protocolo FODMAP há 6 semanas. Inchaço abdominal reduziu em aproximadamente 70%. Ainda apresenta desconforto ocasional após consumo de laticínios. Aderência de 85% ao plano alimentar com registro regular de refeições.`,
+            (async () => {
+                const result = await executeAIAction('medical_record_creator', {
+                    action: 'generate-soap',
+                    transcription,
+                    consultationType
+                });
 
-                        objective: `Peso: 68.2kg (perda de 6.5kg desde início do tratamento)
-Pressão arterial: 120/80 mmHg
-Abdômen: Sem distensão significativa à palpação
-Estado geral: Bom, paciente alerta e cooperativa`,
+                if (!result.success) throw new Error(result.error);
 
-                        assessment: `1. Síndrome do Intestino Irritável (SII) - Em melhora com protocolo FODMAP
-2. Intolerância à lactose - Suspeita clínica
-3. Perda de peso progressiva e saudável - 6.5kg em 6 semanas
-4. Boa aderência ao tratamento nutricional`,
-
-                        plan: `1. Manter protocolo FODMAP fase 2 por mais 4 semanas
-2. Iniciar reintrodução gradual de laticínios com baixa lactose (iogurte natural, queijos maturados)
-3. Agendar retorno em 4 semanas para avaliação
-4. Solicitar exames laboratoriais:
-   - Hemograma completo
-   - Perfil lipídico
-   - Vitamina D
-5. Orientar suplementação de vitamina D 2000 UI/dia
-6. Manter registro diário de refeições e sintomas
-7. Encaminhar para nutricionista especialista em SII se necessário`
-                    };
-
-                    setSOAPNote(soap);
-                    resolve(soap);
-                }, 2000);
-            }),
+                const note = result.data.soapNote;
+                setSOAPNote({
+                    subjective: note.subjective || '',
+                    objective: note.objective || '',
+                    assessment: note.assessment || '',
+                    plan: note.plan || ''
+                });
+                return note;
+            })(),
             {
                 loading: 'Gerando nota SOAP com IA...',
                 success: 'Nota SOAP gerada com sucesso!',
-                error: 'Erro ao gerar nota SOAP',
+                error: (err) => `Erro: ${err.message}`,
             }
         );
     };

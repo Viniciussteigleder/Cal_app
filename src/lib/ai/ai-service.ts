@@ -458,11 +458,18 @@ export class AIService {
         const openai = this.requireOpenAI();
 
         if (input.action === 'transcribe') {
-            if (!input.audioUrl) throw new Error('URL do áudio é obrigatória para transcrição.');
-            const audioResponse = await fetch(input.audioUrl);
-            if (!audioResponse.ok) throw new Error('Falha ao buscar arquivo de áudio.');
-            const blob = await audioResponse.blob();
-            const file = new File([blob], 'consultation.webm', { type: blob.type });
+            let file: File;
+
+            if (input.audioFile) {
+                file = input.audioFile;
+            } else if (input.audioUrl) {
+                const audioResponse = await fetch(input.audioUrl);
+                if (!audioResponse.ok) throw new Error('Falha ao buscar arquivo de áudio.');
+                const blob = await audioResponse.blob();
+                file = new File([blob], 'consultation.webm', { type: blob.type });
+            } else {
+                throw new Error('Arquivo de áudio ou URL é obrigatória para transcrição.');
+            }
 
             const transcription = await openai.audio.transcriptions.create({
                 file, model: 'whisper-1', language: 'pt',
@@ -585,10 +592,19 @@ Retorne JSON com:
   "estimated_weekly_cost_brl": 0 
 }`,
 
-    patient_analyzer: `Você é um analista de comportamento de pacientes nutricionais.
-Analise os dados e retorne JSON:
-{ "adherence_score": 0-100, "progress_score": 0-100, "dropout_risk": "low|medium|high|critical",
-  "intervention_needed": true/false, "insights": ["..."], "recommended_actions": ["..."] }`,
+    patient_analyzer: `Você é um analista de comportamento de pacientes nutricionais e "Clinical Copilot".
+    Analise os registros do paciente e retorne JSON com:
+    { 
+      "adherence_score": 0-100, 
+      "progress_score": 0-100, 
+      "dropout_risk": "low|medium|high|critical",
+      "intervention_needed": true/false, 
+      "suspected_deficiencies": ["..."], 
+      "dietary_patterns": "...", 
+      "clinical_reasoning": "...",
+      "insights": ["..."], 
+      "recommended_actions": [{ "action": "...", "priority": "high|medium|low", "description": "..." }] 
+    }`,
 
     medical_record_creator: `Você é um scribe médico especialista em nutrição.
 Gere uma nota SOAP estruturada a partir da transcrição. Retorne JSON:

@@ -160,27 +160,25 @@ export function calculateCreditsCost(tokens: number): number {
  */
 export async function generateEmbeddings(text: string) {
     try {
-        // Mock implementation - replace with real OpenAI embeddings
-        console.log('Mock Embeddings Generation:', { text });
+        if (!process.env.OPENAI_API_KEY) {
+            console.warn('OPENAI_API_KEY is not set. Returning mock embeddings.');
+            return {
+                embedding: new Array(1536).fill(0).map(() => Math.random()),
+                usage: {
+                    prompt_tokens: 0,
+                    total_tokens: 0,
+                },
+            };
+        }
 
-        // Real implementation (uncomment when ready):
-        // const embedding = await openai.embeddings.create({
-        //   model: 'text-embedding-ada-002',
-        //   input: text,
-        // });
-        // 
-        // return {
-        //   embedding: embedding.data[0].embedding,
-        //   usage: embedding.usage,
-        // };
+        const response = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: text,
+        });
 
-        // Mock response
         return {
-            embedding: new Array(1536).fill(0).map(() => Math.random()),
-            usage: {
-                prompt_tokens: 50,
-                total_tokens: 50,
-            },
+            embedding: response.data[0].embedding,
+            usage: response.usage,
         };
     } catch (error) {
         console.error('Error generating embeddings:', error);
@@ -197,31 +195,30 @@ export async function streamChatCompletion(
     onChunk: (chunk: string) => void
 ) {
     try {
-        // Mock implementation - replace with real streaming
-        console.log('Mock Streaming Chat:', { systemPrompt, userPrompt });
+        if (!process.env.OPENAI_API_KEY) {
+            console.warn('OPENAI_API_KEY is not set. Returning mock streaming.');
+            const mockResponse = 'Mock streaming response - OPENAI_API_KEY missing';
+            for (const char of mockResponse) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                onChunk(char);
+            }
+            return;
+        }
 
-        // Real implementation (uncomment when ready):
-        // const stream = await openai.chat.completions.create({
-        //   model: 'gpt-4-turbo-preview',
-        //   messages: [
-        //     { role: 'system', content: systemPrompt },
-        //     { role: 'user', content: userPrompt },
-        //   ],
-        //   stream: true,
-        // });
-        // 
-        // for await (const chunk of stream) {
-        //   const content = chunk.choices[0]?.delta?.content || '';
-        //   if (content) {
-        //     onChunk(content);
-        //   }
-        // }
+        const stream = await openai.chat.completions.create({
+            model: 'gpt-4-turbo-preview',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+            ],
+            stream: true,
+        });
 
-        // Mock streaming
-        const mockResponse = 'Mock streaming response - replace with real OpenAI streaming';
-        for (const char of mockResponse) {
-            await new Promise(resolve => setTimeout(resolve, 50));
-            onChunk(char);
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+                onChunk(content);
+            }
         }
     } catch (error) {
         console.error('Error in streaming chat:', error);

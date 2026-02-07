@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
+import { executeAIAction } from '@/app/studio/ai/actions';
 
 interface NutrientGap {
     nutrient: string;
@@ -37,140 +38,56 @@ export default function SupplementAdvisorPage() {
     const [selectedPatient, setSelectedPatient] = useState('1');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisComplete, setAnalysisComplete] = useState(false);
+    const [nutrientGaps, setNutrientGaps] = useState<NutrientGap[]>([]);
+    const [recommendations, setRecommendations] = useState<SupplementRecommendation[]>([]);
 
-    // Mock nutrient gaps data
-    const nutrientGaps: NutrientGap[] = [
-        { nutrient: 'Vitamina D', current: 18, target: 30, unit: 'ng/mL', status: 'low', percentage: 60 },
-        { nutrient: 'Vitamina B12', current: 180, target: 400, unit: 'pg/mL', status: 'low', percentage: 45 },
-        { nutrient: 'Ferro', current: 25, target: 70, unit: 'ng/mL', status: 'critical', percentage: 36 },
-        { nutrient: 'Magnésio', current: 1.8, target: 2.2, unit: 'mg/dL', status: 'low', percentage: 82 },
-        { nutrient: 'Ômega-3', current: 4.5, target: 8, unit: '%', status: 'low', percentage: 56 },
-        { nutrient: 'Zinco', current: 85, target: 100, unit: 'μg/dL', status: 'adequate', percentage: 85 },
-    ];
 
-    // Mock supplement recommendations
-    const recommendations: SupplementRecommendation[] = [
-        {
-            name: 'Vitamina D3',
-            dosage: '2.000 UI/dia',
-            timing: 'Junto com refeição que contenha gordura (almoço ou jantar)',
-            duration: '3 meses, depois reavaliar',
-            benefits: [
-                'Melhora absorção de cálcio',
-                'Fortalece sistema imunológico',
-                'Reduz risco de osteoporose',
-                'Melhora humor e energia',
-            ],
-            warnings: [
-                'Não exceder 4.000 UI/dia sem supervisão médica',
-                'Monitorar níveis sanguíneos a cada 3 meses',
-            ],
-            interactions: [
-                'Pode interagir com medicamentos para pressão alta',
-                'Aumenta absorção de cálcio - cuidado com hipercalcemia',
-            ],
-            estimatedCost: 'R$ 25-40/mês',
-            priority: 'high',
-        },
-        {
-            name: 'Complexo B (com B12 metilada)',
-            dosage: '1 cápsula/dia (B12: 1.000 mcg)',
-            timing: 'Pela manhã, em jejum ou com café da manhã',
-            duration: '6 meses, depois reavaliar',
-            benefits: [
-                'Melhora energia e disposição',
-                'Suporta metabolismo energético',
-                'Importante para saúde neurológica',
-                'Reduz fadiga',
-            ],
-            warnings: [
-                'Pode deixar urina amarelada (normal)',
-                'Vegetarianos/veganos precisam de suplementação contínua',
-            ],
-            interactions: [
-                'Pode reduzir eficácia de alguns antibióticos',
-                'Interage com metformina (diabetes)',
-            ],
-            estimatedCost: 'R$ 30-50/mês',
-            priority: 'high',
-        },
-        {
-            name: 'Ferro Quelado + Vitamina C',
-            dosage: '30 mg de ferro elementar/dia',
-            timing: 'Em jejum ou 2h após refeições, com suco de laranja',
-            duration: '3 meses, depois reavaliar',
-            benefits: [
-                'Corrige anemia ferropriva',
-                'Melhora energia e disposição',
-                'Reduz fadiga',
-                'Melhora concentração',
-            ],
-            warnings: [
-                'Pode causar constipação intestinal',
-                'Pode causar náusea - tomar com alimento se necessário',
-                'Fezes podem ficar escuras (normal)',
-            ],
-            interactions: [
-                'Não tomar junto com cálcio ou laticínios',
-                'Não tomar junto com chá ou café',
-                'Interage com antibióticos - espaçar 2h',
-            ],
-            estimatedCost: 'R$ 35-55/mês',
-            priority: 'high',
-        },
-        {
-            name: 'Magnésio Dimalato',
-            dosage: '300-400 mg/dia',
-            timing: 'À noite, antes de dormir',
-            duration: 'Uso contínuo',
-            benefits: [
-                'Melhora qualidade do sono',
-                'Reduz cãibras musculares',
-                'Ajuda no relaxamento',
-                'Suporta saúde cardiovascular',
-            ],
-            warnings: [
-                'Pode causar diarreia em doses altas',
-                'Começar com dose menor e aumentar gradualmente',
-            ],
-            interactions: [
-                'Pode interagir com antibióticos',
-                'Reduz absorção de alguns medicamentos',
-            ],
-            estimatedCost: 'R$ 40-60/mês',
-            priority: 'medium',
-        },
-        {
-            name: 'Ômega-3 (EPA/DHA)',
-            dosage: '1.000-2.000 mg/dia (EPA+DHA)',
-            timing: 'Junto com refeições',
-            duration: 'Uso contínuo',
-            benefits: [
-                'Reduz inflamação',
-                'Melhora saúde cardiovascular',
-                'Suporta função cerebral',
-                'Melhora perfil lipídico',
-            ],
-            warnings: [
-                'Escolher marca com certificação de pureza',
-                'Pode causar "arroto de peixe" - congelar cápsulas ajuda',
-            ],
-            interactions: [
-                'Pode aumentar risco de sangramento com anticoagulantes',
-                'Cuidado se tomar aspirina regularmente',
-            ],
-            estimatedCost: 'R$ 60-100/mês',
-            priority: 'medium',
-        },
-    ];
 
-    const handleAnalyze = () => {
+    const handleAnalyze = async () => {
         setIsAnalyzing(true);
-        setTimeout(() => {
-            setIsAnalyzing(false);
+        try {
+            const result = await executeAIAction('supplement_advisor', {
+                patientId: selectedPatient
+            });
+
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            const data = result.data;
+
+            // Map nutrient gaps
+            const mappedGaps: NutrientGap[] = data.nutrient_gaps?.map((g: any) => ({
+                nutrient: g.nutrient,
+                current: 0, // Mock current if not returned
+                target: 100, // Mock target if not returned
+                unit: '',
+                status: g.severity || 'low',
+                percentage: g.severity === 'high' ? 30 : (g.severity === 'medium' ? 60 : 100)
+            })) || [];
+
+            // Map recommendations
+            const mappedRecs: SupplementRecommendation[] = data.recommendations?.map((r: any) => ({
+                name: r.supplement,
+                dosage: r.dosage,
+                timing: r.timing,
+                duration: r.duration,
+                benefits: r.benefits || [],
+                warnings: r.warnings || [],
+                interactions: [], // Will be filled from data.interactions if needed
+                estimatedCost: r.estimated_cost_brl ? `R$ ${r.estimated_cost_brl}` : 'N/A',
+                priority: r.priority || 'medium'
+            })) || [];
+
+            setNutrientGaps(mappedGaps);
+            setRecommendations(mappedRecs);
             setAnalysisComplete(true);
             toast.success('Análise de nutrientes concluída!');
-        }, 2000);
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao analisar nutrientes');
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
     const getStatusColor = (status: string) => {

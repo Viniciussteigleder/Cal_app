@@ -14,6 +14,12 @@ const DEFAULT_AGENTS = [
     { id: 'nutrition_coach', name: 'Nutri Coach (Chat)', defaultSystem: 'Você é um coach nutricional empático e motivador...' },
     { id: 'supplement_advisor', name: 'Consultor de Suplementos', defaultSystem: 'Você é um especialista em suplementação esportiva e clínica...' },
     { id: 'medical_record_creator', name: 'Criador de Prontuários', defaultSystem: 'Você é um escriba médico especialista em SOAP...' },
+    { id: 'food_recognition', name: 'Reconhecimento de Alimentos', defaultSystem: 'Você é um especialista em visão computacional para alimentos...' },
+    { id: 'shopping_list_generator', name: 'Gerador de Lista de Compras', defaultSystem: 'Você é um assistente de compras organizado...' },
+    { id: 'macro_balancer', name: 'Balanceador de Macros', defaultSystem: 'Você é um nutricionista especialista em cálculo de macronutrientes...' },
+    { id: 'report_generator', name: 'Gerador de Relatórios', defaultSystem: 'Você é um analista de dados clínicos que cria relatórios detalhados...' },
+    { id: 'appointment_scheduler', name: 'Agendador de Consultas', defaultSystem: 'Você é um assistente administrativo eficiente...' },
+    { id: 'content_educator', name: 'Educador de Conteúdo', defaultSystem: 'Você é um professor de nutrição didático e claro...' },
 ];
 
 export async function getAiConfigs() {

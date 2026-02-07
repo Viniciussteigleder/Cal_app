@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight,
   BarChart3,
@@ -116,53 +118,74 @@ export default function LandingPage() {
           </div>
 
           <div className="relative animate-in slide-in-from-right-6 duration-700">
-            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-emerald-200/40 blur-3xl" />
-            <div className="absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-blue-200/40 blur-3xl" />
-            <div className="relative bg-white/80 backdrop-blur-xl border border-white shadow-2xl shadow-emerald-200/50 rounded-3xl p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-900">Painel NutriPlan</div>
-                <div className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">AI Live</div>
-              </div>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Adesão semanal</p>
-                      <p className="text-2xl font-bold text-slate-900">86%</p>
-                    </div>
-                    <TrendingUp className="h-5 w-5 text-emerald-500" />
+            <div className="absolute -top-10 -right-10 h-60 w-60 rounded-full bg-emerald-200/40 blur-3xl animate-pulse" />
+            <div className="absolute -bottom-12 -left-10 h-60 w-60 rounded-full bg-blue-200/30 blur-3xl" />
+
+            {/* Premium Dashboard Mockup */}
+            <div className="relative bg-white/90 backdrop-blur-2xl border border-white shadow-[0_32px_64px_-16px_rgba(16,185,129,0.2)] rounded-[2.5rem] p-8 overflow-hidden">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
+                    <Brain className="h-6 w-6 text-emerald-400" />
                   </div>
-                  <div className="mt-3 h-2 w-full rounded-full bg-emerald-100">
-                    <div className="h-2 w-[86%] rounded-full bg-emerald-500" />
+                  <div>
+                    <div className="text-sm font-bold text-slate-900 uppercase tracking-tighter">Clinical Intelligence</div>
+                    <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-emerald-500 animate-ping" />
+                      Sincronizado em tempo real
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
-                    <p className="text-xs text-muted-foreground">Macros ajustados</p>
-                    <p className="text-lg font-semibold text-slate-900">+24%</p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
-                    <p className="text-xs text-muted-foreground">Alertas inteligentes</p>
-                    <p className="text-lg font-semibold text-slate-900">12 hoje</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                      <Brain className="h-5 w-5 text-emerald-300" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">AI Nutri Coach</p>
-                      <p className="text-xs text-slate-300">Sugestão diária de ajuste</p>
-                    </div>
-                  </div>
+                <div className="flex -space-x-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-slate-200" />
+                  ))}
+                  <div className="h-8 w-8 rounded-full border-2 border-white bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">+12</div>
                 </div>
               </div>
-              <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
-                <span>Atualizado há 2 min</span>
-                <span className="flex items-center gap-1 text-emerald-600">
-                  <Sparkles className="h-3 w-3" /> IA ativa
-                </span>
+
+              <div className="grid gap-6">
+                {/* UPF Score Visualization */}
+                <div className="rounded-3xl bg-slate-50/50 border border-slate-100 p-5 group hover:bg-white hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                        <Zap className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">Carga de Ultraprocessados (NOVA)</span>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700">-22% este mês</span>
+                  </div>
+                  <div className="flex gap-1 h-3 w-full rounded-full bg-slate-200 overflow-hidden">
+                    <div className="w-[60%] bg-emerald-500" />
+                    <div className="w-[20%] bg-amber-400" />
+                    <div className="w-[20%] bg-rose-500" />
+                  </div>
+                </div>
+
+                {/* Micronutrient Density */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-3xl bg-slate-50/50 border border-slate-100 p-5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Densidade Nutricional</p>
+                    <p className="text-2xl font-black text-slate-900 mt-1">8.4/10</p>
+                    <div className="mt-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" /> Máxima eficiência metabólica
+                    </div>
+                  </div>
+                  <div className="rounded-3xl bg-emerald-600 text-white p-5 shadow-lg shadow-emerald-200">
+                    <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest">Proteína PDCAAS</p>
+                    <p className="text-2xl font-black mt-1">Alta</p>
+                    <div className="mt-2 text-[10px] text-emerald-200 font-medium">Biodisponibilidade otimizada</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-bold text-slate-600">IA detectou inflamação baixa hoje</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-400" />
               </div>
             </div>
           </div>
@@ -199,61 +222,162 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 pb-10">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6 text-center text-sm text-muted-foreground">
-          {[
-            "Clínicas que cresceram 3x em adesão",
-            "Pacientes mais engajados",
-            "Equipe com visão em tempo real",
-            "Dados prontos para evolução",
-          ].map((label) => (
-            <div
-              key={label}
-              className="rounded-2xl border border-slate-100 bg-white/70 backdrop-blur-sm px-4 py-6 shadow-sm transition-transform duration-300 hover:-translate-y-1"
-            >
-              {label}
+      <section className="px-6 pb-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-slate-900 rounded-[3rem] p-12 md:p-20 text-white relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-emerald-500/10 skew-x-12 translate-x-1/4" />
+            <div className="relative z-10 grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <Badge variant="outline" className="border-emerald-500/50 text-emerald-400 mb-6 uppercase tracking-widest px-4 py-1">Business Impact</Badge>
+                <h2 className="text-4xl md:text-6xl font-black tracking-tighter leading-[1.05]">
+                  Escalabilidade <br />
+                  <span className="text-emerald-400 font-serif italic">sem Burnout.</span>
+                </h2>
+                <p className="text-xl text-slate-400 mt-6 leading-relaxed max-w-lg">
+                  O NutriPlan não é apenas uma ferramenta; é um ativo que aumenta o Valor Vitalício (LTV) do seu paciente em 40% ao evitar o abandono preventivamente.
+                </p>
+
+                <div className="mt-10 space-y-6">
+                  {[
+                    { val: "R$ 15k+", label: "Faturamento adicional/mês com escala" },
+                    { val: "40h", label: "Economia de tempo em prontuários/mês" },
+                    { val: "92%", label: "Aumente a retenção de pacientes" }
+                  ].map(stat => (
+                    <div key={stat.label} className="flex items-center gap-6 group">
+                      <div className="text-3xl font-black text-white group-hover:text-emerald-400 transition-colors">{stat.val}</div>
+                      <div className="h-px flex-1 bg-slate-800" />
+                      <div className="text-sm font-bold text-slate-500 uppercase tracking-widest text-right">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-white/5 border-white/10 p-6 backdrop-blur-sm rounded-[2rem]">
+                  <TrendingUp className="h-8 w-8 text-emerald-400 mb-4" />
+                  <h4 className="text-lg font-bold">Crescimento Linear</h4>
+                  <p className="text-sm text-slate-400 mt-2">Dobre sua base de pacientes sem aumentar sua carga horária.</p>
+                </Card>
+                <Card className="bg-white/5 border-white/10 p-6 backdrop-blur-sm rounded-[2rem] mt-8">
+                  <Star className="h-8 w-8 text-amber-400 mb-4" />
+                  <h4 className="text-lg font-bold">Autoridade Premium</h4>
+                  <p className="text-sm text-slate-400 mt-2">Seja percebido como um nutrólogo de elite com IA própria.</p>
+                </Card>
+              </div>
             </div>
-          ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Deep Health / Precision Section */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-50/30 -skew-x-12 translate-x-1/2" />
+        <div className="max-w-7xl mx-auto relative">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <div className="order-2 lg:order-1 space-y-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide">
+                <Brain className="h-3 w-3" /> Nutrição de Precisão 2.0
+              </div>
+              <h2 className="text-4xl md:text-6xl font-bold text-slate-900 leading-[1.1]">
+                Vá além das <span className="text-emerald-600 underline decoration-emerald-200 underline-offset-8">calorias</span>.
+              </h2>
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                Pare de perder tempo com dados genéricos. O NutriPlan fornece a profundidade clínica que diferencia um profissional comum de um especialista de elite.
+              </p>
+
+              <div className="grid gap-6">
+                {[
+                  {
+                    title: "Score de Ultraprocessados (UPF)",
+                    desc: "Identifique automaticamente alimentos inflamatórios usando a classificação NOVA.",
+                    icon: <ShieldCheck className="h-6 w-6 text-emerald-600" />
+                  },
+                  {
+                    title: "Biodisponibilidade Proteica",
+                    desc: "Análise baseada em PDCAAS/DIAAS para garantir que o paciente absorva o que come.",
+                    icon: <Zap className="h-6 w-6 text-emerald-600" />
+                  },
+                  {
+                    title: "Densidade de Micronutrientes",
+                    desc: "Visualize a 'riqueza' do prato, indo além dos macros para otimizar a saúde celular.",
+                    icon: <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                  }
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4 group cursor-default">
+                    <div className="mt-1 h-12 w-12 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="order-1 lg:order-2">
+              <div className="relative aspect-square rounded-[3rem] bg-gradient-to-br from-slate-900 to-slate-800 p-1 shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1543332164-6e82f355badc?q=80&w=2070&auto=format&fit=crop')] bg-cover opacity-20" />
+                <div className="relative h-full w-full bg-slate-900/40 backdrop-blur-sm flex items-center justify-center flex-col p-12 text-center text-white">
+                  <div className="h-20 w-20 rounded-full bg-emerald-500 flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20">
+                    <Sparkles className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-3xl font-black mb-4">IA Clínica de Elite</h3>
+                  <p className="text-slate-300 text-lg">
+                    "O NutriPlan não apenas rastreia; ele pensa como um nutricionista sênior, avisando você sobre riscos que passariam despercebidos."
+                  </p>
+                  <div className="mt-8 flex items-center gap-3">
+                    <div className="h-1 rounded-full bg-emerald-500 w-12" />
+                    <div className="h-1 rounded-full bg-slate-700 w-8" />
+                    <div className="h-1 rounded-full bg-slate-700 w-8" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24 px-6">
+      <section id="features" className="py-24 px-6 bg-slate-50/50">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-16 items-start">
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wide">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wide">
                 <Wand2 className="h-3 w-3" />
-                Recursos avançados
+                Máxima Eficiência Operacional
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-                Operação nutricional com IA que economiza horas por semana.
+              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
+                Recupere suas noites. <br />
+                <span className="text-emerald-600">IA cuida da burocracia.</span>
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-xl text-muted-foreground">
                 Do registro à prescrição, o NutriPlan automatiza tarefas repetitivas e cria insights
                 acionáveis para decisões clínicas mais rápidas.
               </p>
               <div className="space-y-4">
                 {[
-                  "Análise Vision AI: Identifica UPF (Ultra-processados) e qualidade proteica instantaneamente",
-                  "Ajuste Preditivo: Algoritmos que antecipam queda de adesão e sugerem intervenções",
-                  "Fricção Zero: Registro por voz ou foto que economiza 15 minutos por paciente/dia",
-                  "Inteligência Clínica: Correlação automática entre sintomas, sono e dieta",
+                  "Análise Vision AI: Identifica UPF e bio-disponibilidade instantaneamente",
+                  "Ajuste Preditivo: Algoritmos que antecipam queda de adesão (LTV)",
+                  "Fricção Zero: Registro por voz ou foto que salva 15 min/dia",
+                  "Inteligência Clínica: Correlação entre sono, estresse e dieta",
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
-                    <div className="mt-1 h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                    <div className="mt-1 h-5 w-5 rounded-full bg-emerald-200 flex items-center justify-center">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-700" />
                     </div>
-                    <p className="text-slate-700">{item}</p>
+                    <p className="text-slate-800 font-medium">{item}</p>
                   </div>
                 ))}
               </div>
               <Button
-                className="rounded-full bg-slate-900 hover:bg-slate-800 text-white"
+                size="lg"
+                className="h-14 px-8 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-lg font-bold"
                 onClick={openSignup}
               >
-                Quero ver na prática
-                <ChevronRight className="ml-2 h-4 w-4" />
+                Quero Escalar Minha Clínica
+                <ChevronRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
 

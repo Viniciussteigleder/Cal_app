@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { trackEvent } from "@/lib/analytics";
 import Link from "next/link";
+import { DeepHealthDashboard } from "@/components/patient/DeepHealthDashboard";
 
 interface DashboardData {
   profile: { name: string; currentWeight: number; targetWeight: number | null; goal: string } | null;
@@ -331,6 +332,20 @@ export default function PatientDashboard() {
             </div>
           </div>
         </Card>
+
+        {/* Clinical Deep Health Intelligence */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-emerald-500" />
+              Saúde em Profundidade
+            </h2>
+            <Link href="/patient/progress" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-wider">
+              Ver histórico completo
+            </Link>
+          </div>
+          <DeepHealthDashboard />
+        </section>
 
         {/* Daily Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

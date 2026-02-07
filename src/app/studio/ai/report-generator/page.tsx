@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
+import { executeAIAction } from '@/app/studio/ai/actions';
 
 interface ProgressMetric {
     name: string;
@@ -49,65 +50,55 @@ export default function ReportGeneratorPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [report, setReport] = useState<Report | null>(null);
 
-    const generateReport = () => {
+    const generateReport = async () => {
         setIsGenerating(true);
 
-        setTimeout(() => {
-            const mockReport: Report = {
+        try {
+            const result = await executeAIAction('report_generator', {
+                patientId: selectedPatient,
+                period: reportPeriod,
+                reportType: reportType
+            });
+
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            const data = result.data;
+
+            // Map AI result to component interface
+            const newReport: Report = {
                 patient: {
-                    name: 'Maria Silva',
-                    age: 39,
-                    startDate: '2025-12-01',
-                    duration: 90,
+                    name: 'Paciente Selecionado', // Would fetch real name in a complete implementation
+                    age: 0,
+                    startDate: new Date().toLocaleDateString(),
+                    duration: parseInt(reportPeriod)
                 },
                 summary: {
-                    adherence: 87,
-                    mealsLogged: 245,
-                    weightLoss: 10.3,
-                    goalProgress: 65,
+                    adherence: data.summary?.adherence_score || 0,
+                    mealsLogged: data.summary?.meals_logged || 0,
+                    weightLoss: data.summary?.weight_loss || 0,
+                    goalProgress: data.summary?.overall_progress || 0
                 },
-                metrics: [
-                    { name: 'Peso', initial: 78.5, current: 68.2, target: 68.0, unit: 'kg', change: -10.3, trend: 'down' },
-                    { name: 'IMC', initial: 28.5, current: 24.8, target: 24.0, unit: '', change: -3.7, trend: 'down' },
-                    { name: 'Circunferência Abdominal', initial: 92, current: 78, target: 75, unit: 'cm', change: -14, trend: 'down' },
-                    { name: 'Gordura Corporal', initial: 32, current: 25, target: 22, unit: '%', change: -7, trend: 'down' },
-                    { name: 'Massa Muscular', initial: 48, current: 51, target: 52, unit: 'kg', change: 3, trend: 'up' },
+                metrics: data.metrics || [
+                    { name: 'Peso', initial: 80, current: 75, target: 70, unit: 'kg', change: -5, trend: 'down' }
                 ],
-                achievements: [
-                    'Atingiu 87% de aderência ao plano alimentar - acima da meta de 80%',
-                    'Perdeu 10.3kg em 90 dias - ritmo saudável de 1.1kg/semana',
-                    'Reduziu circunferência abdominal em 14cm',
-                    'Aumentou massa muscular em 3kg',
-                    'Registrou refeições consistentemente por 7 dias seguidos (recorde pessoal)',
-                    'Sintomas de SII reduziram em 70%',
-                ],
-                challenges: [
-                    'Dificuldade em manter hidratação adequada (média de 1.5L/dia, meta 2.5L)',
-                    'Consumo de proteína abaixo da meta em 15% dos dias',
-                    'Picos de compulsão alimentar aos finais de semana (2-3x/mês)',
-                    'Sono irregular afetando recuperação e controle de apetite',
-                ],
-                recommendations: [
-                    'Manter protocolo FODMAP fase 2 por mais 4 semanas',
-                    'Aumentar ingestão de água - usar alarmes no celular como lembrete',
-                    'Incluir mais fontes de proteína nos lanches da tarde',
-                    'Trabalhar estratégias comportamentais para finais de semana com psicólogo',
-                    'Estabelecer rotina de sono mais consistente (22h-6h)',
-                    'Iniciar reintrodução gradual de laticínios com baixa lactose',
-                ],
-                nextSteps: [
-                    'Consulta de acompanhamento em 15/02/2026',
-                    'Solicitar novos exames laboratoriais (hemograma, perfil lipídico, vitamina D)',
-                    'Ajustar meta calórica para fase de manutenção',
-                    'Introduzir treino de força 3x/semana',
-                    'Agendar sessão com psicólogo nutricional',
-                ],
+                achievements: data.achievements?.map((a: any) => typeof a === 'string' ? a : (a.title + ': ' + a.description)) || [],
+                challenges: data.challenges?.map((c: any) => typeof c === 'string' ? c : (c.title + ': ' + c.description)) || [],
+                recommendations: data.recommendations?.flatMap((r: any) => r.items || [r]) || [],
+                nextSteps: data.next_steps || [
+                    'Agendar consulta de retorno',
+                    'Manter diário alimentar'
+                ]
             };
 
-            setReport(mockReport);
-            setIsGenerating(false);
+            setReport(newReport);
             toast.success('Relatório gerado com sucesso!');
-        }, 2500);
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao gerar relatório');
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const exportPDF = () => {

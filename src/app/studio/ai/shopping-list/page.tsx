@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { MedicalDisclaimer } from '@/components/ui/medical-disclaimer';
+import { executeAIAction } from '@/app/studio/ai/actions';
 
 interface ShoppingItem {
     id: string;
@@ -37,87 +38,43 @@ export default function ShoppingListGeneratorPage() {
     const [shoppingList, setShoppingList] = useState<ShoppingCategory[]>([]);
     const [viewMode, setViewMode] = useState<'category' | 'store'>('category');
 
-    const generateShoppingList = () => {
+    const generateShoppingList = async () => {
         setIsGenerating(true);
 
-        setTimeout(() => {
-            const mockList: ShoppingCategory[] = [
-                {
-                    name: 'Proteínas',
-                    icon: '🍗',
-                    totalCost: 145.50,
-                    items: [
-                        { id: '1', name: 'Peito de frango', quantity: '2', unit: 'kg', category: 'Proteínas', estimatedCost: 32.00, checked: false, alternatives: ['Peito de peru', 'Filé de tilápia'] },
-                        { id: '2', name: 'Filé de tilápia', quantity: '1', unit: 'kg', category: 'Proteínas', estimatedCost: 38.00, checked: false },
-                        { id: '3', name: 'Carne moída magra', quantity: '500', unit: 'g', category: 'Proteínas', estimatedCost: 22.50, checked: false },
-                        { id: '4', name: 'Ovos', quantity: '30', unit: 'unidades', category: 'Proteínas', estimatedCost: 18.00, checked: false },
-                        { id: '5', name: 'Iogurte grego natural', quantity: '4', unit: 'potes', category: 'Proteínas', estimatedCost: 35.00, checked: false },
-                    ],
-                },
-                {
-                    name: 'Carboidratos',
-                    icon: '🍚',
-                    totalCost: 68.00,
-                    items: [
-                        { id: '6', name: 'Arroz integral', quantity: '2', unit: 'kg', category: 'Carboidratos', estimatedCost: 18.00, checked: false },
-                        { id: '7', name: 'Batata doce', quantity: '3', unit: 'kg', category: 'Carboidratos', estimatedCost: 15.00, checked: false, alternatives: ['Batata inglesa', 'Mandioca'] },
-                        { id: '8', name: 'Aveia em flocos', quantity: '500', unit: 'g', category: 'Carboidratos', estimatedCost: 12.00, checked: false },
-                        { id: '9', name: 'Pão integral', quantity: '2', unit: 'pacotes', category: 'Carboidratos', estimatedCost: 16.00, checked: false },
-                        { id: '10', name: 'Macarrão integral', quantity: '500', unit: 'g', category: 'Carboidratos', estimatedCost: 7.00, checked: false },
-                    ],
-                },
-                {
-                    name: 'Vegetais',
-                    icon: '🥬',
-                    totalCost: 52.50,
-                    items: [
-                        { id: '11', name: 'Brócolis', quantity: '3', unit: 'maços', category: 'Vegetais', estimatedCost: 12.00, checked: false },
-                        { id: '12', name: 'Couve-flor', quantity: '2', unit: 'unidades', category: 'Vegetais', estimatedCost: 10.00, checked: false },
-                        { id: '13', name: 'Alface americana', quantity: '2', unit: 'pés', category: 'Vegetais', estimatedCost: 8.00, checked: false },
-                        { id: '14', name: 'Tomate', quantity: '1', unit: 'kg', category: 'Vegetais', estimatedCost: 7.50, checked: false },
-                        { id: '15', name: 'Cenoura', quantity: '1', unit: 'kg', category: 'Vegetais', estimatedCost: 5.00, checked: false },
-                        { id: '16', name: 'Abobrinha', quantity: '4', unit: 'unidades', category: 'Vegetais', estimatedCost: 10.00, checked: false },
-                    ],
-                },
-                {
-                    name: 'Frutas',
-                    icon: '🍎',
-                    totalCost: 48.00,
-                    items: [
-                        { id: '17', name: 'Banana', quantity: '2', unit: 'dúzias', category: 'Frutas', estimatedCost: 12.00, checked: false },
-                        { id: '18', name: 'Maçã', quantity: '1', unit: 'kg', category: 'Frutas', estimatedCost: 10.00, checked: false },
-                        { id: '19', name: 'Mamão papaia', quantity: '2', unit: 'unidades', category: 'Frutas', estimatedCost: 14.00, checked: false },
-                        { id: '20', name: 'Abacate', quantity: '4', unit: 'unidades', category: 'Frutas', estimatedCost: 12.00, checked: false },
-                    ],
-                },
-                {
-                    name: 'Gorduras Saudáveis',
-                    icon: '🥑',
-                    totalCost: 85.00,
-                    items: [
-                        { id: '21', name: 'Azeite extra virgem', quantity: '500', unit: 'ml', category: 'Gorduras', estimatedCost: 35.00, checked: false },
-                        { id: '22', name: 'Castanha de caju', quantity: '200', unit: 'g', category: 'Gorduras', estimatedCost: 18.00, checked: false },
-                        { id: '23', name: 'Amendoim', quantity: '200', unit: 'g', category: 'Gorduras', estimatedCost: 12.00, checked: false },
-                        { id: '24', name: 'Pasta de amendoim integral', quantity: '1', unit: 'pote', category: 'Gorduras', estimatedCost: 20.00, checked: false },
-                    ],
-                },
-                {
-                    name: 'Temperos e Condimentos',
-                    icon: '🧂',
-                    totalCost: 32.00,
-                    items: [
-                        { id: '25', name: 'Alho', quantity: '200', unit: 'g', category: 'Temperos', estimatedCost: 6.00, checked: false },
-                        { id: '26', name: 'Cebola', quantity: '1', unit: 'kg', category: 'Temperos', estimatedCost: 5.00, checked: false },
-                        { id: '27', name: 'Limão', quantity: '6', unit: 'unidades', category: 'Temperos', estimatedCost: 6.00, checked: false },
-                        { id: '28', name: 'Sal rosa do Himalaia', quantity: '1', unit: 'pacote', category: 'Temperos', estimatedCost: 15.00, checked: false },
-                    ],
-                },
-            ];
+        try {
+            const result = await executeAIAction('shopping_list_generator', {
+                patientId: selectedPatient,
+                mealPlanId: selectedMealPlan
+            });
 
-            setShoppingList(mockList);
-            setIsGenerating(false);
+            if (!result.success) throw new Error(result.error);
+
+            const data = result.data;
+
+            // Map AI result to component interface
+            const mappedList: ShoppingCategory[] = data.categories?.map((cat: any) => ({
+                name: cat.name,
+                icon: '🛒', // Default icon
+                totalCost: cat.subtotal_brl || 0,
+                items: cat.items?.map((item: any, idx: number) => ({
+                    id: `${cat.name}-${idx}`,
+                    name: item.name,
+                    quantity: item.quantity,
+                    unit: '',
+                    category: cat.name,
+                    estimatedCost: item.estimated_cost_brl || 0,
+                    checked: false,
+                    alternatives: item.alternatives
+                })) || []
+            })) || [];
+
+            setShoppingList(mappedList);
             toast.success('Lista de compras gerada com sucesso!');
-        }, 2000);
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao gerar lista de compras');
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const toggleItem = (categoryIndex: number, itemId: string) => {
