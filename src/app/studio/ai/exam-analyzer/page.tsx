@@ -112,8 +112,8 @@ export default function ExamAnalyzerPage() {
     const [examType, setExamType] = useState('blood_test');
     const [examDate, setExamDate] = useState(new Date().toISOString().slice(0, 10));
 
-    // State to store analyzed exams (starting with mock for demo, but adding real ones dynamically)
-    const [analyzedExams, setAnalyzedExams] = useState<ExamAnalysis[]>(mockExams);
+    // State to store analyzed exams
+    const [analyzedExams, setAnalyzedExams] = useState<ExamAnalysis[]>([]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {

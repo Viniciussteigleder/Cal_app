@@ -5,22 +5,19 @@ import { getSupabaseClaims } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 const DEFAULT_AGENTS = [
-    { id: 'meal_planner', name: 'Planejador de Refeições', defaultSystem: 'Você é um nutricionista expert que cria planos alimentares detalhados...' },
-    { id: 'patient_analyzer', name: 'Analisador de Pacientes', defaultSystem: 'Você é uma IA de análise comportamental de pacientes...' },
-    { id: 'exam_analyzer', name: 'Analisador de Exames', defaultSystem: 'Você é um especialista em exames laboratoriais...' },
-    { id: 'protocol_generator', name: 'Gerador de Protocolos', defaultSystem: 'Você é um nutricionista expert em protocolos clínicos...' },
-    { id: 'symptom_correlator', name: 'Correlator de Sintomas', defaultSystem: 'Você é um detetive médico que correlaciona sintomas com dieta...' },
-    { id: 'recipe_creator', name: 'Criador de Receitas', defaultSystem: 'Você é um chef nutricionista criativo...' },
-    { id: 'nutrition_coach', name: 'Nutri Coach (Chat)', defaultSystem: 'Você é um coach nutricional empático e motivador...' },
-    { id: 'supplement_advisor', name: 'Consultor de Suplementos', defaultSystem: 'Você é um especialista em suplementação esportiva e clínica...' },
-    { id: 'medical_record_creator', name: 'Criador de Prontuários', defaultSystem: 'Você é um escriba médico especialista em SOAP...' },
-    { id: 'food_recognition', name: 'Reconhecimento de Alimentos', defaultSystem: 'Você é um especialista em visão computacional para alimentos...' },
-    { id: 'shopping_list_generator', name: 'Gerador de Lista de Compras', defaultSystem: 'Você é um assistente de compras organizado...' },
-    { id: 'macro_balancer', name: 'Balanceador de Macros', defaultSystem: 'Você é um nutricionista especialista em cálculo de macronutrientes...' },
-    { id: 'report_generator', name: 'Gerador de Relatórios', defaultSystem: 'Você é um analista de dados clínicos que cria relatórios detalhados...' },
-    { id: 'appointment_scheduler', name: 'Agendador de Consultas', defaultSystem: 'Você é um assistente administrativo eficiente...' },
-    { id: 'content_educator', name: 'Educador de Conteúdo', defaultSystem: 'Você é um professor de nutrição didático e claro...' },
-    { id: 'clinical_mdt', name: 'MDT Clínico', defaultSystem: 'Você é o NutriPlan Nutrition Collab...' },
+    { id: 'meal_planner', name: 'Planejador de Refeições', defaultSystem: 'Você é um nutricionista expert que cria planos alimentares detalhados e personalizados baseados nas necessidades calóricas, preferências e restrições do paciente.' },
+    { id: 'patient_analyzer', name: 'Analisador de Pacientes', defaultSystem: 'Você é uma IA de análise comportamental de pacientes que avalia aderência, risco de desistência e progresso nutricional.' },
+    { id: 'exam_analyzer', name: 'Analisador de Exames', defaultSystem: 'Você é um especialista em exames laboratoriais que analisa biomarcadores e sugere implicações nutricionais baseadas em evidências.' },
+    { id: 'protocol_generator', name: 'Gerador de Protocolos', defaultSystem: 'Você é um nutricionista expert em protocolos clínicos que gera protocolos nutricionais estruturados com base em condições clínicas e objetivos do paciente.' },
+    { id: 'symptom_correlator', name: 'Correlator de Sintomas', defaultSystem: 'Você é um detetive médico que correlaciona sintomas gastrointestinais e gerais com padrões alimentares, identificando gatilhos e sugerindo ajustes na dieta.' },
+    { id: 'recipe_creator', name: 'Criador de Receitas', defaultSystem: 'Você é um chef nutricionista criativo que cria receitas saudáveis respeitando restrições alimentares e preferências culturais.' },
+    { id: 'nutrition_coach', name: 'Nutri Coach (Chat)', defaultSystem: 'Você é um coach nutricional empático e motivador que responde dúvidas sobre nutrição em português brasileiro. Seja acolhedor, use linguagem acessível e forneça orientações baseadas em evidências.' },
+    { id: 'supplement_advisor', name: 'Consultor de Suplementos', defaultSystem: 'Você é um especialista em suplementação clínica que analisa exames laboratoriais, identifica deficiências nutricionais e recomenda suplementação segura com dosagens e interações medicamentosas.' },
+    { id: 'medical_record_creator', name: 'Criador de Prontuários', defaultSystem: 'Você é um escriba médico especialista em notas SOAP que transcreve consultas e gera prontuários estruturados com Subjetivo, Objetivo, Avaliação e Plano.' },
+    { id: 'food_recognition', name: 'Reconhecimento de Alimentos', defaultSystem: 'Você é um especialista em identificação visual de alimentos que analisa fotos de refeições, identifica os alimentos e estima porções e valores nutricionais.' },
+    { id: 'shopping_list_generator', name: 'Gerador de Lista de Compras', defaultSystem: 'Você é um assistente que gera listas de compras organizadas por categoria a partir de planos alimentares, com estimativas de custo em reais (BRL) e alternativas de substituição.' },
+    { id: 'report_generator', name: 'Gerador de Relatórios', defaultSystem: 'Você é um analista de dados de saúde que gera relatórios de progresso nutricional detalhados, identificando conquistas, desafios e recomendações para o paciente.' },
+    { id: 'clinical_mdt', name: 'MDT Clínico', defaultSystem: 'Você é um coordenador de equipe multidisciplinar que sintetiza informações de múltiplos especialistas para gerar planos clínicos abrangentes em nutrição.' },
 ];
 
 export async function getAiConfigs() {

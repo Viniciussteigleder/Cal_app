@@ -18,7 +18,7 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
-    type?: 'motivational' | 'educational' | 'behavioral' | 'answer';
+    type?: 'motivational' | 'educational' | 'behavioral' | 'answer' | 'general';
 }
 
 const quickQuestions = [
@@ -30,59 +30,18 @@ const quickQuestions = [
     'Posso substituir arroz por batata doce?',
 ];
 
-const motivationalMessages = [
-    'Você está indo muito bem! Continue assim! 💪',
-    'Cada pequeno progresso conta. Celebre suas vitórias! 🎉',
-    'Lembre-se: consistência é mais importante que perfeição! ⭐',
-    'Você é mais forte do que pensa! Continue firme! 🔥',
-];
-
-// Helper to safely extract text from message
-const getTextFromMessage = (message: any) => {
-    if (typeof message.content === 'string') return message.content;
-    if (Array.isArray(message.parts)) {
-        return message.parts.map((part: any) => {
-            if (part.type === 'text') return part.text;
-            return '';
-        }).join('');
-    }
-    return '';
-};
-
 export default function NutritionCoachChatbotPage() {
-    const { messages, sendMessage, status } = useChat({
-        // @ts-ignore - api option is deprecated/hidden but we try to use it
-        api: '/api/ai/coach',
-        // using 'messages' instead of 'initialMessages' per ChatInit interface
-        messages: [
-            {
-                id: '1',
-                role: 'assistant',
-                // Pre-format as parts to be safe with v6
-                content: '',
-                parts: [{
-                    type: 'text',
-                    text: 'Olá! Sou seu Coach Nutricional com IA, disponível 24/7 para ajudar você! 🌟\n\nPosso responder suas dúvidas sobre nutrição, dar dicas motivacionais, sugerir substituições de alimentos e muito mais. Como posso ajudar você hoje?'
-                }]
-            } as any,
-        ],
-    });
-
-    const [input, setInput] = useState('');
-    const isLoading = status === 'streaming' || status === 'submitted';
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setInput(e.target.value);
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim()) return;
-        // Use 'text' instead of 'content' for v6 sendMessage
-        sendMessage({ role: 'user', content: input } as any);
-        setInput('');
-    };
-
+    const [messages, setMessages] = useState<Message[]>([
+        {
+            id: '1',
+            role: 'assistant',
+            content: 'Olá! Sou seu Coach Nutricional com IA, disponível 24/7 para ajudar você!\n\nPosso responder suas dúvidas sobre nutrição, dar dicas motivacionais, sugerir substituições de alimentos e muito mais. Como posso ajudar você hoje?',
+            timestamp: new Date(),
+            type: 'answer',
+        },
+    ]);
+    const [inputMessage, setInputMessage] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +52,67 @@ export default function NutritionCoachChatbotPage() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    const handleSendMessage = async () => {
+        if (!inputMessage.trim() || isTyping) return;
+
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: inputMessage,
+            timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, userMessage]);
+        const currentInput = inputMessage;
+        setInputMessage('');
+        setIsTyping(true);
+
+        try {
+            const history = messages.slice(-10).map((m) => ({
+                role: m.role,
+                content: m.content,
+            }));
+
+            const response = await fetch('/api/ai/chatbot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: currentInput,
+                    history,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha na comunicação com a IA');
+            }
+
+            const data = await response.json();
+
+            const aiMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: data.data?.message || data.data?.raw_response || 'Desculpe, não consegui processar sua mensagem. Tente novamente.',
+                timestamp: new Date(),
+                type: data.data?.category || 'answer',
+            };
+
+            setMessages((prev) => [...prev, aiMessage]);
+        } catch (error) {
+            console.error('Error calling chatbot API:', error);
+            const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Verifique sua conexão e tente novamente.',
+                timestamp: new Date(),
+                type: 'answer',
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+            toast.error('Erro ao comunicar com o coach de IA');
+        } finally {
+            setIsTyping(false);
+        }
+    };
 
     const handleQuickQuestion = (question: string) => {
         setInput(question);
@@ -144,7 +164,7 @@ export default function NutritionCoachChatbotPage() {
                                 </div>
                             </div>
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700">
-                                Grátis
+                                IA
                             </Badge>
                         </div>
                     </CardHeader>
@@ -174,9 +194,19 @@ export default function NutritionCoachChatbotPage() {
                                                 : 'bg-muted prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:my-0'
                                                 }`}
                                         >
-                                            <ReactMarkdown>
-                                                {getTextFromMessage(message)}
-                                            </ReactMarkdown>
+                                            {message.role === 'assistant' && message.type && (
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    {getMessageIcon(message.type)}
+                                                    <span className="text-xs font-medium capitalize">
+                                                        {message.type === 'motivational' && 'Motivação'}
+                                                        {message.type === 'educational' && 'Educação'}
+                                                        {message.type === 'behavioral' && 'Comportamento'}
+                                                        {message.type === 'answer' && 'Resposta'}
+                                                        {message.type === 'general' && 'Resposta'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <p className="text-sm whitespace-pre-line">{message.content}</p>
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1 px-1">
                                             {(message as any).createdAt?.toLocaleTimeString('pt-BR', {
@@ -230,10 +260,10 @@ export default function NutritionCoachChatbotPage() {
                     <form onSubmit={handleSubmit} className="p-4 border-t bg-muted/30">
                         <div className="flex gap-2">
                             <Input
-                                placeholder="Digite sua dúvida aqui..."
-                                value={input}
-                                onChange={handleInputChange}
-                                disabled={isLoading}
+                                value={inputMessage}
+                                onChange={(e) => setInputMessage(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="Digite sua pergunta..."
                                 className="flex-1"
                             />
                             <Button type="submit" disabled={isLoading || !input.trim()} size="icon">

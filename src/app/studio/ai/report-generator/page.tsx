@@ -54,44 +54,60 @@ export default function ReportGeneratorPage() {
         setIsGenerating(true);
 
         try {
-            const result = await generateReportAction(selectedPatient, reportPeriod, reportType);
+            const periodMap: Record<string, string> = { '7': '7 dias', '30': '30 dias', '90': '90 dias' };
 
-            if (!result.success) {
-                throw new Error(result.error);
-            }
+            const response = await fetch('/api/ai/report-generator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: selectedPatient,
+                    period: periodMap[reportPeriod] || '90 dias',
+                    reportType,
+                }),
+            });
 
-            const data = result.data;
+            if (!response.ok) throw new Error('Falha ao gerar relatório');
 
-            // Map AI result to component interface
-            const newReport: Report = {
+            const result = await response.json();
+            const aiData = result.data || {};
+
+            const generatedReport: Report = {
                 patient: {
-                    name: 'Paciente Selecionado', // Would fetch real name in a complete implementation
-                    age: 0,
-                    startDate: new Date().toLocaleDateString(),
-                    duration: parseInt(reportPeriod)
+                    name: aiData.patient?.name || 'Paciente',
+                    age: aiData.patient?.age || 0,
+                    startDate: aiData.patient?.startDate || aiData.summary?.period || new Date().toISOString().slice(0, 10),
+                    duration: Number(reportPeriod) || 90,
                 },
                 summary: {
-                    adherence: data.summary?.adherence_score || 0,
-                    mealsLogged: data.summary?.meals_logged || 0,
-                    weightLoss: data.summary?.weight_loss || 0,
-                    goalProgress: data.summary?.overall_progress || 0
+                    adherence: aiData.summary?.adherence_score ?? aiData.summary?.adherence ?? 0,
+                    mealsLogged: aiData.summary?.meals_logged ?? aiData.summary?.mealsLogged ?? 0,
+                    weightLoss: Math.abs(aiData.summary?.weight_change ?? aiData.summary?.weightLoss ?? 0),
+                    goalProgress: aiData.summary?.overall_progress ?? aiData.summary?.goalProgress ?? 0,
                 },
-                metrics: data.metrics || [
-                    { name: 'Peso', initial: 80, current: 75, target: 70, unit: 'kg', change: -5, trend: 'down' }
-                ],
-                achievements: data.achievements?.map((a: any) => typeof a === 'string' ? a : (a.title + ': ' + a.description)) || [],
-                challenges: data.challenges?.map((c: any) => typeof c === 'string' ? c : (c.title + ': ' + c.description)) || [],
-                recommendations: data.recommendations?.flatMap((r: any) => r.items || [r]) || [],
-                nextSteps: data.next_steps || [
-                    'Agendar consulta de retorno',
-                    'Manter diário alimentar'
-                ]
+                metrics: (aiData.metrics || []).map((m: any) => ({
+                    name: m.name || m.metric,
+                    initial: m.initial ?? m.start_value ?? 0,
+                    current: m.current ?? m.end_value ?? 0,
+                    target: m.target ?? m.goal_value ?? 0,
+                    unit: m.unit || '',
+                    change: m.change ?? ((m.current ?? 0) - (m.initial ?? 0)),
+                    trend: m.trend || ((m.change ?? 0) > 0 ? 'up' : (m.change ?? 0) < 0 ? 'down' : 'stable'),
+                })),
+                achievements: (aiData.achievements || []).map((a: any) => typeof a === 'string' ? a : a.description || a.title || ''),
+                challenges: (aiData.challenges || []).map((c: any) => typeof c === 'string' ? c : `${c.title}${c.recommendation ? ' - ' + c.recommendation : ''}`),
+                recommendations: (aiData.recommendations || []).flatMap((r: any) => {
+                    if (typeof r === 'string') return [r];
+                    if (r.items) return r.items as string[];
+                    return [r.description || r.title || ''];
+                }),
+                nextSteps: aiData.next_steps || aiData.nextSteps || [],
             };
 
-            setReport(newReport);
-            toast.success('Relatório gerado com sucesso!');
-        } catch (error: any) {
-            toast.error(error.message || 'Erro ao gerar relatório');
+            setReport(generatedReport);
+            toast.success(`Relatório gerado com sucesso! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error generating report:', error);
+            toast.error('Erro ao gerar relatório. Tente novamente.');
         } finally {
             setIsGenerating(false);
         }

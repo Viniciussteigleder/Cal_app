@@ -42,33 +42,60 @@ export default function ShoppingListGeneratorPage() {
         setIsGenerating(true);
 
         try {
-            const result = await generateShoppingListAction(selectedPatient, selectedMealPlan);
+            const response = await fetch('/api/ai/shopping-list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: selectedPatient,
+                    mealPlanId: selectedMealPlan,
+                }),
+            });
 
-            if (!result.success) throw new Error(result.error);
+            if (!response.ok) throw new Error('Falha ao gerar lista');
 
-            const data = result.data;
+            const result = await response.json();
+            const aiData = result.data || {};
 
-            // Map AI result to component interface
-            const mappedList: ShoppingCategory[] = data.categories?.map((cat: any) => ({
-                name: cat.name,
-                icon: '🛒', // Default icon
-                totalCost: cat.subtotal_brl || 0,
-                items: cat.items?.map((item: any, idx: number) => ({
-                    id: `${cat.name}-${idx}`,
-                    name: item.name,
-                    quantity: item.quantity,
-                    unit: '',
-                    category: cat.name,
-                    estimatedCost: item.estimated_cost_brl || 0,
+            const categoryIcons: Record<string, string> = {
+                'proteinas': '🍗', 'proteínas': '🍗', 'carnes': '🍗',
+                'carboidratos': '🍚', 'cereais': '🍚', 'grãos': '🍚',
+                'vegetais': '🥬', 'legumes': '🥬', 'verduras': '🥬',
+                'frutas': '🍎',
+                'gorduras': '🥑', 'óleos': '🥑', 'gorduras saudáveis': '🥑',
+                'temperos': '🧂', 'condimentos': '🧂', 'temperos e condimentos': '🧂',
+                'laticínios': '🥛',
+                'bebidas': '🥤',
+            };
+
+            const categories: ShoppingCategory[] = (aiData.categories || []).map((cat: any, catIdx: number) => {
+                const catName = cat.name || cat.category || 'Outros';
+                const catNameLower = catName.toLowerCase();
+                const icon = categoryIcons[catNameLower] || Object.entries(categoryIcons).find(([key]) => catNameLower.includes(key))?.[1] || '🛒';
+
+                const items: ShoppingItem[] = (cat.items || []).map((item: any, itemIdx: number) => ({
+                    id: `${catIdx}-${itemIdx}`,
+                    name: item.name || item.item,
+                    quantity: String(item.quantity || '1'),
+                    unit: item.unit || 'un',
+                    category: catName,
+                    estimatedCost: item.estimated_cost ?? item.estimatedCost ?? item.cost ?? 0,
                     checked: false,
-                    alternatives: item.alternatives
-                })) || []
-            })) || [];
+                    alternatives: item.alternatives || item.substitutes,
+                }));
 
-            setShoppingList(mappedList);
-            toast.success('Lista de compras gerada com sucesso!');
-        } catch (error: any) {
-            toast.error(error.message || 'Erro ao gerar lista de compras');
+                return {
+                    name: catName,
+                    icon,
+                    items,
+                    totalCost: cat.total_cost ?? items.reduce((sum: number, i: ShoppingItem) => sum + i.estimatedCost, 0),
+                };
+            });
+
+            setShoppingList(categories);
+            toast.success(`Lista de compras gerada! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error generating shopping list:', error);
+            toast.error('Erro ao gerar lista de compras. Tente novamente.');
         } finally {
             setIsGenerating(false);
         }

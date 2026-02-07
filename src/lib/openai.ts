@@ -164,21 +164,18 @@ export async function generateEmbeddings(text: string) {
             console.warn('OPENAI_API_KEY is not set. Returning mock embeddings.');
             return {
                 embedding: new Array(1536).fill(0).map(() => Math.random()),
-                usage: {
-                    prompt_tokens: 0,
-                    total_tokens: 0,
-                },
+                usage: { prompt_tokens: 0, total_tokens: 0 },
             };
         }
 
-        const response = await openai.embeddings.create({
-            model: 'text-embedding-3-small',
+        const embedding = await openai.embeddings.create({
+            model: 'text-embedding-ada-002',
             input: text,
         });
 
         return {
-            embedding: response.data[0].embedding,
-            usage: response.usage,
+            embedding: embedding.data[0].embedding,
+            usage: embedding.usage,
         };
     } catch (error) {
         console.error('Error generating embeddings:', error);
@@ -192,25 +189,30 @@ export async function generateEmbeddings(text: string) {
 export async function streamChatCompletion(
     systemPrompt: string,
     userPrompt: string,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
+    options?: {
+        model?: string;
+        temperature?: number;
+    }
 ) {
     try {
         if (!process.env.OPENAI_API_KEY) {
             console.warn('OPENAI_API_KEY is not set. Returning mock streaming.');
-            const mockResponse = 'Mock streaming response - OPENAI_API_KEY missing';
+            const mockResponse = 'Resposta de IA indisponível - OPENAI_API_KEY não configurada.';
             for (const char of mockResponse) {
-                await new Promise(resolve => setTimeout(resolve, 50));
+                await new Promise(resolve => setTimeout(resolve, 20));
                 onChunk(char);
             }
             return;
         }
 
         const stream = await openai.chat.completions.create({
-            model: 'gpt-4-turbo-preview',
+            model: options?.model || 'gpt-4o',
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
+            temperature: options?.temperature || 0.7,
             stream: true,
         });
 

@@ -75,24 +75,39 @@ export default function MedicalRecordCreatorPage() {
         setTranscriptionProgress(0);
 
         try {
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'consultation.webm');
+            // Convert audio blob to base64 data URL for API transport
+            const reader = new FileReader();
+            const audioDataUrl = await new Promise<string>((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(audioBlob);
+            });
 
-            // Simulate progress while uploading/processing
-            const progressInterval = setInterval(() => {
-                setTranscriptionProgress(p => p < 90 ? p + 5 : p);
-            }, 500);
+            setTranscriptionProgress(30);
 
-            const result = await transcribeAction(formData);
-            clearInterval(progressInterval);
+            const response = await fetch('/api/ai/medical-record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'transcribe',
+                    audioUrl: audioDataUrl,
+                    consultationType,
+                    patientId: selectedPatient,
+                }),
+            });
+
+            setTranscriptionProgress(70);
+
+            if (!response.ok) throw new Error('Falha na transcrição');
+
+            const result = await response.json();
             setTranscriptionProgress(100);
 
-            if (!result.success) throw new Error(result.error);
-
-            setTranscription(result.data.text);
-            toast.success('Transcrição concluída!');
-        } catch (error: any) {
-            toast.error(error.message || 'Erro na transcrição');
+            const text = result.transcription?.text || result.transcription || '';
+            setTranscription(text);
+            toast.success(`Transcrição concluída! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error transcribing audio:', error);
+            toast.error('Erro na transcrição. Tente novamente.');
         } finally {
             setIsTranscribing(false);
         }
@@ -101,31 +116,39 @@ export default function MedicalRecordCreatorPage() {
     const generateSOAPNote = async () => {
         if (!transcription) return;
 
-        toast.promise(
-            (async () => {
-                const result = await executeAIAction('medical_record_creator', {
+        const soapPromise = (async () => {
+            const response = await fetch('/api/ai/medical-record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     action: 'generate-soap',
                     transcription,
-                    consultationType
-                });
+                    consultationType,
+                    patientId: selectedPatient,
+                }),
+            });
 
-                if (!result.success) throw new Error(result.error);
+            if (!response.ok) throw new Error('Falha ao gerar nota SOAP');
 
-                const note = result.data.soapNote;
-                setSOAPNote({
-                    subjective: note.subjective || '',
-                    objective: note.objective || '',
-                    assessment: note.assessment || '',
-                    plan: note.plan || ''
-                });
-                return note;
-            })(),
-            {
-                loading: 'Gerando nota SOAP com IA...',
-                success: 'Nota SOAP gerada com sucesso!',
-                error: (err) => `Erro: ${err.message}`,
-            }
-        );
+            const result = await response.json();
+            const soapData = result.soapNote || result.data?.soapNote || result.data || {};
+
+            const soap: SOAPNote = {
+                subjective: soapData.subjective || soapData.subjetivo || '',
+                objective: soapData.objective || soapData.objetivo || '',
+                assessment: soapData.assessment || soapData.avaliacao || '',
+                plan: soapData.plan || soapData.plano || '',
+            };
+
+            setSOAPNote(soap);
+            return soap;
+        })();
+
+        toast.promise(soapPromise, {
+            loading: 'Gerando nota SOAP com IA...',
+            success: 'Nota SOAP gerada com sucesso!',
+            error: 'Erro ao gerar nota SOAP',
+        });
     };
 
     const copyToClipboard = (text: string) => {

@@ -41,48 +41,55 @@ export default function SupplementAdvisorPage() {
     const [nutrientGaps, setNutrientGaps] = useState<NutrientGap[]>([]);
     const [recommendations, setRecommendations] = useState<SupplementRecommendation[]>([]);
 
-
-
     const handleAnalyze = async () => {
         setIsAnalyzing(true);
+
         try {
-            const result = await recommendSupplementsAction(selectedPatient);
+            const response = await fetch('/api/ai/supplement-advisor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ patientId: selectedPatient }),
+            });
 
-            if (!result.success) {
-                throw new Error(result.error);
-            }
+            if (!response.ok) throw new Error('Falha na análise');
 
-            const data = result.data;
+            const result = await response.json();
+            const aiData = result.data || {};
 
-            // Map nutrient gaps
-            const mappedGaps: NutrientGap[] = data.nutrient_gaps?.map((g: any) => ({
-                nutrient: g.nutrient,
-                current: 0, // Mock current if not returned
-                target: 100, // Mock target if not returned
-                unit: '',
-                status: g.severity || 'low',
-                percentage: g.severity === 'high' ? 30 : (g.severity === 'medium' ? 60 : 100)
-            })) || [];
+            const gaps: NutrientGap[] = (aiData.nutrient_gaps || []).map((g: any) => {
+                const current = g.current ?? g.value ?? 0;
+                const target = g.target ?? g.recommended ?? 100;
+                const pct = target > 0 ? Math.round((current / target) * 100) : 0;
+                const severityMap: Record<string, NutrientGap['status']> = { high: 'critical', medium: 'low', low: 'adequate' };
+                return {
+                    nutrient: g.nutrient || g.name,
+                    current,
+                    target,
+                    unit: g.unit || '',
+                    status: severityMap[g.severity] || g.status || 'adequate',
+                    percentage: Math.min(pct, 100),
+                };
+            });
+            setNutrientGaps(gaps);
 
-            // Map recommendations
-            const mappedRecs: SupplementRecommendation[] = data.recommendations?.map((r: any) => ({
-                name: r.supplement,
-                dosage: r.dosage,
-                timing: r.timing,
-                duration: r.duration,
+            const recs: SupplementRecommendation[] = (aiData.recommendations || []).map((r: any) => ({
+                name: r.supplement || r.name,
+                dosage: r.dosage || '',
+                timing: r.timing || '',
+                duration: r.duration || '',
                 benefits: r.benefits || [],
                 warnings: r.warnings || [],
-                interactions: [], // Will be filled from data.interactions if needed
-                estimatedCost: r.estimated_cost_brl ? `R$ ${r.estimated_cost_brl}` : 'N/A',
-                priority: r.priority || 'medium'
-            })) || [];
+                interactions: r.interactions || [],
+                estimatedCost: r.estimated_cost_brl ? `R$ ${r.estimated_cost_brl}` : (r.estimatedCost || ''),
+                priority: r.priority || 'medium',
+            }));
+            setRecommendations(recs);
 
-            setNutrientGaps(mappedGaps);
-            setRecommendations(mappedRecs);
             setAnalysisComplete(true);
-            toast.success('Análise de nutrientes concluída!');
-        } catch (error: any) {
-            toast.error(error.message || 'Erro ao analisar nutrientes');
+            toast.success(`Análise concluída! (${result.creditsUsed || 0} créditos)`);
+        } catch (error) {
+            console.error('Error analyzing supplements:', error);
+            toast.error('Erro na análise de suplementos. Tente novamente.');
         } finally {
             setIsAnalyzing(false);
         }
