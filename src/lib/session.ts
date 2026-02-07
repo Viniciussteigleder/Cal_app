@@ -1,4 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { cookies } from "next/headers";
+import type { SessionClaims } from "./db";
 
 export interface SessionPayload {
   userId: string;
@@ -53,4 +55,21 @@ export function verifySessionCookieValue(value?: string): SessionPayload | null 
   } catch {
     return null;
   }
+}
+
+export async function getSessionClaims(): Promise<SessionClaims | null> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("np_session");
+  if (!sessionCookie) return null;
+
+  const payload = verifySessionCookieValue(sessionCookie.value);
+  if (!payload || !payload.userId || !payload.tenantId || !payload.role) {
+    return null;
+  }
+
+  return {
+    user_id: payload.userId,
+    tenant_id: payload.tenantId,
+    role: payload.role,
+  };
 }
