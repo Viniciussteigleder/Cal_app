@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Mic, MicOff, FileText, Brain, Save, Download, Copy, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -161,7 +160,6 @@ export default function MedicalRecordCreatorPage() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -415,6 +413,5 @@ export default function MedicalRecordCreatorPage() {
                     </Card>
                 )}
             </div>
-        </DashboardLayout>
     );
 }

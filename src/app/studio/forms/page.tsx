@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,7 +45,6 @@ const MOCK_RESPONSES = [
 
 export default function StudioFormsPage() {
     return (
-        <DashboardLayout role="nutritionist">
             <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -153,6 +151,5 @@ export default function StudioFormsPage() {
                     </TabsContent>
                 </Tabs>
             </div>
-        </DashboardLayout>
     );
 }

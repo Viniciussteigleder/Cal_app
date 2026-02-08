@@ -1,4 +1,3 @@
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -134,7 +133,6 @@ export default async function StudioDashboard() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-8 animate-in fade-in duration-500 pb-10">
                 {/* Header ... */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -319,6 +317,5 @@ export default async function StudioDashboard() {
                     </Card>
                 </section>
             </div>
-        </DashboardLayout>
     );
 }

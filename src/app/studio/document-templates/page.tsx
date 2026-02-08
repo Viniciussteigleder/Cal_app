@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { FileText, Plus, Search, Filter, Copy, Edit, Trash2, Download, Star, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -165,7 +164,6 @@ export default function DocumentTemplatesPage() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -383,6 +381,5 @@ export default function DocumentTemplatesPage() {
                     </DialogContent>
                 </Dialog>
             </div>
-        </DashboardLayout>
     );
 }

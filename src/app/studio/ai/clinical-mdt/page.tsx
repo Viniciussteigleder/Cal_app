@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Brain, FileText, Activity, AlertCircle, PlayCircle, Save, CheckCircle2, ChevronRight, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -81,7 +80,6 @@ export default function ClinicalMDTPage() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6 h-full flex flex-col">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -338,6 +336,5 @@ export default function ClinicalMDTPage() {
                     </TabsContent>
                 </Tabs>
             </div>
-        </DashboardLayout>
     );
 }

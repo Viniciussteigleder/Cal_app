@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { ShoppingCart, Brain, Download, Printer, Mail, CheckCircle, DollarSign, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -140,7 +139,6 @@ export default function ShoppingListGeneratorPage() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -396,6 +394,5 @@ export default function ShoppingListGeneratorPage() {
                     </>
                 )}
             </div>
-        </DashboardLayout>
     );
 }

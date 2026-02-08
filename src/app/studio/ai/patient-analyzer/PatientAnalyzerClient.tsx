@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, RefreshCw, FileText, Brain, Heart, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,7 +96,6 @@ export function PatientAnalyzerClient({ patients }: { patients: Patient[] }) {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -438,6 +436,5 @@ export function PatientAnalyzerClient({ patients }: { patients: Patient[] }) {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Pill, Brain, AlertTriangle, CheckCircle, TrendingUp, Info, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -149,7 +148,6 @@ export default function SupplementAdvisorPage() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -431,6 +429,5 @@ export default function SupplementAdvisorPage() {
                     </>
                 )}
             </div>
-        </DashboardLayout>
     );
 }

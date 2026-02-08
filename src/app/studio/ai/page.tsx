@@ -20,7 +20,6 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { ptBR } from '@/i18n/pt-BR';
 
 const AI_FEATURES = [
@@ -252,7 +251,6 @@ const USAGE_STATS = [
 
 export default function AIDashboardPage() {
     return (
-        <DashboardLayout role="nutritionist">
             <div className="container mx-auto py-8 px-4 max-w-7xl">
                 {/* Header */}
                 <div className="mb-8">
@@ -405,6 +403,5 @@ export default function AIDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-        </DashboardLayout>
     );
 }

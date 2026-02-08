@@ -1,6 +1,5 @@
 "use client";
 
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,6 @@ import { ptBR } from "@/i18n/pt-BR";
 
 export default function StudioPatientsPage() {
   return (
-    <DashboardLayout role="nutritionist">
       <div className="grid gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">{ptBR.patients.list}</h1>
@@ -123,6 +121,5 @@ export default function StudioPatientsPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

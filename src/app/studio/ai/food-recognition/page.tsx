@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Camera, Upload, CheckCircle, Edit, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -114,7 +113,6 @@ export default function FoodRecognitionPage() {
     const macros = calculateTotalMacros();
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -299,6 +297,5 @@ export default function FoodRecognitionPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
     );
 }

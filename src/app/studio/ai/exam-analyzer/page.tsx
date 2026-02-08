@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { FileText, Upload, Brain, TrendingUp, AlertCircle, CheckCircle, Activity, Droplet, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -183,7 +182,6 @@ export default function ExamAnalyzerPage() {
     };
 
     return (
-        <DashboardLayout role="nutritionist">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -505,6 +503,5 @@ export default function ExamAnalyzerPage() {
                     ))}
                 </div>
             </div>
-        </DashboardLayout>
     );
 }
