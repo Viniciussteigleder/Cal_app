@@ -8,7 +8,11 @@ export async function updateSession(request: NextRequest) {
         },
     })
 
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // Skip Supabase session refresh if not configured or using placeholder values
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
         return response
     }
 

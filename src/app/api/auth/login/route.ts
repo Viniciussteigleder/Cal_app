@@ -18,10 +18,20 @@ export async function POST(request: NextRequest) {
     const cleanPassword = password.trim();
 
     const { prisma } = await import("@/lib/prisma");
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      include: { patient: true },
-    });
+
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        include: { patient: true },
+      });
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível. Verifique DATABASE_URL e SESSION_SECRET no Vercel." },
+        { status: 503 }
+      );
+    }
 
     if (!user || !user.password_hash) {
       return NextResponse.json(
@@ -75,8 +85,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Login error:", error);
+    const message = error instanceof Error ? error.message : "Unknown";
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: `Erro no login: ${message}` },
       { status: 500 }
     );
   }
