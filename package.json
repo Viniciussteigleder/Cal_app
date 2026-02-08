@@ -17,6 +17,8 @@
     "populate:demo": "tsx scripts/populate-demo-data-prisma.ts",
     "populate:comprehensive": "tsx scripts/populate-comprehensive-demo.ts",
     "setup:demo-auth": "tsx scripts/setup-demo-auth.ts",
+    "admin:hash-password": "tsx scripts/admin/hash-password.ts",
+    "admin:create-tenant-user": "tsx scripts/admin/create-tenant-and-user.ts",
     "postinstall": "prisma generate",
     "vercel-build": "node scripts/vercel-build.js",
     "typecheck": "tsc --noEmit",

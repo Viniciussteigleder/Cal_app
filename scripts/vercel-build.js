@@ -71,9 +71,9 @@ if (shouldMigrate) {
 
   const label = isProduction ? 'production' : 'preview';
   console.log(`${ANSI_YELLOW}Running prisma migrate deploy (${label})...${ANSI_RESET}`);
-  const migrated = run('npx', ['prisma', 'migrate', 'deploy'], { allowFailure: true });
-  if (!migrated) {
-    console.warn(`${ANSI_YELLOW}Migration failed — DB may be paused or unreachable. Build continues.${ANSI_RESET}`);
+  const migrated = run('npx', ['prisma', 'migrate', 'deploy'], { allowFailure: !isProduction });
+  if (!migrated && !isProduction) {
+    console.warn(`${ANSI_YELLOW}Migration failed in preview — build continues.${ANSI_RESET}`);
   }
 } else {
   console.log(`${ANSI_YELLOW}Skipping prisma migrate deploy (VERCEL_ENV=${vercelEnv || 'unknown'})${ANSI_RESET}`);
