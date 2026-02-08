@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { verifySessionCookieValueEdge } from "@/lib/session-edge";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -59,15 +60,18 @@ export async function GET(request: NextRequest) {
   const provided = base64UrlToUint8Array(signature);
   const verified = constantTimeEqual(expected, provided);
 
+  const decoded = await verifySessionCookieValueEdge(cookie);
+
   return NextResponse.json(
     {
       ok: true,
       has_cookie: true,
       has_secret: true,
       verified,
-      // Do not return payload/secret/signature details in prod.
+      decoded: decoded
+        ? { userId: decoded.userId, role: decoded.role, tenantId: decoded.tenantId }
+        : null,
     },
     { status: 200 }
   );
 }
-
