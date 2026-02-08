@@ -12,7 +12,17 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const limit = parseInt(searchParams.get("limit") || "20");
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+    } catch (dbError) {
+      console.error("DB connection error (foods search):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível." },
+        { status: 503 }
+      );
+    }
 
       // Get the latest published dataset for this tenant
       const datasetRelease = await prisma.datasetRelease.findFirst({

@@ -12,7 +12,18 @@ export async function GET(request: NextRequest) {
     const dateStr = searchParams.get("date");
     const limit = parseInt(searchParams.get("limit") || "20");
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      console.error("DB connection error (meals GET):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível. Tente novamente em alguns minutos." },
+        { status: 503 }
+      );
+    }
 
       let dateFilter = {};
       if (dateStr) {
@@ -123,7 +134,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+    } catch (dbError) {
+      console.error("DB connection error (meals POST):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível. Tente novamente em alguns minutos." },
+        { status: 503 }
+      );
+    }
 
     // Get the dataset release for this tenant
       const datasetRelease = await prisma.datasetRelease.findFirst({

@@ -30,6 +30,16 @@ const migrateOnPreview = process.env.MIGRATE_ON_PREVIEW === 'true';
 const isProduction = vercelEnv === 'production';
 const shouldMigrate = isProduction || (vercelEnv === 'preview' && migrateOnPreview);
 
+// Ensure DIRECT_URL is set (Prisma needs it for migrations when using connection pooler)
+if (databaseUrl && !process.env.DIRECT_URL) {
+  // If DATABASE_URL uses a pooler (port 6543 or pgbouncer param), DIRECT_URL should
+  // ideally point to the direct connection. But as a fallback, use DATABASE_URL itself.
+  process.env.DIRECT_URL = databaseUrl;
+  console.log(
+    `${ANSI_YELLOW}DIRECT_URL not set. Using DATABASE_URL as fallback for Prisma migrations.${ANSI_RESET}`
+  );
+}
+
 // Ensure Prisma has a connection string even for demo/preview builds
 if (!databaseUrl) {
   const placeholderDb =

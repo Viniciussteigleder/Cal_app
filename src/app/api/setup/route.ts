@@ -219,6 +219,28 @@ async function handleSetup(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
+  // Test DB connectivity before attempting setup
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (dbError) {
+    const msg = dbError instanceof Error ? dbError.message : String(dbError);
+    return NextResponse.json(
+      {
+        error: "Database connection failed",
+        detail: msg,
+        hints: [
+          "Set DATABASE_URL in Vercel → Settings → Environment Variables",
+          "For Supabase: Project Settings → Database → Connection string → URI",
+          "Use the connection pooler URL (port 6543) with ?pgbouncer=true for DATABASE_URL",
+          "Set DIRECT_URL to the direct connection (port 5432)",
+          "Check if Supabase project is paused (free tier auto-pauses after 1 week)",
+        ],
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const result = await runSetup();
     return NextResponse.json({
@@ -248,4 +270,3 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleSetup(request);
 }
-
