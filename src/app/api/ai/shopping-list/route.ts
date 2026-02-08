@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeAIRoute } from '@/lib/ai/route-helper';
 import { getRequestClaims } from '@/lib/claims';
 import { prisma } from '@/lib/prisma';
+import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 export async function POST(request: NextRequest) {
     try {
@@ -21,10 +22,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Verify patient belongs to this tenant
+        if (patientId) {
+            await assertPatientBelongsToTenant(patientId, claims.tenant_id);
+        }
+
         let planContext = '';
         if (mealPlanId) {
-            const template = await prisma.planTemplate.findUnique({
-                where: { id: mealPlanId },
+            // Scope planTemplate read by tenant_id
+            const template = await prisma.planTemplate.findFirst({
+                where: { id: mealPlanId, tenant_id: claims.tenant_id },
                 select: { name: true, target_kcal: true, macro_split: true, goal: true, description: true },
             });
             if (template) {
@@ -48,6 +55,9 @@ export async function POST(request: NextRequest) {
             patientId,
         });
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         console.error('Shopping list error:', error);
         return NextResponse.json(
             { error: 'Falha ao gerar lista de compras' },

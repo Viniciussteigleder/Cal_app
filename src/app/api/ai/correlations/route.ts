@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-utils";
+import { assertPatientBelongsToTenant, TenantMismatchError } from "@/lib/ai/tenant-guard";
 
 // AI-powered symptom-meal correlation analysis
 export async function GET(request: NextRequest) {
@@ -8,6 +9,11 @@ export async function GET(request: NextRequest) {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const tenantId = session.tenantId;
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant not found" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -24,16 +30,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get symptom logs (without broken `correlations` include)
+    // Verify patient belongs to this tenant
+    await assertPatientBelongsToTenant(targetPatientId, tenantId);
+
+    // Get symptom logs scoped by tenant
     const symptomLogs = await prisma.symptomLog.findMany({
-      where: { patient_id: targetPatientId },
+      where: { patient_id: targetPatientId, tenant_id: tenantId },
       orderBy: { logged_at: "desc" },
       take: 50,
     });
 
     // Get all meals for this patient
     const meals = await prisma.meal.findMany({
-      where: { patient_id: targetPatientId },
+      where: { patient_id: targetPatientId, tenant_id: tenantId },
       orderBy: { date: "desc" },
       take: 100,
     });
@@ -202,6 +211,9 @@ export async function GET(request: NextRequest) {
       insights: generateInsights(correlations, topSymptoms),
     });
   } catch (error) {
+    if (error instanceof TenantMismatchError) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     console.error("AI correlations error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -277,10 +289,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantId = session.tenantId;
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant not found" }, { status: 401 });
+    }
+
     const { symptomLogId } = await request.json();
 
-    const symptomLog = await prisma.symptomLog.findUnique({
-      where: { id: symptomLogId },
+    // Scope symptom log lookup by tenant_id to prevent cross-tenant access
+    const symptomLog = await prisma.symptomLog.findFirst({
+      where: { id: symptomLogId, tenant_id: tenantId },
     });
 
     if (!symptomLog) {
@@ -298,6 +316,7 @@ export async function POST(request: NextRequest) {
     const relevantMeals = await prisma.meal.findMany({
       where: {
         patient_id: symptomLog.patient_id,
+        tenant_id: tenantId,
         date: {
           gte: windowStart,
           lte: windowEnd,
@@ -357,6 +376,9 @@ export async function POST(request: NextRequest) {
       correlationsCreated: createdCorrelations.length,
     });
   } catch (error) {
+    if (error instanceof TenantMismatchError) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     console.error("Correlation analysis error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

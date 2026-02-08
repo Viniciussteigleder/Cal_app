@@ -22,13 +22,18 @@ export async function PATCH(
             );
         }
 
+        const tenantId = user.app_metadata?.tenant_id as string;
+        if (!tenantId) {
+            return NextResponse.json({ error: 'No tenant found' }, { status: 400 });
+        }
+
         // Await params in Next.js 16
         const { id } = await params;
 
         const body = await request.json();
         const { confirmed, corrections } = body;
 
-        // Update recognition record
+        // Update recognition record scoped by tenant_id
         const { data, error } = await supabase
             .from('FoodRecognition')
             .update({
@@ -36,6 +41,7 @@ export async function PATCH(
                 corrections: corrections,
             })
             .eq('id', id)
+            .eq('tenant_id', tenantId)
             .select()
             .single();
 

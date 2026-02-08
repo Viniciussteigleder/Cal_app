@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { aiService } from '@/lib/ai/ai-service';
+import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 /**
  * POST /api/ai/food-recognition
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Verify patient belongs to this tenant
+        await assertPatientBelongsToTenant(patientId, tenantId);
 
         // Execute AI agent
         const result = await aiService.execute({
@@ -87,6 +91,9 @@ export async function POST(request: NextRequest) {
             recognitionId: recognitionRecord?.id,
         });
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         console.error('Food recognition error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },

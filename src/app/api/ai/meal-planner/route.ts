@@ -5,6 +5,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAgentConfig } from '@/lib/ai-config';
 import { prisma } from '@/lib/prisma';
+import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 // 1. Define Zod Schemas
 const MacroSchema = z.object({
@@ -73,6 +74,11 @@ export async function POST(request: NextRequest) {
             restrictions = [],
             daysCount = 7,
         } = body;
+
+        // Verify patient belongs to this tenant
+        if (patientId) {
+            await assertPatientBelongsToTenant(patientId, tenantId);
+        }
 
         // 2. Get Dynamic Config
         const agentConfig = await getAgentConfig('meal_planner');
@@ -188,6 +194,9 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         console.error('Unified Meal Planner Error:', error);
         // Mark execution as failed if it was created
         if (execution?.id) {
@@ -211,21 +220,31 @@ export async function GET(request: NextRequest) {
 
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        const tenantId = user.app_metadata?.tenant_id as string;
+        if (!tenantId) return NextResponse.json({ error: 'No tenant found' }, { status: 400 });
+
         const { searchParams } = new URL(request.url);
         const patientId = searchParams.get('patientId');
 
         if (!patientId) return NextResponse.json({ error: 'Missing patientId' }, { status: 400 });
 
+        // Verify patient belongs to this tenant
+        await assertPatientBelongsToTenant(patientId, tenantId);
+
         const { data, error } = await supabase
             .from('AIMealPlan')
             .select('*')
             .eq('patient_id', patientId)
+            .eq('tenant_id', tenantId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         return NextResponse.json({ success: true, data });
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
     }
 }

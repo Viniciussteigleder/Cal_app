@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeAIRoute } from '@/lib/ai/route-helper';
 import { getRequestClaims } from '@/lib/claims';
 import { prisma } from '@/lib/prisma';
+import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,8 +19,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Patient ID is required' }, { status: 400 });
         }
 
+        // Verify patient belongs to this tenant
+        await assertPatientBelongsToTenant(patientId, claims.tenant_id);
+
         const examResults = await prisma.examResultExtracted.findMany({
-            where: { patient_id: patientId },
+            where: { patient_id: patientId, tenant_id: claims.tenant_id },
             orderBy: { created_at: 'desc' },
             take: 20,
             select: {
@@ -45,6 +49,9 @@ export async function POST(request: NextRequest) {
             patientId,
         });
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         console.error('Supplement advisor error:', error);
         return NextResponse.json(
             { error: 'Falha ao gerar recomendações de suplementação' },
