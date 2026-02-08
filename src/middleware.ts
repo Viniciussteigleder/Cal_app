@@ -20,8 +20,10 @@ export async function middleware(request: NextRequest) {
   let rateLimitHeaders: Record<string, string> | null = null;
   const isPublicAuthPath =
     pathname === '/login' ||
+    pathname === '/nutri/login' ||
     pathname === '/owner/login' ||
-    pathname.startsWith('/auth/callback');
+    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/onboarding');
 
   const applySecurityHeaders = (res: NextResponse) => {
     res.headers.set('X-DNS-Prefetch-Control', 'on');

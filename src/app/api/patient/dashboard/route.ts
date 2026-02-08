@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-utils";
-import { MOCK_DASHBOARD_DATA } from "@/lib/mock-data";
 
 export async function GET() {
   try {
@@ -9,11 +8,9 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
-      if (session.patientId) {
+    if (session.patientId) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
@@ -176,21 +173,14 @@ export async function GET() {
           deepHealth, // Added new field
         });
       }
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, usando dados de demonstração");
-    }
 
-    // Return mock data if database not available
+    // No patient profile yet - return empty dashboard
     return NextResponse.json({
-      profile: {
-        name: session.name || MOCK_DASHBOARD_DATA.profile.name,
-        currentWeight: MOCK_DASHBOARD_DATA.profile.currentWeight,
-        targetWeight: MOCK_DASHBOARD_DATA.profile.targetWeight,
-        goal: MOCK_DASHBOARD_DATA.profile.goal,
-      },
-      today: MOCK_DASHBOARD_DATA.today,
-      goals: MOCK_DASHBOARD_DATA.goals,
-      consistency: MOCK_DASHBOARD_DATA.consistency,
+      profile: { name: session.name, currentWeight: 0, targetWeight: null, goal: "maintain" },
+      today: { calories: 0, protein: 0, carbs: 0, fat: 0, mealsLogged: 0 },
+      goals: { calories: 2000, protein: 125, carbs: 225, fat: 67 },
+      consistency: { daysThisWeek: 0, streak: 0 },
+      deepHealth: null,
     });
   } catch (error) {
     console.error("Erro no dashboard:", error);

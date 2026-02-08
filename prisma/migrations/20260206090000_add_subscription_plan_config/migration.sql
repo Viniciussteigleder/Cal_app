@@ -1,3 +1,64 @@
+-- Create SubscriptionPlan enum if it doesn't exist
+DO $$ BEGIN
+    CREATE TYPE "SubscriptionPlan" AS ENUM ('BASIC', 'PRO', 'PRO_MAX', 'PRO_MAX_AI');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add plan column to Tenant if it doesn't exist
+DO $$ BEGIN
+    ALTER TABLE "Tenant" ADD COLUMN "plan" "SubscriptionPlan" NOT NULL DEFAULT 'BASIC';
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add Stripe columns to Tenant if they don't exist
+DO $$ BEGIN
+    ALTER TABLE "Tenant" ADD COLUMN "stripe_customer_id" text;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "Tenant" ADD COLUMN "stripe_subscription_id" text;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "Tenant" ADD COLUMN "subscription_status" text;
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
+
+-- Add RecipeUnitType enum if it doesn't exist
+DO $$ BEGIN
+    CREATE TYPE "RecipeUnitType" AS ENUM ('solid', 'liquid');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add FormType enum if it doesn't exist
+DO $$ BEGIN
+    CREATE TYPE "FormType" AS ENUM ('system', 'custom');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add TaskStatus enum if it doesn't exist
+DO $$ BEGIN
+    CREATE TYPE "TaskStatus" AS ENUM ('todo', 'in_progress', 'done');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add TaskPriority enum if it doesn't exist
+DO $$ BEGIN
+    CREATE TYPE "TaskPriority" AS ENUM ('low', 'medium', 'high');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 CREATE TABLE "SubscriptionPlanConfig" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "plan" "SubscriptionPlan" NOT NULL,

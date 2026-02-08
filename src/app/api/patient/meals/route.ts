@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-utils";
-import { MOCK_MEALS_TODAY } from "@/lib/mock-data";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,9 +12,7 @@ export async function GET(request: NextRequest) {
     const dateStr = searchParams.get("date");
     const limit = parseInt(searchParams.get("limit") || "20");
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
       let dateFilter = {};
       if (dateStr) {
@@ -101,33 +98,6 @@ export async function GET(request: NextRequest) {
       });
 
       return NextResponse.json({ meals: formattedMeals });
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, usando dados de demonstração");
-    }
-
-    // Return mock data if database not available
-    return NextResponse.json({
-      meals: MOCK_MEALS_TODAY.map(meal => ({
-        id: meal.id,
-        date: new Date(),
-        type: meal.type,
-        items: meal.items.map(item => ({
-          id: `item-${item.foodId}`,
-          foodId: item.foodId,
-          grams: item.grams,
-          calories: item.calories,
-          protein: Math.round(item.calories * 0.2 / 4),
-          carbs: Math.round(item.calories * 0.5 / 4),
-          fat: Math.round(item.calories * 0.3 / 9),
-        })),
-        totals: {
-          calories: meal.totalCalories,
-          protein: Math.round(meal.totalCalories * 0.2 / 4),
-          carbs: Math.round(meal.totalCalories * 0.5 / 4),
-          fat: Math.round(meal.totalCalories * 0.3 / 9),
-        },
-      })),
-    });
   } catch (error) {
     console.error("Erro ao buscar refeições:", error);
     return NextResponse.json(
@@ -153,11 +123,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
-      // Get the dataset release for this tenant
+    // Get the dataset release for this tenant
       const datasetRelease = await prisma.datasetRelease.findFirst({
         where: {
           tenant_id: session.tenantId,
@@ -262,19 +230,9 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      return NextResponse.json({
-        success: true,
-        mealId: meal.id,
-      });
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, simulando criação de refeição");
-    }
-
-    // Mock response for demo mode
     return NextResponse.json({
       success: true,
-      mealId: `demo-meal-${Date.now()}`,
-      message: "Refeição registrada (modo demonstração)",
+      mealId: meal.id,
     });
   } catch (error) {
     console.error("Erro ao criar refeição:", error);

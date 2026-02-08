@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-utils";
-import { MOCK_SYMPTOM_LOGS } from "@/lib/mock-data";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,9 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "30");
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
       const symptoms = await prisma.symptomLog.findMany({
         where: { patient_id: session.patientId },
@@ -57,30 +54,7 @@ export async function GET(request: NextRequest) {
         })),
       }));
 
-      return NextResponse.json({ symptoms: formattedSymptoms });
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, usando dados de demonstração");
-    }
-
-    // Return mock data if database not available
-    return NextResponse.json({
-      symptoms: MOCK_SYMPTOM_LOGS.map(s => ({
-        id: s.id,
-        date: new Date(s.date),
-        bristolScale: s.bristolScale,
-        discomfortLevel: s.discomfortLevel,
-        symptoms: s.symptoms,
-        notes: s.notes,
-        correlations: s.linkedMealId ? [{
-          mealId: s.linkedMealId,
-          mealType: "lunch",
-          mealDate: new Date(),
-          correlationScore: 0.75,
-          isFlagged: s.discomfortLevel >= 7,
-          foods: ["Arroz", "Feijão", "Frango"],
-        }] : [],
-      })),
-    });
+    return NextResponse.json({ symptoms: formattedSymptoms });
   } catch (error) {
     console.error("Erro ao buscar sintomas:", error);
     return NextResponse.json(
@@ -100,11 +74,9 @@ export async function POST(request: NextRequest) {
     const { bristolScale, discomfortLevel, symptoms, notes, linkedMealId } =
       await request.json();
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
-      // Create symptom log
+    // Create symptom log
       const symptomLog = await prisma.symptomLog.create({
         data: {
           tenant_id: session.tenantId,
@@ -151,21 +123,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({
-        success: true,
-        symptomLogId: symptomLog.id,
-        isSOS: discomfortLevel >= 8,
-      });
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, simulando registro de sintomas");
-    }
-
-    // Mock response for demo mode
     return NextResponse.json({
       success: true,
-      symptomLogId: `demo-symptom-${Date.now()}`,
+      symptomLogId: symptomLog.id,
       isSOS: discomfortLevel >= 8,
-      message: "Sintoma registrado (modo demonstração)",
     });
   } catch (error) {
     console.error("Erro ao criar registro de sintomas:", error);

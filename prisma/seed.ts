@@ -1,6 +1,10 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
+
+// Default password for all seeded users - change after first login
+const DEFAULT_PASSWORD = "Nutri@2026";
 
 const BR_FOODS = [
   "Arroz branco cozido",
@@ -258,6 +262,10 @@ async function seedCanonicalExams(tx: Prisma.TransactionClient) {
 async function main() {
   console.log("Seeding database...");
 
+  // Hash password once for all users
+  const passwordHash = await hash(DEFAULT_PASSWORD, 10);
+  console.log(`Default password for all users: ${DEFAULT_PASSWORD}`);
+
   await prisma.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(
       "SELECT set_config('app.user_id', $1, true), set_config('app.tenant_id', $2, true), set_config('app.role', $3, true), set_config('app.owner_mode', $4, true)",
@@ -268,10 +276,10 @@ async function main() {
     );
 
     const tenantA = await tx.tenant.create({
-      data: { name: "Clínica A", type: "B2C", status: "active" },
+      data: { name: "Clínica NutriVida", type: "B2C", status: "active" },
     });
     const tenantB = await tx.tenant.create({
-      data: { name: "Clínica B", type: "B2C", status: "active" },
+      data: { name: "Clínica Saúde Digestiva", type: "B2C", status: "active" },
     });
 
     const owner = await tx.user.create({
@@ -279,6 +287,7 @@ async function main() {
         email: "owner@nutriplan.com",
         name: "Owner Admin",
         role: "OWNER",
+        password_hash: passwordHash,
         tenant_id: tenantA.id,
         status: "active",
       },
@@ -286,27 +295,30 @@ async function main() {
 
     const nutriA = await tx.user.create({
       data: {
-        email: "nutri-a@example.com",
-        name: "Nutricionista A",
+        email: "nutri@nutriplan.com",
+        name: "Dr. Carlos Nutricionista",
         role: "TENANT_ADMIN",
+        password_hash: passwordHash,
         tenant_id: tenantA.id,
         status: "active",
       },
     });
     await tx.user.create({
       data: {
-        email: "nutri-b@example.com",
-        name: "Nutricionista B",
+        email: "equipe@nutriplan.com",
+        name: "Ana Assistente",
         role: "TEAM",
+        password_hash: passwordHash,
         tenant_id: tenantA.id,
         status: "active",
       },
     });
     const nutriB = await tx.user.create({
       data: {
-        email: "nutri-c@example.com",
-        name: "Nutricionista C",
+        email: "nutri-b@nutriplan.com",
+        name: "Dra. Fernanda Lima",
         role: "TENANT_ADMIN",
+        password_hash: passwordHash,
         tenant_id: tenantB.id,
         status: "active",
       },
@@ -314,17 +326,18 @@ async function main() {
 
     const patientUsers = await Promise.all(
       [
-        { email: "patient1@example.com", name: "Maria Silva", tenant: tenantA },
-        { email: "patient2@example.com", name: "João Pereira", tenant: tenantA },
-        { email: "patient3@example.com", name: "Ana Souza", tenant: tenantA },
-        { email: "patient4@example.com", name: "Lena Fischer", tenant: tenantB },
-        { email: "patient5@example.com", name: "Paul Schmidt", tenant: tenantB },
+        { email: "maria@nutriplan.com", name: "Maria Silva", tenant: tenantA },
+        { email: "joao@nutriplan.com", name: "João Pereira", tenant: tenantA },
+        { email: "ana@nutriplan.com", name: "Ana Souza", tenant: tenantA },
+        { email: "lena@nutriplan.com", name: "Lena Fischer", tenant: tenantB },
+        { email: "paul@nutriplan.com", name: "Paul Schmidt", tenant: tenantB },
       ].map((user) =>
         tx.user.create({
           data: {
             email: user.email,
             name: user.name,
             role: "PATIENT",
+            password_hash: passwordHash,
             tenant_id: user.tenant.id,
             status: "active",
           },
@@ -515,7 +528,21 @@ async function main() {
     await seedCanonicalExams(tx);
   });
 
-  console.log("Seed completed successfully.");
+  console.log("\n========================================");
+  console.log("Seed completed successfully!");
+  console.log("========================================");
+  console.log("\nAll accounts use password: " + DEFAULT_PASSWORD);
+  console.log("\nAvailable logins:");
+  console.log("  OWNER:        owner@nutriplan.com");
+  console.log("  NUTRITIONIST: nutri@nutriplan.com   (Clínica NutriVida)");
+  console.log("  TEAM:         equipe@nutriplan.com  (Clínica NutriVida)");
+  console.log("  NUTRITIONIST: nutri-b@nutriplan.com (Clínica Saúde Digestiva)");
+  console.log("  PATIENT:      maria@nutriplan.com   (Clínica NutriVida)");
+  console.log("  PATIENT:      joao@nutriplan.com    (Clínica NutriVida)");
+  console.log("  PATIENT:      ana@nutriplan.com     (Clínica NutriVida)");
+  console.log("  PATIENT:      lena@nutriplan.com    (Clínica Saúde Digestiva)");
+  console.log("  PATIENT:      paul@nutriplan.com    (Clínica Saúde Digestiva)");
+  console.log("========================================\n");
 }
 
 main()

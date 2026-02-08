@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-utils";
-import { MOCK_FOODS } from "@/lib/mock-data";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,9 +12,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const limit = parseInt(searchParams.get("limit") || "20");
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
       // Get the latest published dataset for this tenant
       const datasetRelease = await prisma.datasetRelease.findFirst({
@@ -76,26 +73,9 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ foods: formattedFoods });
       }
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, usando dados de demonstração");
-    }
 
-    // Use mock data as fallback
-    const queryLower = query.toLowerCase();
-    const filteredFoods = MOCK_FOODS
-      .filter((food) => food.name.toLowerCase().includes(queryLower))
-      .slice(0, limit)
-      .map((food) => ({
-        id: food.id,
-        name: food.name,
-        group: food.group,
-        regionTag: food.regionTag,
-        nutrients: food.nutrients,
-        histamineRisk: food.histamineRisk,
-        aliases: [],
-      }));
-
-    return NextResponse.json({ foods: filteredFoods });
+    // No published dataset found
+    return NextResponse.json({ foods: [] });
   } catch (error) {
     console.error("Erro na busca de alimentos:", error);
     return NextResponse.json(
