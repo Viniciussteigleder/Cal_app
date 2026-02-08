@@ -41,8 +41,13 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
+    // If the app uses the signed `np_session` cookie (credentials login),
+    // don't let Supabase auth gating force a redirect.
+    const hasNpSession = !!request.cookies.get('np_session')?.value
+
     if (
         !user &&
+        !hasNpSession &&
         !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
         // Allow public access to certain paths if needed, e.g. landing page
