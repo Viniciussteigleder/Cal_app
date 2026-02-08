@@ -34,7 +34,8 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array) {
 
 export async function verifySessionCookieValueEdge(value?: string): Promise<SessionPayloadEdge | null> {
   if (!value) return null;
-  const secret = process.env.SESSION_SECRET;
+  // Use bracket access to avoid build-time inlining in Edge bundles.
+  const secret = process.env["SESSION_SECRET"];
   if (!secret) return null;
 
   const [encoded, signature] = value.split(".");
