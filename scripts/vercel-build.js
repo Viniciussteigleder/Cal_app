@@ -24,6 +24,7 @@ function run(command, args, options = {}) {
 
 const vercelEnv = process.env.VERCEL_ENV;
 const databaseUrl = process.env.DATABASE_URL;
+const directUrl = process.env.DIRECT_URL;
 const migrateOnPreview = process.env.MIGRATE_ON_PREVIEW === 'true';
 
 const isProduction = vercelEnv === 'production';
@@ -37,6 +38,12 @@ if (!databaseUrl) {
   process.env.DIRECT_URL = process.env.DIRECT_URL || placeholderDb;
   console.log(
     `${ANSI_YELLOW}DATABASE_URL not set. Using placeholder for prisma generate (no migrations will run).${ANSI_RESET}`
+  );
+} else if (!directUrl) {
+  // Prisma schema references DIRECT_URL. On Vercel, it's common to only set DATABASE_URL.
+  process.env.DIRECT_URL = databaseUrl;
+  console.log(
+    `${ANSI_YELLOW}DIRECT_URL not set. Falling back to DATABASE_URL for Prisma CLI.${ANSI_RESET}`
   );
 }
 
