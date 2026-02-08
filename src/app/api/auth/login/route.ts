@@ -3,8 +3,20 @@ import { cookies } from "next/headers";
 import { compare } from "bcryptjs";
 import { createSessionCookieValue, type SessionPayload } from "@/lib/session";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.SESSION_SECRET) {
+      return NextResponse.json(
+        {
+          error:
+            "Configuração do servidor incompleta. Defina SESSION_SECRET no Vercel e faça um novo deploy.",
+        },
+        { status: 503 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -14,12 +26,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password).trim();
 
     const { prisma } = await import("@/lib/prisma");
 
-    let user;
+    let user:
+      | (Awaited<ReturnType<typeof prisma.user.findUnique>> & {
+          patient?: { id: string } | null;
+        })
+      | null = null;
+
     try {
       user = await prisma.user.findUnique({
         where: { email: normalizedEmail },
@@ -28,7 +45,10 @@ export async function POST(request: NextRequest) {
     } catch (dbError) {
       console.error("Database connection error:", dbError);
       return NextResponse.json(
-        { error: "Banco de dados indisponível. Verifique DATABASE_URL e SESSION_SECRET no Vercel." },
+        {
+          error:
+            "Banco de dados indisponível. Verifique DATABASE_URL (e DIRECT_URL, se necessário) no Vercel.",
+        },
         { status: 503 }
       );
     }
@@ -92,3 +112,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
