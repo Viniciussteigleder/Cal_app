@@ -72,12 +72,18 @@ model Patient {
   enabled_modules  Json?
   form_submissions FormSubmission[]
   user             User?            @relation(fields: [user_id], references: [id])
+  profile          PatientProfile?
+  symptom_logs     SymptomLog[]
+  meals            Meal[]
+  plans            Plan[]
+  protocol_instances PatientProtocolInstance[]
 }
 
 model PatientProfile {
   id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id         String        @db.Uuid
   patient_id        String        @unique @db.Uuid
+  patient           Patient       @relation(fields: [patient_id], references: [id])
   sex               BiologicalSex
   birth_date        DateTime      @db.Timestamptz(6)
   height_cm         Decimal       @db.Decimal
@@ -101,21 +107,25 @@ model SymptomLog {
   id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id        String        @db.Uuid
   patient_id       String        @db.Uuid
+  patient          Patient       @relation(fields: [patient_id], references: [id])
   logged_at        DateTime      @default(now()) @db.Timestamptz(6)
   bristol_scale    BristolScale?
   discomfort_level Int?
   symptoms         SymptomType[]
   notes            String?
   created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  correlations     SymptomMealCorrelation[]
 
   @@index([patient_id, logged_at])
 }
 
 model SymptomMealCorrelation {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id         String   @db.Uuid
-  symptom_log_id    String   @db.Uuid
-  meal_id           String   @db.Uuid
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String     @db.Uuid
+  symptom_log_id    String     @db.Uuid
+  meal_id           String     @db.Uuid
+  symptom_log       SymptomLog @relation(fields: [symptom_log_id], references: [id])
+  meal              Meal       @relation(fields: [meal_id], references: [id])
   correlation_score Decimal? @db.Decimal
   notes             String?
   is_flagged        Boolean  @default(false)
@@ -156,9 +166,10 @@ model Protocol {
 }
 
 model ProtocolPhase {
-  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  protocol_id  String            @db.Uuid
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  protocol_id  String                   @db.Uuid
   phase_type   ProtocolPhaseType
+  patient_phases PatientProtocolPhase[]
   name         String
   description  String?
   order        Int
@@ -192,16 +203,20 @@ model PatientProtocolInstance {
   notes       String?
   created_by  String    @db.Uuid
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
-  
-  protocol    Protocol  @relation(fields: [protocol_id], references: [id])
+
+  patient     Patient                  @relation(fields: [patient_id], references: [id])
+  protocol    Protocol                 @relation(fields: [protocol_id], references: [id])
+  phases      PatientProtocolPhase[]
 
   @@index([patient_id, is_active])
 }
 
 model PatientProtocolPhase {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  instance_id     String    @db.Uuid
-  phase_id        String    @db.Uuid
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instance_id     String                   @db.Uuid
+  phase_id        String                   @db.Uuid
+  instance        PatientProtocolInstance   @relation(fields: [instance_id], references: [id])
+  phase           ProtocolPhase            @relation(fields: [phase_id], references: [id])
   started_at      DateTime  @default(now()) @db.Timestamptz(6)
   ended_at        DateTime? @db.Timestamptz(6)
   is_current      Boolean   @default(true)
@@ -222,6 +237,8 @@ model FoodCanonical {
   protein_quality Decimal? @db.Decimal // PDCAAS or DIAAS score
   upf_category    Int?     // NOVA scale 1-4
   created_at DateTime  @default(now())
+  nutrients  FoodNutrient[]
+  aliases    FoodAlias[]
 }
 
 model Recipe {
@@ -365,18 +382,20 @@ model FoodSubstitution {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model FoodAlias {
-  id         String   @id @default(uuid())
+  id         String        @id @default(uuid())
   tenant_id  String
   food_id    String
   alias      String
   locale     String
-  created_at DateTime @default(now())
+  created_at DateTime      @default(now())
+  food       FoodCanonical @relation(fields: [food_id], references: [id])
 }
 
 model FoodNutrient {
   tenant_id          String
   food_id            String
   nutrient_key       NutrientKey
+  food               FoodCanonical @relation(fields: [food_id], references: [id])
   per_100g_value     Decimal
   unit               String
   source             String
@@ -444,15 +463,16 @@ model PatientCategoryOverride {
 }
 
 model FoodSnapshot {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id          String   @db.Uuid
-  patient_id         String   @db.Uuid
-  food_id            String   @db.Uuid
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String     @db.Uuid
+  patient_id         String     @db.Uuid
+  food_id            String     @db.Uuid
   snapshot_json      Json
   source             String
-  dataset_release_id String   @db.Uuid
+  dataset_release_id String     @db.Uuid
   content_hash       String?
-  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  created_at         DateTime   @default(now()) @db.Timestamptz(6)
+  meal_items         MealItem[]
 }
 
 model Meal {
@@ -465,18 +485,23 @@ model Meal {
   upf_score   Int?     // 1-4 NOVA scale or 0-100 score
   micronutrients Json? // Vitamins/Minerals/Phytonutrients
   created_at  DateTime @default(now()) @db.Timestamptz(6)
+  patient     Patient  @relation(fields: [patient_id], references: [id])
+  items       MealItem[]
+  correlations SymptomMealCorrelation[]
 
   @@index([patient_id, date], map: "idx_patient_date")
 }
 
 model MealItem {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id   String   @db.Uuid
-  meal_id     String   @db.Uuid
-  food_id     String   @db.Uuid
-  grams       Decimal  @db.Decimal
-  snapshot_id String   @db.Uuid
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String       @db.Uuid
+  meal_id     String       @db.Uuid
+  food_id     String       @db.Uuid
+  grams       Decimal      @db.Decimal
+  snapshot_id String       @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  meal        Meal         @relation(fields: [meal_id], references: [id])
+  snapshot    FoodSnapshot @relation(fields: [snapshot_id], references: [id])
 }
 
 model PlanTemplate {
@@ -520,6 +545,7 @@ model Plan {
   status      PlanStatus
   created_at  DateTime   @default(now()) @db.Timestamptz(6)
   template_id String?    @db.Uuid
+  patient     Patient    @relation(fields: [patient_id], references: [id])
 }
 
 model PlanVersion {

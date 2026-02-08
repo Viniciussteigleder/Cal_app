@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-utils";
-import { MOCK_PATIENTS, MOCK_CLINICAL_ALERTS, MOCK_AI_CORRELATIONS } from "@/lib/mock-data";
 
 export async function GET() {
   try {
@@ -9,9 +8,7 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Try database first
-    try {
-      const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
       // Get all patients for this tenant
       const patients = await prisma.patient.findMany({
@@ -199,47 +196,6 @@ export async function GET() {
         patients: patientInsights,
         aiInsights,
       });
-    } catch (dbError) {
-      console.log("Banco de dados não disponível, usando dados de demonstração");
-    }
-
-    // Return mock data if database not available
-    const activePatients = MOCK_PATIENTS.filter(p => p.status === "active");
-
-    return NextResponse.json({
-      summary: {
-        totalPatients: activePatients.length,
-        activeToday: 3,
-        criticalAlerts: MOCK_CLINICAL_ALERTS.filter(a => a.severity === "warning").length,
-        warningAlerts: MOCK_CLINICAL_ALERTS.filter(a => a.severity === "info").length,
-      },
-      alerts: MOCK_CLINICAL_ALERTS.map(alert => ({
-        type: alert.severity === "warning" ? "warning" : "watch",
-        patientId: alert.patientId,
-        patientName: alert.patientName,
-        message: alert.message,
-        timestamp: new Date(alert.timestamp),
-      })),
-      patients: activePatients.map(p => ({
-        id: p.id,
-        name: p.name,
-        email: p.email,
-        lastActivity: new Date(p.lastConsultation),
-        consistencyScore: 85,
-        histamineLoad: p.histamineLoad,
-        recentDiscomfort: p.alerts.length > 0 ? 6 : 3,
-        status: p.histamineLoad > 60 ? "warning" : "good",
-      })),
-      aiInsights: MOCK_AI_CORRELATIONS.map(c => ({
-        id: c.id,
-        patientName: c.patientName,
-        patientId: c.patientId,
-        foods: [c.pattern.split(" ")[2] || "Alimento"],
-        symptoms: ["Inchaço"],
-        confidence: c.confidence * 100,
-        date: new Date(),
-      })),
-    });
   } catch (error) {
     console.error("Erro no dashboard do nutricionista:", error);
     return NextResponse.json(
