@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-utils";
+import { assertPatientBelongsToTenant, TenantMismatchError } from "@/lib/ai/tenant-guard";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const tenantId = session.tenantId;
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant não identificado" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -19,18 +25,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Query patient, profile, and protocol instances as separate queries
-    // (Patient model only has `user` and `form_submissions` as relations)
+    // Verify patient belongs to this tenant
+    await assertPatientBelongsToTenant(patientId, tenantId);
+
+    // Query patient, profile, and protocol instances scoped by tenant
     const [patient, profile, protocolInstances] = await Promise.all([
-      prisma.patient.findUnique({
-        where: { id: patientId },
+      prisma.patient.findFirst({
+        where: { id: patientId, tenant_id: tenantId },
         include: { user: true },
       }),
-      prisma.patientProfile.findUnique({
-        where: { patient_id: patientId },
+      prisma.patientProfile.findFirst({
+        where: { patient_id: patientId, tenant_id: tenantId },
       }),
       prisma.patientProtocolInstance.findMany({
-        where: { patient_id: patientId, is_active: true },
+        where: { patient_id: patientId, tenant_id: tenantId, is_active: true },
         include: { protocol: true },
         take: 5,
       }),
@@ -43,7 +51,7 @@ export async function GET(request: NextRequest) {
     // Get recent meals, items, and snapshots as separate queries
     // (Meal, MealItem, FoodSnapshot have no Prisma relations defined)
     const recentMeals = await prisma.meal.findMany({
-      where: { patient_id: patientId },
+      where: { patient_id: patientId, tenant_id: tenantId },
       orderBy: { date: "desc" },
       take: 30,
     });
@@ -57,7 +65,7 @@ export async function GET(request: NextRequest) {
           })
         : Promise.resolve([]),
       prisma.symptomLog.findMany({
-        where: { patient_id: patientId },
+        where: { patient_id: patientId, tenant_id: tenantId },
         orderBy: { logged_at: "desc" },
         take: 30,
       }),
@@ -229,8 +237,11 @@ export async function GET(request: NextRequest) {
       },
       insights,
     });
-  } catch (dbError) {
-    console.error("Erro ao acessar banco de dados para insights:", dbError);
+  } catch (error) {
+    if (error instanceof TenantMismatchError) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+    console.error("Erro ao acessar banco de dados para insights:", error);
     return NextResponse.json(
       { error: "Não foi possível acessar os dados do paciente. Tente novamente mais tarde." },
       { status: 503 }

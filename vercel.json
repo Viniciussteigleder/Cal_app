@@ -3,6 +3,7 @@
   "regions": [
     "iad1"
   ],
+  "buildCommand": "npm run vercel-build",
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://nutri-app-cal.vercel.app",
     "NEXT_PUBLIC_ENABLE_DEMO_LOGIN": "false"
