@@ -44,10 +44,13 @@ export async function POST(request: NextRequest) {
       });
     } catch (dbError) {
       console.error("Database connection error:", dbError);
+      const detail = dbError instanceof Error ? dbError.message : "";
+      const isPaused = detail.includes("P1001") || detail.includes("Can't reach");
       return NextResponse.json(
         {
-          error:
-            "Banco de dados indisponível. Verifique DATABASE_URL (e DIRECT_URL, se necessário) no Vercel.",
+          error: isPaused
+            ? "Banco de dados não alcançável. O projeto Supabase pode estar pausado — acesse supabase.com/dashboard para reativar."
+            : "Banco de dados indisponível. Verifique DATABASE_URL no Vercel (use URL do pooler Supabase, porta 6543). Acesse /api/health para diagnóstico.",
         },
         { status: 503 }
       );
