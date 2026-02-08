@@ -102,12 +102,23 @@ export class AIService {
     private openai: OpenAI | null = null;
     private anthropic: Anthropic | null = null;
 
+    /** Default timeout for AI provider calls (60 seconds) */
+    private static readonly AI_TIMEOUT_MS = 60_000;
+
     constructor() {
         if (process.env.OPENAI_API_KEY) {
-            this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            this.openai = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY,
+                timeout: AIService.AI_TIMEOUT_MS,
+                maxRetries: 2,
+            });
         }
         if (process.env.ANTHROPIC_API_KEY) {
-            this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+            this.anthropic = new Anthropic({
+                apiKey: process.env.ANTHROPIC_API_KEY,
+                timeout: AIService.AI_TIMEOUT_MS,
+                maxRetries: 2,
+            });
         }
     }
 

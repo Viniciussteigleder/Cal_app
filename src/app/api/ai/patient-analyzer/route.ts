@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { aiService } from '@/lib/ai/ai-service';
 import { prisma } from '@/lib/prisma';
+import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 /**
  * POST /api/ai/patient-analyzer
@@ -42,10 +43,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Gather patient data for analysis
+        // Verify patient belongs to this tenant
+        await assertPatientBelongsToTenant(patientId, tenantId);
+
+        // Gather patient data for analysis (scoped by tenant_id)
         const [recentMeals, consultations, symptoms] = await Promise.all([
             prisma.meal.findMany({
-                where: { patient_id: patientId },
+                where: { patient_id: patientId, tenant_id: tenantId },
                 orderBy: { date: 'desc' },
                 take: 30,
                 select: {
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
                 },
             }),
             prisma.consultation.findMany({
-                where: { patient_id: patientId },
+                where: { patient_id: patientId, tenant_id: tenantId },
                 orderBy: { created_at: 'desc' },
                 take: 10,
                 select: {
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
                 },
             }),
             prisma.symptomLog.findMany({
-                where: { patient_id: patientId },
+                where: { patient_id: patientId, tenant_id: tenantId },
                 orderBy: { logged_at: 'desc' },
                 take: 20,
                 select: {
@@ -127,6 +131,9 @@ export async function POST(request: NextRequest) {
             analysisId: analysisRecord?.id,
         });
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         console.error('Patient analyzer error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
@@ -153,6 +160,11 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        const tenantId = user.app_metadata?.tenant_id as string;
+        if (!tenantId) {
+            return NextResponse.json({ error: 'No tenant found' }, { status: 400 });
+        }
+
         const { searchParams } = new URL(request.url);
         const patientId = searchParams.get('patientId');
 
@@ -163,10 +175,14 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        // Verify patient belongs to this tenant
+        await assertPatientBelongsToTenant(patientId, tenantId);
+
         const { data, error } = await supabase
             .from('PatientAnalysis')
             .select('*')
             .eq('patient_id', patientId)
+            .eq('tenant_id', tenantId)
             .order('analysis_date', { ascending: false })
             .limit(10);
 
@@ -179,6 +195,9 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ success: true, data });
     } catch (error) {
+        if (error instanceof TenantMismatchError) {
+            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
         console.error('Get patient analyses error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },

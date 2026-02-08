@@ -24,12 +24,22 @@ export async function POST(req: Request) {
             });
         }
 
+        // Cap message history to prevent token overflow / abuse
+        const MAX_MESSAGES = 50;
+        const MAX_CONTENT_LENGTH = 10_000;
+        const cappedMessages = messages.slice(-MAX_MESSAGES).map((m: any) => ({
+            ...m,
+            content: typeof m.content === 'string'
+                ? m.content.slice(0, MAX_CONTENT_LENGTH)
+                : m.content,
+        }));
+
         // Get config for nutrition coach
         const config = await aiService.getAgentConfig(claims.tenant_id, 'nutrition_coach');
 
         const result = streamText({
             model: openai(config.modelName || 'gpt-4-turbo'),
-            messages,
+            messages: cappedMessages,
             system: config.systemPrompt || "Você é um nutricionista clínico sênior atuando como 'Coach Nutricional'. Seja motivador, empático e informativo.",
             temperature: config.temperature || 0.7,
             onFinish: async ({ usage, text }) => {
