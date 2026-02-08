@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
                         model_name: 'gpt-4o',
                         is_active: false,
                         temperature: 0.7,
+                        system_prompt: 'You are a helpful clinical nutrition assistant.',
                     },
                 });
 

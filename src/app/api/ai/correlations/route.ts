@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-utils";
 import { assertPatientBelongsToTenant, TenantMismatchError } from "@/lib/ai/tenant-guard";
+import { withSession, type SessionClaims } from "@/lib/db";
 
 // AI-powered symptom-meal correlation analysis
 export async function GET(request: NextRequest) {
@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
     if (!tenantId) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 401 });
     }
+
+    const claims: SessionClaims = {
+      user_id: session.userId,
+      tenant_id: tenantId,
+      role: session.role,
+    };
 
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get("patientId");
@@ -31,36 +37,39 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify patient belongs to this tenant
-    await assertPatientBelongsToTenant(targetPatientId, tenantId);
+    await assertPatientBelongsToTenant(targetPatientId, claims);
 
-    // Get symptom logs scoped by tenant
-    const symptomLogs = await prisma.symptomLog.findMany({
-      where: { patient_id: targetPatientId, tenant_id: tenantId },
-      orderBy: { logged_at: "desc" },
-      take: 50,
+    const { symptomLogs, meals, mealItems, snapshots } = await withSession(claims, async (tx) => {
+      const symptomLogs = await tx.symptomLog.findMany({
+        where: { patient_id: targetPatientId, tenant_id: tenantId },
+        orderBy: { logged_at: "desc" },
+        take: 50,
+      });
+
+      const meals = await tx.meal.findMany({
+        where: { patient_id: targetPatientId, tenant_id: tenantId },
+        orderBy: { date: "desc" },
+        take: 100,
+      });
+
+      const mealIds = meals.map((m) => m.id);
+      const mealItems =
+        mealIds.length > 0
+          ? await tx.mealItem.findMany({
+              where: { meal_id: { in: mealIds }, tenant_id: tenantId },
+            })
+          : [];
+
+      const snapshotIds = [...new Set(mealItems.map((i) => i.snapshot_id))];
+      const snapshots =
+        snapshotIds.length > 0
+          ? await tx.foodSnapshot.findMany({
+              where: { id: { in: snapshotIds }, tenant_id: tenantId },
+            })
+          : [];
+
+      return { symptomLogs, meals, mealItems, snapshots };
     });
-
-    // Get all meals for this patient
-    const meals = await prisma.meal.findMany({
-      where: { patient_id: targetPatientId, tenant_id: tenantId },
-      orderBy: { date: "desc" },
-      take: 100,
-    });
-
-    // Get meal items and snapshots as separate queries
-    const mealIds = meals.map((m) => m.id);
-    const mealItems = mealIds.length > 0
-      ? await prisma.mealItem.findMany({
-          where: { meal_id: { in: mealIds } },
-        })
-      : [];
-
-    const snapshotIds = [...new Set(mealItems.map((i) => i.snapshot_id))];
-    const snapshots = snapshotIds.length > 0
-      ? await prisma.foodSnapshot.findMany({
-          where: { id: { in: snapshotIds } },
-        })
-      : [];
     const snapshotMap = new Map(snapshots.map((s) => [s.id, s]));
 
     // Group items by meal for easy lookup
@@ -294,12 +303,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 401 });
     }
 
+    const claims: SessionClaims = {
+      user_id: session.userId,
+      tenant_id: tenantId,
+      role: session.role,
+    };
+
     const { symptomLogId } = await request.json();
 
     // Scope symptom log lookup by tenant_id to prevent cross-tenant access
-    const symptomLog = await prisma.symptomLog.findFirst({
-      where: { id: symptomLogId, tenant_id: tenantId },
-    });
+    const symptomLog = await withSession(claims, (tx) =>
+      tx.symptomLog.findFirst({
+        where: { id: symptomLogId, tenant_id: tenantId },
+      })
+    );
 
     if (!symptomLog) {
       return NextResponse.json(
@@ -313,16 +330,18 @@ export async function POST(request: NextRequest) {
     const windowStart = new Date(symptomTime - 8 * 60 * 60 * 1000);
     const windowEnd = new Date(symptomTime - 2 * 60 * 60 * 1000);
 
-    const relevantMeals = await prisma.meal.findMany({
-      where: {
-        patient_id: symptomLog.patient_id,
-        tenant_id: tenantId,
-        date: {
-          gte: windowStart,
-          lte: windowEnd,
+    const relevantMeals = await withSession(claims, (tx) =>
+      tx.meal.findMany({
+        where: {
+          patient_id: symptomLog.patient_id,
+          tenant_id: tenantId,
+          date: {
+            gte: windowStart,
+            lte: windowEnd,
+          },
         },
-      },
-    });
+      })
+    );
 
     // Create correlations
     const createdCorrelations = [];
@@ -344,29 +363,31 @@ export async function POST(request: NextRequest) {
         : 0.5;
       const correlationScore = Math.min(0.95, baseScore * (0.7 + discomfortMultiplier * 0.3));
 
-      const correlation = await prisma.symptomMealCorrelation.upsert({
-        where: {
-          symptom_log_id_meal_id: {
+      const correlation = await withSession(claims, (tx) =>
+        tx.symptomMealCorrelation.upsert({
+          where: {
+            symptom_log_id_meal_id: {
+              symptom_log_id: symptomLogId,
+              meal_id: meal.id,
+            },
+          },
+          update: {
+            correlation_score: correlationScore,
+            is_flagged: symptomLog.discomfort_level
+              ? symptomLog.discomfort_level >= 7
+              : false,
+          },
+          create: {
+            tenant_id: symptomLog.tenant_id,
             symptom_log_id: symptomLogId,
             meal_id: meal.id,
+            correlation_score: correlationScore,
+            is_flagged: symptomLog.discomfort_level
+              ? symptomLog.discomfort_level >= 7
+              : false,
           },
-        },
-        update: {
-          correlation_score: correlationScore,
-          is_flagged: symptomLog.discomfort_level
-            ? symptomLog.discomfort_level >= 7
-            : false,
-        },
-        create: {
-          tenant_id: symptomLog.tenant_id,
-          symptom_log_id: symptomLogId,
-          meal_id: meal.id,
-          correlation_score: correlationScore,
-          is_flagged: symptomLog.discomfort_level
-            ? symptomLog.discomfort_level >= 7
-            : false,
-        },
-      });
+        })
+      );
 
       createdCorrelations.push(correlation);
     }

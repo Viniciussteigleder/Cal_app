@@ -1,12 +1,12 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
 import { getSupabaseClaims } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { withSession } from '@/lib/db';
 
 const LogContentSchema = z.union([
-    z.object({ type: z.string(), description: z.string().optional() }), // Meal
+    z.object({ description: z.string(), type: z.string().optional() }), // Meal
     z.object({ amount: z.number(), unit: z.string() }), // Water
     z.object({ symptoms: z.array(z.string()), severity: z.number(), note: z.string().optional() }), // Symptom
     z.object({ activity: z.string(), duration_min: z.string().or(z.number()) }), // Exercise
@@ -25,11 +25,13 @@ export async function getDailyLogs(patientId: string) {
     if (!claims) return { success: false, error: 'Unauthorized' };
 
     try {
-        const logs = await prisma.dailyLogEntry.findMany({
-            where: { patient_id: patientId },
-            orderBy: { timestamp: 'desc' },
-            take: 50
-        });
+        const logs = await withSession(claims, (tx) =>
+            tx.dailyLogEntry.findMany({
+                where: { patient_id: patientId, tenant_id: claims.tenant_id },
+                orderBy: { timestamp: 'desc' },
+                take: 50
+            })
+        );
 
         return { success: true, data: logs };
     } catch (error) {
@@ -51,16 +53,18 @@ export async function createDailyLog(patientId: string, rawData: any) {
     const data = validation.data;
 
     try {
-        const log = await prisma.dailyLogEntry.create({
-            data: {
-                tenant_id: claims.tenant_id,
-                patient_id: patientId,
-                entry_type: data.entry_type,
-                timestamp: new Date(data.timestamp),
-                content: data.content,
-                media_urls: data.media_urls || []
-            }
-        });
+        const log = await withSession(claims, (tx) =>
+            tx.dailyLogEntry.create({
+                data: {
+                    tenant_id: claims.tenant_id,
+                    patient_id: patientId,
+                    entry_type: data.entry_type,
+                    timestamp: new Date(data.timestamp),
+                    content: data.content,
+                    media_urls: data.media_urls || []
+                }
+            })
+        );
 
         revalidatePath(`/studio/patients/${patientId}/log`);
         return { success: true, data: log };
@@ -75,13 +79,15 @@ export async function deleteDailyLog(logId: string, patientId: string) {
     if (!claims) return { success: false, error: 'Unauthorized' };
 
     try {
-        await prisma.dailyLogEntry.delete({
-            where: {
-                id: logId,
-                tenant_id: claims.tenant_id,
-                // Ensure it belongs to this patient approx (extra safety) or just ID
-            }
-        });
+        await withSession(claims, (tx) =>
+            tx.dailyLogEntry.delete({
+                where: {
+                    id: logId,
+                    tenant_id: claims.tenant_id,
+                    // Ensure it belongs to this patient approx (extra safety) or just ID
+                }
+            })
+        );
 
         revalidatePath(`/studio/patients/${patientId}/log`);
         return { success: true };

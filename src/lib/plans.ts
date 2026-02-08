@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { SubscriptionPlan, type SubscriptionPlanConfig } from "@prisma/client";
+import { Prisma, SubscriptionPlan, type SubscriptionPlanConfig } from "@prisma/client";
 
 const DEFAULT_PLAN_CONFIGS: Array<Omit<SubscriptionPlanConfig, "id" | "created_at" | "updated_at" | "stripe_product_id" | "stripe_price_id">> = [
   {
@@ -102,6 +102,7 @@ export async function ensurePlanConfigs(): Promise<SubscriptionPlanConfig[]> {
     await prisma.subscriptionPlanConfig.createMany({
       data: DEFAULT_PLAN_CONFIGS.map((plan) => ({
         ...plan,
+        features: plan.features as Prisma.InputJsonValue,
         stripe_price_id: DEFAULT_PRICE_IDS[plan.plan] || undefined,
       })),
     });
@@ -117,6 +118,7 @@ export async function ensurePlanConfigs(): Promise<SubscriptionPlanConfig[]> {
     await prisma.subscriptionPlanConfig.createMany({
       data: missing.map((plan) => ({
         ...plan,
+        features: plan.features as Prisma.InputJsonValue,
         stripe_price_id: DEFAULT_PRICE_IDS[plan.plan] || undefined,
       })),
     });

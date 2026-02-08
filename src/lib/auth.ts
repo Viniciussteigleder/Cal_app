@@ -4,9 +4,24 @@ import { cookies } from "next/headers";
 import { verifySessionCookieValue } from "./session";
 
 export async function getSupabaseClaims(): Promise<SessionClaims | null> {
+  // Test harness hook: allow unit tests to run server actions without Next request context.
+  if ((process.env.VITEST || process.env.NODE_ENV === "test") && process.env.TEST_SESSION_CLAIMS) {
+    try {
+      const parsed = JSON.parse(process.env.TEST_SESSION_CLAIMS) as SessionClaims;
+      if (parsed?.user_id && parsed?.tenant_id && parsed?.role) return parsed;
+    } catch {
+      // ignore
+    }
+  }
+
   // 1. Check Mock/Demo Session FIRST (Avoids Supabase init crash if envs are missing)
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('np_session');
+  let sessionCookie: { value: string } | undefined;
+  try {
+    const cookieStore = await cookies();
+    sessionCookie = cookieStore.get("np_session");
+  } catch {
+    // `cookies()` throws outside request scope (e.g. unit tests). Continue to Supabase.
+  }
 
   if (sessionCookie) {
     try {

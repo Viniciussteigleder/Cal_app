@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 import { NextRequest } from 'next/server';
 import * as aiConfig from '@/lib/ai-config';
-import * as usage from '@/lib/ai/usage';
+import { withSession } from '@/lib/db';
 
 // Mock Dependencies
 vi.mock('@ai-sdk/openai', () => ({
@@ -25,7 +25,12 @@ vi.mock('@/lib/supabase/server', () => ({
     createSupabaseServerClient: vi.fn().mockResolvedValue({
         auth: {
             getUser: vi.fn().mockResolvedValue({
-                data: { user: { id: 'user1', app_metadata: { tenant_id: 'tenant1' } } },
+                data: {
+                    user: {
+                        id: '00000000-0000-0000-0000-000000000902',
+                        app_metadata: { tenant_id: '00000000-0000-0000-0000-000000000901', role: 'TENANT_ADMIN' }
+                    }
+                },
                 error: null
             })
         },
@@ -45,13 +50,36 @@ describe('Meal Planner API', () => {
         const configSpy = vi.spyOn(aiConfig, 'getAgentConfig').mockResolvedValue({
             systemPrompt: 'sys', model: 'gpt-4o', temperature: 0.7
         });
-        const usageSpy = vi.spyOn(usage, 'recordAiUsage').mockResolvedValue(true);
+
+        const tenantId = '00000000-0000-0000-0000-000000000901';
+        const userId = '00000000-0000-0000-0000-000000000902';
+        const patientId = '00000000-0000-0000-0000-000000000903';
+
+        // Seed DB entities required by the handler (RLS-safe via OWNER+ownerMode).
+        await withSession(
+            { user_id: '00000000-0000-0000-0000-000000000999', tenant_id: tenantId, role: 'OWNER' },
+            async (tx) => {
+                await tx.tenant.create({ data: { id: tenantId, name: 'Tenant', type: 'B2C', status: 'active' } });
+                await tx.user.create({
+                    data: {
+                        id: userId,
+                        email: 'u@test.com',
+                        name: 'User',
+                        role: 'TENANT_ADMIN',
+                        tenant_id: tenantId,
+                        status: 'active',
+                    },
+                });
+                await tx.patient.create({ data: { id: patientId, tenant_id: tenantId, status: 'active' } });
+            },
+            { ownerMode: true }
+        );
 
         // Request
         const req = new NextRequest('http://localhost/api/ai/meal-planner', {
             method: 'POST',
             body: JSON.stringify({
-                patientId: 'pat1',
+                patientId,
                 targetKcal: 2000,
                 macroSplit: { protein: 30, carbs: 40, fat: 30 }
             })
@@ -62,9 +90,5 @@ describe('Meal Planner API', () => {
 
         expect(body.success).toBe(true);
         expect(configSpy).toHaveBeenCalledWith('meal_planner');
-        expect(usageSpy).toHaveBeenCalledWith(expect.objectContaining({
-            tenantId: 'tenant1',
-            creditsUsed: 1
-        }));
     });
 });

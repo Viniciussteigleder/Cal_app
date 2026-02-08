@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
                 nutritionist_id: claims.user_id,
                 agent_type: transactionType,
                 credits_used: -creditsAmount,
+                cost_usd: 0,
                 cost_brl: 0,
                 metadata: { type: transactionType, manual: true },
             },

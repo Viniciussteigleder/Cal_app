@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeAIRoute } from '@/lib/ai/route-helper';
 import { getRequestClaims } from '@/lib/claims';
-import { prisma } from '@/lib/prisma';
+import { withSession } from '@/lib/db';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 export async function POST(request: NextRequest) {
@@ -20,33 +20,35 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, claims.tenant_id);
+        await assertPatientBelongsToTenant(patientId, claims);
 
         const daysBack = period === '30 dias' ? 30 : period === '60 dias' ? 60 : 90;
         const since = new Date();
         since.setDate(since.getDate() - daysBack);
 
-        const [patient, profile, dailyLogs, anthropometry] = await Promise.all([
-            prisma.patient.findFirst({
-                where: { id: patientId, tenant_id: claims.tenant_id },
-                include: { user: true },
-            }),
-            prisma.patientProfile.findFirst({
-                where: { patient_id: patientId, tenant_id: claims.tenant_id },
-                select: { birth_date: true, goal: true, current_weight_kg: true, target_weight_kg: true },
-            }),
-            prisma.dailyLogEntry.findMany({
-                where: { patient_id: patientId, tenant_id: claims.tenant_id, timestamp: { gte: since } },
-                orderBy: { timestamp: 'asc' },
-                take: 100,
-                select: { timestamp: true, entry_type: true, content: true },
-            }),
-            prisma.anthropometryRecord.findMany({
-                where: { patient_id: patientId, tenant_id: claims.tenant_id, measured_at: { gte: since } },
-                orderBy: { measured_at: 'asc' },
-                select: { measured_at: true, weight_kg: true, height_cm: true, measurements: true },
-            }),
-        ]);
+        const [patient, profile, dailyLogs, anthropometry] = await withSession(claims, (tx) =>
+            Promise.all([
+                tx.patient.findFirst({
+                    where: { id: patientId, tenant_id: claims.tenant_id },
+                    include: { user: true },
+                }),
+                tx.patientProfile.findFirst({
+                    where: { patient_id: patientId, tenant_id: claims.tenant_id },
+                    select: { birth_date: true, goal: true, current_weight_kg: true, target_weight_kg: true },
+                }),
+                tx.dailyLogEntry.findMany({
+                    where: { patient_id: patientId, tenant_id: claims.tenant_id, timestamp: { gte: since } },
+                    orderBy: { timestamp: 'asc' },
+                    take: 100,
+                    select: { timestamp: true, entry_type: true, content: true },
+                }),
+                tx.anthropometryRecord.findMany({
+                    where: { patient_id: patientId, tenant_id: claims.tenant_id, measured_at: { gte: since } },
+                    orderBy: { measured_at: 'asc' },
+                    select: { measured_at: true, weight_kg: true, height_cm: true, measurements: true },
+                }),
+            ])
+        );
 
         const patientName = patient?.user?.name || 'Paciente';
 

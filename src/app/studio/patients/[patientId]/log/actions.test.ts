@@ -1,21 +1,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createDailyLog } from './actions';
-import { prisma } from '@/lib/prisma';
 import { getSupabaseClaims } from '@/lib/auth';
+import { withSession } from '@/lib/db';
 
 // Mock Dependencies
-vi.mock('@/lib/prisma', () => ({
-    prisma: {
-        dailyLogEntry: {
-            create: vi.fn(),
-            findMany: vi.fn(),
-        }
-    }
-}));
-
 vi.mock('@/lib/auth', () => ({
     getSupabaseClaims: vi.fn()
+}));
+
+vi.mock('@/lib/db', () => ({
+    withSession: vi.fn()
 }));
 
 vi.mock('next/cache', () => ({
@@ -35,10 +30,11 @@ describe('Daily Log Actions', () => {
             role: 'NUTRITIONIST'
         });
 
-        (prisma.dailyLogEntry.create as any).mockResolvedValue({
+        const mockCreate = vi.fn().mockResolvedValue({
             id: 'log1',
             entry_type: 'meal'
         });
+        (withSession as any).mockImplementation(async (_claims: any, fn: any) => fn({ dailyLogEntry: { create: mockCreate } }));
 
         // Execute
         const result = await createDailyLog('patient1', {
@@ -49,7 +45,7 @@ describe('Daily Log Actions', () => {
 
         // Verify
         expect(result.success).toBe(true);
-        expect(prisma.dailyLogEntry.create).toHaveBeenCalledWith(expect.objectContaining({
+        expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({
                 patient_id: 'patient1',
                 entry_type: 'meal',

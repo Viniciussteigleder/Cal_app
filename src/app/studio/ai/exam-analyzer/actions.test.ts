@@ -1,16 +1,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { analyzeExamAction } from './actions';
-import * as aiConfig from '@/lib/ai-config';
 
-// Mock dependencies
-vi.mock('@ai-sdk/openai', () => ({
-    createOpenAI: vi.fn(() => vi.fn()),
-}));
-
-vi.mock('ai', () => ({
-    generateObject: vi.fn().mockResolvedValue({
-        object: {
+vi.mock('@/app/studio/ai/actions', () => ({
+    executeAIAction: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
             examType: 'Hemograma',
             examDate: '2025-01-01',
             biomarkers: [],
@@ -24,10 +18,12 @@ vi.mock('ai', () => ({
 
 describe('analyzeExamAction', () => {
     beforeEach(() => {
+        vi.resetModules();
         vi.clearAllMocks();
     });
 
     it('should return error if no file is provided', async () => {
+        const { analyzeExamAction } = await import('./actions');
         const formData = new FormData();
         const result = await analyzeExamAction(formData);
         expect(result.success).toBe(false);
@@ -35,12 +31,8 @@ describe('analyzeExamAction', () => {
     });
 
     it('should call OpenAI and return data when file is provided', async () => {
-        // Mock Config
-        vi.spyOn(aiConfig, 'getAgentConfig').mockResolvedValue({
-            systemPrompt: 'test prompt',
-            model: 'gpt-4o',
-            temperature: 0,
-        });
+        const { analyzeExamAction } = await import('./actions');
+        const { executeAIAction } = await import('@/app/studio/ai/actions');
 
         // Mock File
         const blob = new Blob(['fake content'], { type: 'image/png' });
@@ -54,6 +46,9 @@ describe('analyzeExamAction', () => {
         expect(result.success).toBe(true);
         expect(result.data).toBeDefined();
         expect(result.data?.examType).toBe('Hemograma');
-        expect(aiConfig.getAgentConfig).toHaveBeenCalledWith('exam_analyzer');
+        expect(executeAIAction).toHaveBeenCalledWith(
+            'exam_analyzer',
+            expect.objectContaining({ imageUrl: expect.stringContaining('data:image/png;base64,') })
+        );
     });
 });

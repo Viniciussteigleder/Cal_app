@@ -80,7 +80,9 @@ Return the data in JSON format with this structure:
               type: "image",
               source: {
                 type: "base64",
-                media_type: "application/pdf",
+                // Anthropic SDK types currently restrict to common image MIME types,
+                // but we pass PDFs here for provider-side parsing.
+                media_type: "application/pdf" as any,
                 data: pdfBase64,
               },
             },
@@ -154,6 +156,14 @@ Return data in JSON format:
   ]
 }`;
 
+    const safeMediaType =
+      mimeType === "image/png" ||
+      mimeType === "image/jpeg" ||
+      mimeType === "image/gif" ||
+      mimeType === "image/webp"
+        ? mimeType
+        : "image/png";
+
     const message = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 2048,
@@ -170,7 +180,7 @@ Return data in JSON format:
               type: "image",
               source: {
                 type: "base64",
-                media_type: mimeType,
+                media_type: safeMediaType,
                 data: imageBase64,
               },
             },

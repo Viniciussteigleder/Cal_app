@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 import { getDailyLogs } from '@/app/studio/patients/[patientId]/log/actions';
 import { getRecipes } from '@/app/studio/recipes/actions';
 import { DailyLogTimeline } from '@/app/studio/patients/[patientId]/log/DailyLogTimeline';
-import { redirect } from 'next/navigation';
 
 export default async function PatientLogPage() {
   const patientId = await getCurrentPatientId();
@@ -28,7 +27,7 @@ export default async function PatientLogPage() {
       </div>
 
       <DailyLogTimeline
-        initialLogs={logsRes.success ? logsRes.data : []}
+        initialLogs={logsRes.success ? (logsRes.data ?? []) : []}
         patientId={patientId}
         recipes={recipesRes.success ? recipesRes.data : []}
       />

@@ -27,6 +27,7 @@ describe("Snapshot immutability", () => {
       });
       const dataset = await tx.datasetRelease.create({
         data: {
+          id: "00000000-0000-0000-0000-000000000014",
           tenant_id: tenant.id,
           region: "BR",
           source_name: "TACO",
@@ -36,6 +37,7 @@ describe("Snapshot immutability", () => {
       });
       const food = await tx.foodCanonical.create({
         data: {
+          id: "00000000-0000-0000-0000-000000000015",
           tenant_id: tenant.id,
           name: "Arroz branco cozido",
           group: "grains",

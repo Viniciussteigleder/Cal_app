@@ -1,13 +1,16 @@
 'use server';
 
-import { aiService, AIAgentType } from '@/lib/ai/ai-service';
+import { aiService, AIAgentType, type AIExecutionResult } from '@/lib/ai/ai-service';
 import { getSupabaseClaims } from '@/lib/auth';
 
 /**
  * Executes an AI agent based on the provided type and input data.
  * This is a unified action to be used by various Studio and Patient components.
  */
-export async function executeAIAction(agentType: AIAgentType, inputData: Record<string, any>) {
+export async function executeAIAction(
+    agentType: AIAgentType,
+    inputData: Record<string, any>
+): Promise<AIExecutionResult> {
     try {
         const claims = await getSupabaseClaims();
         if (!claims) {
@@ -33,15 +36,16 @@ export async function executeAIAction(agentType: AIAgentType, inputData: Record<
             throw new Error(result.error || 'Erro na execução da IA');
         }
 
-        return result;
+        return result as AIExecutionResult;
     } catch (error: any) {
         console.error(`AI Action Error (${agentType}):`, error);
         return {
             success: false,
+            data: undefined,
             error: error.message || 'Erro inesperado na execução da IA',
             executionId: 'error',
             executionTimeMs: 0,
-        };
+        } satisfies AIExecutionResult;
     }
 }
 
@@ -69,4 +73,3 @@ export async function transcribeAction(formData: FormData) {
         return { success: false, error: error.message };
     }
 }
-

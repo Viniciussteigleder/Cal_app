@@ -4,7 +4,7 @@ function createStripeClient(): Stripe | null {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) return null;
     return new Stripe(key, {
-        apiVersion: '2025-01-27.acacia',
+        apiVersion: '2026-01-28.clover',
         appInfo: {
             name: 'NutriPlan',
             version: '0.1.0',

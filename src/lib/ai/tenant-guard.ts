@@ -8,6 +8,8 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import type { SessionClaims } from '@/lib/db';
+import { withSession } from '@/lib/db';
 
 export class TenantMismatchError extends Error {
     constructor(patientId: string) {
@@ -24,12 +26,14 @@ export class TenantMismatchError extends Error {
  */
 export async function assertPatientBelongsToTenant(
     patientId: string,
-    tenantId: string
+    claims: SessionClaims
 ): Promise<void> {
-    const patient = await prisma.patient.findFirst({
-        where: { id: patientId, tenant_id: tenantId },
-        select: { id: true },
-    });
+    const patient = await withSession(claims, (tx) =>
+        tx.patient.findFirst({
+            where: { id: patientId, tenant_id: claims.tenant_id },
+            select: { id: true },
+        })
+    );
 
     if (!patient) {
         throw new TenantMismatchError(patientId);

@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getSupabaseClaims } from '@/lib/auth'; // Assumptions: this helper exists or I used something similar before. 
 // Wait, I used "getSupabaseClaims" in "patient-analyzer/actions.ts". I should check if it exists. 
 // If not, I'll use createSupabaseServerClient.
@@ -69,7 +70,7 @@ export async function saveLetterheadSettings(settings: LetterheadSettings): Prom
 
         await prisma.tenant.update({
             where: { id: tenantId },
-            data: { settings: newSettings }
+            data: { settings: newSettings as unknown as Prisma.InputJsonValue }
         });
 
         return { success: true };

@@ -47,17 +47,17 @@ export async function POST(request: NextRequest) {
       // Analyze with AI
       const analysis = await analyzeMealPhoto(base64, file.type);
 
-      const mealPhoto = await tx.mealPhoto.create({
-        data: {
-          tenant_id: claims.tenant_id,
-          patient_id: patient.id,
-          meal_id: mealId,
-          photo_url: uploadResult.url!,
-          file_name: file.name,
-          file_size: file.size,
-          ai_analysis: analysis.success ? analysis.foods : null,
-        },
-      });
+	      const mealPhoto = await tx.mealPhoto.create({
+	        data: {
+	          tenant_id: claims.tenant_id,
+	          patient_id: patient.id,
+	          meal_id: mealId,
+	          photo_url: uploadResult.url!,
+	          file_name: file.name,
+	          file_size: file.size,
+	          ai_analysis: analysis.success ? analysis.foods : undefined,
+	        },
+	      });
 
       return {
         photo: mealPhoto,

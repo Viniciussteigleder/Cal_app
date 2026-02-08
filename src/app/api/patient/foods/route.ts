@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         : [];
 
       // Get canonical foods for aliases
-      const aliasedFoodIds = aliases.map(a => a.canonical_id);
+      const aliasedFoodIds = aliases.map((a) => a.food_id);
       const aliasedFoods = await tx.foodCanonical.findMany({
         where: { id: { in: aliasedFoodIds } },
       });
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
       const combined = [
         ...foods.map((food) => ({ id: food.id, name: food.name })),
         ...aliases.map((alias) => {
-          const food = aliasedFoodMap.get(alias.canonical_id);
+          const food = aliasedFoodMap.get(alias.food_id);
           return food ? {
             id: food.id,
             name: food.name,

@@ -42,7 +42,7 @@ export const createSafeAction = <TInput, TOutput>(
             const data = parseResult.data;
 
             // 2. Authentication & Session
-            const cookieStore = cookies();
+            const cookieStore = await cookies();
             const supabase = createServerClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

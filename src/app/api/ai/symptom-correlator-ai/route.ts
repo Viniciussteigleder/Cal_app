@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeAIRoute } from '@/lib/ai/route-helper';
 import { getRequestClaims } from '@/lib/claims';
-import { prisma } from '@/lib/prisma';
+import { withSession } from '@/lib/db';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 export async function POST(request: NextRequest) {
@@ -20,32 +20,34 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, claims.tenant_id);
+        await assertPatientBelongsToTenant(patientId, claims);
 
         const daysBack = period === '7 dias' ? 7 : period === '14 dias' ? 14 : 30;
         const since = startDate ? new Date(startDate) : new Date(Date.now() - daysBack * 86400000);
         const until = endDate ? new Date(endDate) : new Date();
 
-        const [dailyLogs, symptomLogs, mealPhotos] = await Promise.all([
-            prisma.dailyLogEntry.findMany({
-                where: { patient_id: patientId, tenant_id: claims.tenant_id, timestamp: { gte: since, lte: until } },
-                orderBy: { timestamp: 'asc' },
-                take: 100,
-                select: { timestamp: true, entry_type: true, content: true },
-            }),
-            prisma.symptomLog.findMany({
-                where: { patient_id: patientId, tenant_id: claims.tenant_id, logged_at: { gte: since, lte: until } },
-                orderBy: { logged_at: 'asc' },
-                take: 100,
-                select: { logged_at: true, symptoms: true, discomfort_level: true, bristol_scale: true, notes: true },
-            }),
-            prisma.mealPhoto.findMany({
-                where: { patient_id: patientId, tenant_id: claims.tenant_id, captured_at: { gte: since, lte: until } },
-                orderBy: { captured_at: 'asc' },
-                take: 50,
-                select: { captured_at: true, ai_analysis: true },
-            }),
-        ]);
+        const [dailyLogs, symptomLogs, mealPhotos] = await withSession(claims, (tx) =>
+            Promise.all([
+                tx.dailyLogEntry.findMany({
+                    where: { patient_id: patientId, tenant_id: claims.tenant_id, timestamp: { gte: since, lte: until } },
+                    orderBy: { timestamp: 'asc' },
+                    take: 100,
+                    select: { timestamp: true, entry_type: true, content: true },
+                }),
+                tx.symptomLog.findMany({
+                    where: { patient_id: patientId, tenant_id: claims.tenant_id, logged_at: { gte: since, lte: until } },
+                    orderBy: { logged_at: 'asc' },
+                    take: 100,
+                    select: { logged_at: true, symptoms: true, discomfort_level: true, bristol_scale: true, notes: true },
+                }),
+                tx.mealPhoto.findMany({
+                    where: { patient_id: patientId, tenant_id: claims.tenant_id, captured_at: { gte: since, lte: until } },
+                    orderBy: { captured_at: 'asc' },
+                    take: 50,
+                    select: { captured_at: true, ai_analysis: true },
+                }),
+            ])
+        );
 
         // Trim data to prevent token overflow in prompts
         const dataContext = [

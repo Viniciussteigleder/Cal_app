@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-utils";
 import { assertPatientBelongsToTenant, TenantMismatchError } from "@/lib/ai/tenant-guard";
+import { withSession, type SessionClaims } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Tenant não identificado" }, { status: 401 });
     }
 
+    const claims: SessionClaims = {
+      user_id: session.userId,
+      tenant_id: tenantId,
+      role: session.role,
+    };
+
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get("patientId") || session.patientId;
 
@@ -26,58 +32,60 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify patient belongs to this tenant
-    await assertPatientBelongsToTenant(patientId, tenantId);
+    await assertPatientBelongsToTenant(patientId, claims);
 
-    // Query patient, profile, and protocol instances scoped by tenant
-    const [patient, profile, protocolInstances] = await Promise.all([
-      prisma.patient.findFirst({
-        where: { id: patientId, tenant_id: tenantId },
-        include: { user: true },
-      }),
-      prisma.patientProfile.findFirst({
-        where: { patient_id: patientId, tenant_id: tenantId },
-      }),
-      prisma.patientProtocolInstance.findMany({
-        where: { patient_id: patientId, tenant_id: tenantId, is_active: true },
-        include: { protocol: true },
-        take: 5,
-      }),
-    ]);
+    const { patient, profile, protocolInstances, recentMeals, mealItems, recentSymptoms, snapshots } =
+      await withSession(claims, async (tx) => {
+        const [patient, profile, protocolInstances] = await Promise.all([
+          tx.patient.findFirst({
+            where: { id: patientId, tenant_id: tenantId },
+            include: { user: true },
+          }),
+          tx.patientProfile.findFirst({
+            where: { patient_id: patientId, tenant_id: tenantId },
+          }),
+          tx.patientProtocolInstance.findMany({
+            where: { patient_id: patientId, tenant_id: tenantId, is_active: true },
+            include: { protocol: true },
+            take: 5,
+          }),
+        ]);
+
+        const recentMeals = await tx.meal.findMany({
+          where: { patient_id: patientId, tenant_id: tenantId },
+          orderBy: { date: "desc" },
+          take: 30,
+        });
+
+        const mealIds = recentMeals.map((m) => m.id);
+        const mealItems =
+          mealIds.length > 0
+            ? await tx.mealItem.findMany({
+                where: { meal_id: { in: mealIds }, tenant_id: tenantId },
+              })
+            : [];
+        const recentSymptoms = await tx.symptomLog.findMany({
+          where: { patient_id: patientId, tenant_id: tenantId },
+          orderBy: { logged_at: "desc" },
+          take: 30,
+        });
+
+        const snapshotIds = [...new Set(mealItems.map((i) => i.snapshot_id))];
+        const snapshots =
+          snapshotIds.length > 0
+            ? await tx.foodSnapshot.findMany({
+                where: { id: { in: snapshotIds }, tenant_id: tenantId },
+              })
+            : [];
+
+        return { patient, profile, protocolInstances, recentMeals, mealItems, recentSymptoms, snapshots };
+      });
 
     if (!patient) {
       return NextResponse.json({ error: "Paciente não encontrado" }, { status: 404 });
     }
 
-    // Get recent meals, items, and snapshots as separate queries
-    // (Meal, MealItem, FoodSnapshot have no Prisma relations defined)
-    const recentMeals = await prisma.meal.findMany({
-      where: { patient_id: patientId, tenant_id: tenantId },
-      orderBy: { date: "desc" },
-      take: 30,
-    });
-
-    const mealIds = recentMeals.map((m) => m.id);
-
-    const [mealItems, recentSymptoms] = await Promise.all([
-      mealIds.length > 0
-        ? prisma.mealItem.findMany({
-            where: { meal_id: { in: mealIds } },
-          })
-        : Promise.resolve([]),
-      prisma.symptomLog.findMany({
-        where: { patient_id: patientId, tenant_id: tenantId },
-        orderBy: { logged_at: "desc" },
-        take: 30,
-      }),
-    ]);
-
-    // Fetch snapshots for meal items
-    const snapshotIds = [...new Set(mealItems.map((i) => i.snapshot_id))];
-    const snapshots = snapshotIds.length > 0
-      ? await prisma.foodSnapshot.findMany({
-          where: { id: { in: snapshotIds } },
-        })
-      : [];
+    // Data fetched inside withSession above for RLS safety.
     const snapshotMap = new Map(snapshots.map((s) => [s.id, s]));
 
     // Calculate nutrition averages
@@ -94,9 +102,12 @@ export async function GET(request: NextRequest) {
         const snapshot = snapshotMap.get(item.snapshot_id);
         if (!snapshot) continue;
 
-        const multiplier = item.quantity ?? 1;
-        totalCalories += (snapshot.nutrients?.energy_kcal || 0) * multiplier;
-        totalProtein += (snapshot.nutrients?.protein_g || 0) * multiplier;
+        const snapshotData = snapshot.snapshot_json as any;
+        const nutrients = (snapshotData?.nutrients ?? {}) as Record<string, number>;
+        const grams = item.grams.toNumber();
+        const multiplier = grams / 100; // nutrients are per-100g snapshots
+        totalCalories += (nutrients.energy_kcal || 0) * multiplier;
+        totalProtein += (nutrients.protein_g || 0) * multiplier;
       }
 
       mealCount++;

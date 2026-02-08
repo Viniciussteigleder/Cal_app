@@ -3,27 +3,27 @@
 
 export const MOCK_USERS = {
   "patient@demo.nutriplan.com": {
-    id: "demo-patient-001",
+    id: "00000000-0000-0000-0000-00000000d101",
     email: "patient@demo.nutriplan.com",
     name: "Maria Silva",
     role: "PATIENT" as const,
-    tenantId: "demo-tenant-001",
-    patientId: "demo-patient-record-001",
+    tenantId: "00000000-0000-0000-0000-00000000d001",
+    patientId: "00000000-0000-0000-0000-00000000d201",
   },
   "nutri@demo.nutriplan.com": {
-    id: "demo-nutri-001",
+    id: "00000000-0000-0000-0000-00000000d102",
     email: "nutri@demo.nutriplan.com",
     name: "Dr. Carlos Nutricionista",
     role: "TENANT_ADMIN" as const,
-    tenantId: "demo-tenant-001",
+    tenantId: "00000000-0000-0000-0000-00000000d001",
     patientId: null,
   },
   "owner@demo.nutriplan.com": {
-    id: "demo-owner-001",
+    id: "00000000-0000-0000-0000-00000000d103",
     email: "owner@demo.nutriplan.com",
     name: "Admin Sistema",
     role: "OWNER" as const,
-    tenantId: "demo-tenant-001",
+    tenantId: "00000000-0000-0000-0000-00000000d001",
     patientId: null,
   },
 };

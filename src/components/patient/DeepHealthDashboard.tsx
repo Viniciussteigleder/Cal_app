@@ -186,7 +186,7 @@ export function DeepHealthDashboard({ data = defaultData, className }: DeepHealt
                             </div>
                         </div>
 
-                        <Badge variant="ghost" className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-default">
+                        <Badge variant="secondary" className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-default">
                             <TrendingUp className="h-3 w-3" /> Tendência Positiva (+8%)
                         </Badge>
                     </div>

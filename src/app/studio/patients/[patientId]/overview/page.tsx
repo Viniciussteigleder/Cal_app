@@ -33,7 +33,7 @@ export default async function PatientOverviewPage({
     const patient = patientRes.data;
     const profile = patient.profile;
     const conditions = patient.conditions || [];
-    const logs = logsRes.success ? logsRes.data : [];
+    const logs = logsRes.success ? (logsRes.data ?? []) : [];
 
     // Calculate basic stats for demo
     const bmi = profile?.height_cm && profile?.current_weight_kg

@@ -65,14 +65,14 @@ export function ClinicalCopilot({ patientId }: ClinicalCopilotProps) {
                                 <span>Adesão Estimada</span>
                                 <span>{analysis.adherence_score}%</span>
                             </div>
-                            <Progress value={analysis.adherence_score} className="h-2 bg-indigo-100 dark:bg-indigo-950" indicatorClassName="bg-indigo-600" />
+                            <Progress value={analysis.adherence_score} className="h-2 bg-indigo-100 dark:bg-indigo-950" />
                         </div>
                         <div className="space-y-1">
                             <div className="flex justify-between text-sm font-medium">
                                 <span>Progresso Clínico</span>
                                 <span>{analysis.progress_score}%</span>
                             </div>
-                            <Progress value={analysis.progress_score} className="h-2 bg-indigo-100 dark:bg-indigo-950" indicatorClassName="bg-emerald-500" />
+                            <Progress value={analysis.progress_score} className="h-2 bg-indigo-100 dark:bg-indigo-950" />
                         </div>
                     </div>
 

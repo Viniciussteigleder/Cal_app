@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeAIRoute } from '@/lib/ai/route-helper';
 import { getRequestClaims } from '@/lib/claims';
-import { prisma } from '@/lib/prisma';
+import { withSession } from '@/lib/db';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 export async function POST(request: NextRequest) {
@@ -24,16 +24,18 @@ export async function POST(request: NextRequest) {
 
         // Verify patient belongs to this tenant
         if (patientId) {
-            await assertPatientBelongsToTenant(patientId, claims.tenant_id);
+            await assertPatientBelongsToTenant(patientId, claims);
         }
 
         let planContext = '';
         if (mealPlanId) {
             // Scope planTemplate read by tenant_id
-            const template = await prisma.planTemplate.findFirst({
-                where: { id: mealPlanId, tenant_id: claims.tenant_id },
-                select: { name: true, target_kcal: true, macro_split: true, goal: true, description: true },
-            });
+            const template = await withSession(claims, (tx) =>
+                tx.planTemplate.findFirst({
+                    where: { id: mealPlanId, tenant_id: claims.tenant_id },
+                    select: { name: true, target_kcal: true, macro_split: true, goal: true, description: true },
+                })
+            );
             if (template) {
                 planContext = [
                     `Plano: "${template.name}"`,

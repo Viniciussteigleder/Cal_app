@@ -14,6 +14,9 @@ model Tenant {
   type           TenantType
   status         TenantStatus
   created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  users          User[]
+  patients       Patient[]
+  datasets       DatasetRelease[]
   form_templates FormTemplate[]
   planner_tasks  PlannerTask[]
   settings       Json?
@@ -60,6 +63,7 @@ model User {
   status        UserStatus
   planner_tasks PlannerTask[]
   patient       Patient?
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id])
 }
 
 model Patient {
@@ -72,6 +76,7 @@ model Patient {
   enabled_modules  Json?
   form_submissions FormSubmission[]
   user             User?            @relation(fields: [user_id], references: [id])
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id])
   profile          PatientProfile?
   symptom_logs     SymptomLog[]
   meals            Meal[]
@@ -228,8 +233,8 @@ model PatientProtocolPhase {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model FoodCanonical {
-  id         String    @id @default(uuid())
-  tenant_id  String
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String    @db.Uuid
   name       String
   group      FoodGroup
   region_tag RegionTag
@@ -239,6 +244,8 @@ model FoodCanonical {
   created_at DateTime  @default(now())
   nutrients  FoodNutrient[]
   aliases    FoodAlias[]
+  snapshots  FoodSnapshot[]
+  plan_items PlanItem[]
 }
 
 model Recipe {
@@ -382,9 +389,9 @@ model FoodSubstitution {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model FoodAlias {
-  id         String        @id @default(uuid())
-  tenant_id  String
-  food_id    String
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String        @db.Uuid
+  food_id    String        @db.Uuid
   alias      String
   locale     String
   created_at DateTime      @default(now())
@@ -392,8 +399,8 @@ model FoodAlias {
 }
 
 model FoodNutrient {
-  tenant_id          String
-  food_id            String
+  tenant_id          String   @db.Uuid
+  food_id            String   @db.Uuid
   nutrient_key       NutrientKey
   food               FoodCanonical @relation(fields: [food_id], references: [id])
   per_100g_value     Decimal
@@ -407,14 +414,15 @@ model FoodNutrient {
 }
 
 model DatasetRelease {
-  id            String        @id @default(uuid())
-  tenant_id     String
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String        @db.Uuid
   region        Region
   source_name   String
   version_label String
   published_at  DateTime?
   status        ReleaseStatus
   created_at    DateTime      @default(now())
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id])
 }
 
 model ImportJob {
@@ -448,6 +456,7 @@ model PatientDataPolicy {
   notes           String?
   updated_by      String   @db.Uuid
   created_at      DateTime @default(now()) @db.Timestamptz(6)
+  category_overrides PatientCategoryOverride[]
 
   @@unique([patient_id, version_number])
 }
@@ -458,6 +467,7 @@ model PatientCategoryOverride {
   category_code    String
   preferred_source String
   notes            String?
+  policy           PatientDataPolicy @relation(fields: [policy_id], references: [id])
 
   @@unique([policy_id, category_code])
 }
@@ -473,6 +483,8 @@ model FoodSnapshot {
   content_hash       String?
   created_at         DateTime   @default(now()) @db.Timestamptz(6)
   meal_items         MealItem[]
+  food               FoodCanonical @relation(fields: [food_id], references: [id])
+  plan_items         PlanItem[]
 }
 
 model Meal {
@@ -518,6 +530,7 @@ model PlanTemplate {
   created_by  String       @db.Uuid
   created_at  DateTime     @default(now()) @db.Timestamptz(6)
   updated_at  DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  plans       Plan[]
 
   @@index([tenant_id, is_public])
   @@index([tenant_id, goal])
@@ -546,6 +559,8 @@ model Plan {
   created_at  DateTime   @default(now()) @db.Timestamptz(6)
   template_id String?    @db.Uuid
   patient     Patient    @relation(fields: [patient_id], references: [id])
+  versions    PlanVersion[]
+  template    PlanTemplate? @relation(fields: [template_id], references: [id])
 }
 
 model PlanVersion {
@@ -557,6 +572,10 @@ model PlanVersion {
   created_by String        @db.Uuid
   created_at DateTime      @default(now()) @db.Timestamptz(6)
   updated_at DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  plan       Plan          @relation(fields: [plan_id], references: [id])
+  items      PlanItem[]
+  approval   PlanApproval?
+  publication PlanPublication?
 
   @@unique([plan_id, version_no])
 }
@@ -570,6 +589,9 @@ model PlanItem {
   grams           Decimal  @db.Decimal
   snapshot_id     String   @db.Uuid
   instructions    String?
+  version         PlanVersion @relation(fields: [plan_version_id], references: [id])
+  snapshot        FoodSnapshot @relation(fields: [snapshot_id], references: [id])
+  food            FoodCanonical @relation(fields: [food_id], references: [id])
 }
 
 model PlanApproval {
@@ -578,6 +600,7 @@ model PlanApproval {
   approved_by     String   @db.Uuid
   approved_at     DateTime @db.Timestamptz(6)
   approval_note   String?
+  version         PlanVersion @relation(fields: [plan_version_id], references: [id])
 }
 
 model PlanPublication {
@@ -585,6 +608,7 @@ model PlanPublication {
   tenant_id       String   @db.Uuid
   published_by    String   @db.Uuid
   published_at    DateTime @db.Timestamptz(6)
+  version         PlanVersion @relation(fields: [plan_version_id], references: [id])
 }
 
 model AuditEvent {
@@ -634,6 +658,7 @@ model IntegrityCheckRun {
   finished_at  DateTime?   @db.Timestamptz(6)
   status       CheckStatus
   summary_json Json?
+  issues       IntegrityIssue[]
 }
 
 model IntegrityIssue {
@@ -646,6 +671,7 @@ model IntegrityIssue {
   details_json Json
   created_at   DateTime      @default(now()) @db.Timestamptz(6)
   resolved_at  DateTime?     @db.Timestamptz(6)
+  run          IntegrityCheckRun @relation(fields: [run_id], references: [id])
 }
 
 model PlannerTask {

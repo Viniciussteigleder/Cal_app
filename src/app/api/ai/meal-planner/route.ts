@@ -4,7 +4,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAgentConfig } from '@/lib/ai-config';
-import { prisma } from '@/lib/prisma';
+import { prisma, withSession, type SessionClaims } from '@/lib/db';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 // 1. Define Zod Schemas
@@ -49,6 +49,7 @@ const MealPlanResponseSchema = z.object({
  */
 export async function POST(request: NextRequest) {
     let execution: { id: string } | null = null;
+    let claims: SessionClaims | null = null;
     try {
         const supabase = await createSupabaseServerClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -57,8 +58,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const claims = user.app_metadata;
-        const tenantId = claims.tenant_id as string;
+        const meta = (user.app_metadata ?? {}) as Record<string, any>;
+        const tenantId = meta.tenant_id as string;
+        const role = (meta.role ?? "TENANT_ADMIN") as SessionClaims["role"];
+        claims = { user_id: user.id, tenant_id: tenantId, role };
 
         if (!tenantId) {
             return NextResponse.json({ error: 'No tenant found for user' }, { status: 400 });
@@ -76,9 +79,7 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Verify patient belongs to this tenant
-        if (patientId) {
-            await assertPatientBelongsToTenant(patientId, tenantId);
-        }
+        if (patientId) await assertPatientBelongsToTenant(patientId, claims);
 
         // 2. Get Dynamic Config
         const agentConfig = await getAgentConfig('meal_planner');
@@ -94,15 +95,20 @@ export async function POST(request: NextRequest) {
 
         // Track execution start
         const startTime = Date.now();
-        execution = await prisma.aIExecution.create({
-            data: {
-                tenant_id: tenantId,
-                model_id: agentConfig.model,
-                agent_type: 'meal_planner',
-                input_data: { patientId, targetKcal, macroSplit, preferences, restrictions, daysCount },
-                status: 'running',
-            },
-        });
+        execution = await withSession(claims, (tx) =>
+            tx.aIExecution.create({
+                data: {
+                    tenant_id: tenantId,
+                    model_id: agentConfig.model,
+                    agent_type: 'meal_planner',
+                    input_data: { patientId, targetKcal, macroSplit, preferences, restrictions, daysCount },
+                    status: 'running',
+                },
+            })
+        );
+        if (!execution) {
+            throw new Error('Failed to start AI execution');
+        }
 
         // 4. Generate Object (Safe!)
         const { object, usage } = await generateObject({
@@ -131,9 +137,9 @@ export async function POST(request: NextRequest) {
         const creditCost = 5; // meal_planner costs 5 credits
 
         // 5. Track execution completion + deduct credits atomically
-        await prisma.$transaction([
-            prisma.aIExecution.update({
-                where: { id: execution.id },
+        await withSession(claims, async (tx) => {
+            await tx.aIExecution.update({
+                where: { id: execution!.id },
                 data: {
                     output_data: object as any,
                     tokens_used: tokensUsed,
@@ -141,12 +147,12 @@ export async function POST(request: NextRequest) {
                     cost,
                     status: 'completed',
                 },
-            }),
-            prisma.tenant.update({
+            });
+            await tx.tenant.update({
                 where: { id: tenantId },
                 data: { ai_credits: { decrement: creditCost } },
-            }),
-            prisma.aiCreditTransaction.create({
+            });
+            await tx.aiCreditTransaction.create({
                 data: {
                     tenant_id: tenantId,
                     nutritionist_id: user.id,
@@ -155,10 +161,10 @@ export async function POST(request: NextRequest) {
                     credits_used: creditCost,
                     cost_usd: cost,
                     cost_brl: cost * 5.0,
-                    metadata: { executionId: execution.id, tokensUsed, daysCount, targetKcal },
+                    metadata: { executionId: execution!.id, tokensUsed, daysCount, targetKcal },
                 },
-            }),
-        ]);
+            });
+        });
 
         // 6. Save to DB (Legacy support via Supabase)
         const { data: mealPlanRecord, error: dbError } = await supabase
@@ -199,11 +205,17 @@ export async function POST(request: NextRequest) {
         }
         console.error('Unified Meal Planner Error:', error);
         // Mark execution as failed if it was created
-        if (execution?.id) {
-            await prisma.aIExecution.update({
-                where: { id: execution.id },
-                data: { status: 'failed', error_message: error instanceof Error ? error.message : 'Unknown error' },
-            }).catch(() => {});
+        const executionId = execution?.id;
+        if (executionId && claims) {
+            await withSession(claims, (tx) =>
+                tx.aIExecution.update({
+                    where: { id: executionId },
+                    data: {
+                        status: 'failed',
+                        error_message: error instanceof Error ? error.message : 'Unknown error',
+                    },
+                })
+            ).catch(() => {});
         }
         return NextResponse.json(
             { error: 'Failed to generate meal plan' },
@@ -222,6 +234,9 @@ export async function GET(request: NextRequest) {
 
         const tenantId = user.app_metadata?.tenant_id as string;
         if (!tenantId) return NextResponse.json({ error: 'No tenant found' }, { status: 400 });
+        const meta = (user.app_metadata ?? {}) as Record<string, any>;
+        const role = (meta.role ?? "TENANT_ADMIN") as SessionClaims["role"];
+        const claims: SessionClaims = { user_id: user.id, tenant_id: tenantId, role };
 
         const { searchParams } = new URL(request.url);
         const patientId = searchParams.get('patientId');
@@ -229,7 +244,7 @@ export async function GET(request: NextRequest) {
         if (!patientId) return NextResponse.json({ error: 'Missing patientId' }, { status: 400 });
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, tenantId);
+        await assertPatientBelongsToTenant(patientId, claims);
 
         const { data, error } = await supabase
             .from('AIMealPlan')

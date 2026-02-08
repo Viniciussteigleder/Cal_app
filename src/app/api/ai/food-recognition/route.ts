@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { aiService } from '@/lib/ai/ai-service';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
+import type { SessionClaims } from '@/lib/db';
 
 /**
  * POST /api/ai/food-recognition
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, tenantId);
+        const role = (user.app_metadata?.role ?? 'TENANT_ADMIN') as SessionClaims['role'];
+        await assertPatientBelongsToTenant(patientId, { user_id: user.id, tenant_id: tenantId, role });
 
         // Execute AI agent
         const result = await aiService.execute({
@@ -101,4 +103,3 @@ export async function POST(request: NextRequest) {
         );
     }
 }
-

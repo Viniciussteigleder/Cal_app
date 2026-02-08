@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeAIRoute } from '@/lib/ai/route-helper';
 import { getRequestClaims } from '@/lib/claims';
-import { prisma } from '@/lib/prisma';
+import { withSession } from '@/lib/db';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
 
 export async function POST(request: NextRequest) {
@@ -20,21 +20,23 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, claims.tenant_id);
+        await assertPatientBelongsToTenant(patientId, claims);
 
-        const examResults = await prisma.examResultExtracted.findMany({
-            where: { patient_id: patientId, tenant_id: claims.tenant_id },
-            orderBy: { created_at: 'desc' },
-            take: 20,
-            select: {
-                raw_name: true,
-                value: true,
-                unit: true,
-                reference_range: true,
-                is_abnormal: true,
-                created_at: true,
-            },
-        });
+        const examResults = await withSession(claims, (tx) =>
+            tx.examResultExtracted.findMany({
+                where: { patient_id: patientId, tenant_id: claims.tenant_id },
+                orderBy: { created_at: 'desc' },
+                take: 20,
+                select: {
+                    raw_name: true,
+                    value: true,
+                    unit: true,
+                    reference_range: true,
+                    is_abnormal: true,
+                    created_at: true,
+                },
+            })
+        );
 
         const examContext = examResults.length
             ? `Resultados de exames do paciente:\n${JSON.stringify(examResults)}`

@@ -105,13 +105,13 @@ export function CreditsDashboardView({ data }: { data: any }) {
                                     cx="50%"
                                     cy="50%"
                                     outerRadius={80}
-                                    label={(entry) => entry.agent}
+                                    label={(entry: any) => entry.agent}
                                 >
                                     {byAgent.map((entry: any, index: number) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(val: number) => [Number(val).toFixed(2), 'Créditos']} />
+                                <Tooltip formatter={(value: any) => [Number(value).toFixed(2), 'Créditos']} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>

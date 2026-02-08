@@ -47,9 +47,9 @@ export async function GET(request: NextRequest) {
                 patient: {
                     select: {
                         id: true,
-                        profile: {
+                        user: {
                             select: {
-                                full_name: true,
+                                name: true,
                             },
                         },
                     },

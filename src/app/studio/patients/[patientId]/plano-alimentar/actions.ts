@@ -65,21 +65,15 @@ export async function getActivePlan(patientId: string) {
     if (!claims) return { success: false, error: 'Unauthorized' };
 
     const plan = await prisma.plan.findFirst({
-        where: { patient_id: patientId, status: 'active' },
-        include: {
-            // Get latest version
-        }
+        where: { patient_id: patientId, tenant_id: claims.tenant_id, status: 'active' },
     });
 
     if (!plan) return { success: true, data: null };
 
     // Get latest approved or published version, or draft if owner
     const latestVersion = await prisma.planVersion.findFirst({
-        where: { plan_id: plan.id },
+        where: { plan_id: plan.id, tenant_id: claims.tenant_id },
         orderBy: { version_no: 'desc' },
-        include: {
-            // PlanItems
-        }
     });
 
     // We need items.

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { aiService } from '@/lib/ai/ai-service';
-import { prisma } from '@/lib/prisma';
 import { assertPatientBelongsToTenant, TenantMismatchError } from '@/lib/ai/tenant-guard';
+import { withSession, type SessionClaims } from '@/lib/db';
 
 /**
  * POST /api/ai/patient-analyzer
@@ -44,43 +44,47 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, tenantId);
+        const role = (user.app_metadata?.role ?? 'TENANT_ADMIN') as SessionClaims['role'];
+        const claims: SessionClaims = { user_id: user.id, tenant_id: tenantId, role };
+        await assertPatientBelongsToTenant(patientId, claims);
 
         // Gather patient data for analysis (scoped by tenant_id)
-        const [recentMeals, consultations, symptoms] = await Promise.all([
-            prisma.meal.findMany({
-                where: { patient_id: patientId, tenant_id: tenantId },
-                orderBy: { date: 'desc' },
-                take: 30,
-                select: {
-                    id: true,
-                    date: true,
-                    type: true,
-                    totals_json: true,
-                },
-            }),
-            prisma.consultation.findMany({
-                where: { patient_id: patientId, tenant_id: tenantId },
-                orderBy: { created_at: 'desc' },
-                take: 10,
-                select: {
-                    id: true,
-                    status: true,
-                    created_at: true,
-                },
-            }),
-            prisma.symptomLog.findMany({
-                where: { patient_id: patientId, tenant_id: tenantId },
-                orderBy: { logged_at: 'desc' },
-                take: 20,
-                select: {
-                    id: true,
-                    logged_at: true,
-                    symptoms: true,
-                    discomfort_level: true,
-                },
-            }),
-        ]);
+        const [recentMeals, consultations, symptoms] = await withSession(claims, (tx) =>
+            Promise.all([
+                tx.meal.findMany({
+                    where: { patient_id: patientId, tenant_id: tenantId },
+                    orderBy: { date: 'desc' },
+                    take: 30,
+                    select: {
+                        id: true,
+                        date: true,
+                        type: true,
+                        totals_json: true,
+                    },
+                }),
+                tx.consultation.findMany({
+                    where: { patient_id: patientId, tenant_id: tenantId },
+                    orderBy: { created_at: 'desc' },
+                    take: 10,
+                    select: {
+                        id: true,
+                        status: true,
+                        created_at: true,
+                    },
+                }),
+                tx.symptomLog.findMany({
+                    where: { patient_id: patientId, tenant_id: tenantId },
+                    orderBy: { logged_at: 'desc' },
+                    take: 20,
+                    select: {
+                        id: true,
+                        logged_at: true,
+                        symptoms: true,
+                        discomfort_level: true,
+                    },
+                }),
+            ])
+        );
 
         // Execute AI agent
         const result = await aiService.execute({
@@ -176,7 +180,8 @@ export async function GET(request: NextRequest) {
         }
 
         // Verify patient belongs to this tenant
-        await assertPatientBelongsToTenant(patientId, tenantId);
+        const role = (user.app_metadata?.role ?? 'TENANT_ADMIN') as SessionClaims['role'];
+        await assertPatientBelongsToTenant(patientId, { user_id: user.id, tenant_id: tenantId, role });
 
         const { data, error } = await supabase
             .from('PatientAnalysis')
