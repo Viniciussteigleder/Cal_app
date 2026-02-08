@@ -1,13 +1,11 @@
 "use client";
 
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Weight, Activity, Droplets, Zap, TrendingDown, Ruler } from "lucide-react";
 
 export default function ProgressPage() {
     return (
-        <DashboardLayout role="patient">
             <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -213,6 +211,5 @@ export default function ProgressPage() {
                     </CardContent>
                 </Card>
             </div>
-        </DashboardLayout>
     );
 }

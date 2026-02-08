@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,7 +240,6 @@ export default function PatientChatPage() {
   };
 
   return (
-    <DashboardLayout role="patient">
       <div className="max-w-2xl mx-auto h-[calc(100vh-120px)] flex flex-col">
         {/* Header */}
         <Card className="mb-4">
@@ -526,6 +524,5 @@ export default function PatientChatPage() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

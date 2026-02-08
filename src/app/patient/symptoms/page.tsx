@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,7 +110,6 @@ export default function PatientSymptomsPage() {
 
   return (
     <TooltipProvider>
-      <DashboardLayout role="patient">
         <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-20 animate-in fade-in duration-500">
 
           {/* Header */}
@@ -330,7 +328,6 @@ export default function PatientSymptomsPage() {
 
           </div>
         </div>
-      </DashboardLayout>
     </TooltipProvider>
   );
 }

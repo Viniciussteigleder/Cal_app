@@ -4,7 +4,6 @@
 // Simplification: Fetch data in page (server) and pass to a PlanView (client).
 
 import React from 'react';
-import DashboardLayout from "@/components/layout/dashboard-layout";
 
 export const dynamic = 'force-dynamic';
 import { getCurrentPatientId } from '@/app/patient/log/actions';
@@ -23,8 +22,6 @@ export default async function PlanPage() {
   // If activeProtocol exists, activeProtocol.protocol has the details.
 
   return (
-    <DashboardLayout role="patient">
-      <PlanView activeProtocol={activeProtocol} />
-    </DashboardLayout>
+    <PlanView activeProtocol={activeProtocol} />
   );
 }

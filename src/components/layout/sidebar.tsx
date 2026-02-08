@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     Home,
+    LayoutDashboard,
     Utensils,
     Calendar,
     TrendingUp,
     Activity,
+    DollarSign,
     Settings,
     LogOut,
     ChevronLeft,
@@ -48,13 +50,14 @@ export function Sidebar({ role }: SidebarProps) {
 
     const patientLinks = [
         { href: "/patient/today", label: "Hoje", icon: Home },
+        { href: "/patient/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/patient/capture", label: "Registrar", icon: Utensils },
-        { href: "/patient/plan", label: "Meu Plano", icon: Calendar },
+        { href: "/patient/plan", label: "Plano", icon: Calendar },
         { href: "/patient/progress", label: "Progresso", icon: TrendingUp },
         { href: "/patient/water", label: "Hidratação", icon: Droplet },
         { href: "/patient/exercise", label: "Exercícios", icon: Dumbbell },
         { href: "/patient/symptoms", label: "Sintomas", icon: Activity },
-        { href: "/patient/log", label: "Diário (Novo)", icon: ScrollText },
+        { href: "/patient/log", label: "Diário", icon: ScrollText },
         { href: "/patient/chat", label: "Chat", icon: MessageSquare },
     ];
 
@@ -75,9 +78,11 @@ export function Sidebar({ role }: SidebarProps) {
     const adminLinks = [
         { href: "/owner/tenants", label: "Clínicas", icon: Building2 },
         { href: "/owner/users", label: "Usuários", icon: Users },
+        { href: "/owner/subscription", label: "Assinatura", icon: DollarSign },
         { href: "/owner/ai-config", label: "Configuração IA", icon: Brain },
         { href: "/owner/datasets", label: "Datasets", icon: Database },
         { href: "/owner/integrity", label: "Integridade", icon: ShieldCheck },
+        { href: "/owner/app-description", label: "Descrição", icon: FileText },
     ];
 
     const links = role === "patient" ? patientLinks : role === "admin" ? adminLinks : nutritionistLinks;
@@ -198,7 +203,13 @@ export function Sidebar({ role }: SidebarProps) {
                     </div>
 
                     <Link
-                        href={role === "patient" ? "/patient/settings" : "/studio/settings"}
+                        href={
+                            role === "patient"
+                                ? "/patient/settings"
+                                : role === "admin"
+                                    ? "/owner/subscription"
+                                    : "/studio/configuracoes"
+                        }
                         className={cn(
                             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all",
                             collapsed && "justify-center px-2"

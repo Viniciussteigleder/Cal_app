@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,7 +223,6 @@ export default function CaptureMealPage() {
   };
 
   return (
-    <DashboardLayout role="patient">
       <div className="max-w-md mx-auto">
         {/* Hidden file input */}
         <input
@@ -692,6 +690,5 @@ export default function CaptureMealPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

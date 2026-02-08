@@ -1,24 +1,9 @@
-import { PortalShell } from "@/components/portal-shell";
+import DashboardLayout from "@/components/layout/dashboard-layout";
 
 export default function PatientLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <PortalShell
-      title="Portal do Paciente"
-      subtitle="Seu plano alimentar, diário e sintomas em um só lugar."
-      devRole="PATIENT"
-      nav={[
-        { href: "/patient/view", label: "Visão geral" },
-        { href: "/patient/dashboard", label: "Dashboard" },
-        { href: "/patient/log", label: "Diário" },
-        { href: "/patient/plan", label: "Plano" },
-        { href: "/patient/symptoms", label: "Sintomas" },
-      ]}
-    >
-      {children}
-    </PortalShell>
-  );
+  return <DashboardLayout role="patient">{children}</DashboardLayout>;
 }

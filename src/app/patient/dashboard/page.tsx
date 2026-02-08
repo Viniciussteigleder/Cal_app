@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, X, ArrowRight, Flame, Droplets, Moon, Check, Search, Loader2, Utensils, Activity, ChevronRight, Zap, Sparkles } from "lucide-react";
-import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -239,15 +238,10 @@ export default function PatientDashboard() {
   };
 
   if (isLoading) {
-    return (
-      <DashboardLayout role="patient">
-        <SkeletonDashboard />
-      </DashboardLayout>
-    );
+    return <SkeletonDashboard />;
   }
 
   return (
-    <DashboardLayout role="patient">
       <div className="flex flex-col gap-8 max-w-md mx-auto md:max-w-5xl relative animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
 
         {/* Header - Premium Personalization */}
@@ -636,6 +630,5 @@ export default function PatientDashboard() {
         )}
 
       </div>
-    </DashboardLayout>
   );
 }

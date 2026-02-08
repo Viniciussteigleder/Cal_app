@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { toast } from "sonner";
-import DashboardLayout from "@/components/layout/dashboard-layout";
 
 const EXAM_TYPES = [
   { value: "blood_test", label: "Exame de Sangue" },
@@ -94,7 +93,6 @@ export default function PatientExamsPage() {
   };
 
   return (
-    <DashboardLayout role="patient">
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Meus Exames</h1>
@@ -283,6 +281,5 @@ export default function PatientExamsPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

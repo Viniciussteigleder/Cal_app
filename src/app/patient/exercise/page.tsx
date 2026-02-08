@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { toast } from 'sonner';
 
 interface Exercise {
@@ -110,7 +109,6 @@ export default function ExerciseTrackingPage() {
     };
 
     return (
-        <DashboardLayout role="patient">
             <div className="container mx-auto py-8 px-4 max-w-4xl">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -335,7 +333,6 @@ export default function ExerciseTrackingPage() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
-        </DashboardLayout>
+            </div>
     );
 }

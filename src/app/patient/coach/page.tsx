@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { MessageCircle, Send, Bot, User, Sparkles, TrendingUp, Heart, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,7 +135,6 @@ export default function NutritionCoachChatbotPage() {
     };
 
     return (
-        <DashboardLayout role="patient">
             <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
                 {/* Header */}
                 <div>
@@ -277,6 +275,5 @@ export default function NutritionCoachChatbotPage() {
                     </form>
                 </Card>
             </div>
-        </DashboardLayout>
     );
 }

@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 
 interface WaterIntake {
     id: string;
@@ -77,7 +76,6 @@ export default function WaterTrackingPage() {
     const remainingMl = Math.max(dailyGoal - todayIntake, 0);
 
     return (
-        <DashboardLayout role="patient">
             <div className="container mx-auto py-8 px-4 max-w-4xl">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -234,7 +232,6 @@ export default function WaterTrackingPage() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
-        </DashboardLayout>
+            </div>
     );
 }

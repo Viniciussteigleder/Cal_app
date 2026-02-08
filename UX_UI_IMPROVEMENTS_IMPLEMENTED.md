@@ -218,6 +218,32 @@
 - [ ] Diary page improvements
 
 ### **Phase 4: Advanced Features** (Not Yet Implemented)
+
+---
+
+## ✅ 2026-02-08 Addendum: Portal Shell Consistency + Navigation Hygiene
+
+**Date:** 2026-02-08  
+**Focus:** remove nested shells, fix role routing, fix mobile nav actionability, correct portal boundaries.
+
+### Implemented
+- **Unified Patient shell** by moving the dashboard shell to `src/app/patient/layout.tsx` and removing per-page nested `DashboardLayout` wrappers.
+- **Unified Owner shell** by moving the dashboard shell to `src/app/owner/layout.tsx` and removing nested wrappers from owner pages.
+- **Fixed mobile nav correctness and actionability** in `src/components/layout/mobile-nav.tsx`:
+  - Home routes to `/patient/today`
+  - “+” routes to `/patient/capture`
+  - “Mais” routes to `/patient/settings`
+- **Fixed role-correct settings destinations** in `src/components/layout/sidebar.tsx`:
+  - Patient: `/patient/settings`
+  - Studio: `/studio/configuracoes`
+  - Owner: `/owner/subscription`
+- **Corrected portal boundary for “Visual Diary”**:
+  - Added Studio diary at `src/app/studio/diary/page.tsx`
+  - Redirected `/patient/diary` to the actual patient diary `/patient/log` via `src/app/patient/diary/page.tsx`
+
+### Validation
+- `npm run typecheck` passed.
+- `npm run lint` passed.
 - [ ] Onboarding wizard
 - [ ] Gamification (streaks, achievements)
 - [ ] Trend sparklines
