@@ -12,7 +12,17 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "active";
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+    } catch (dbError) {
+      console.error("DB connection error (studio patients):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível." },
+        { status: 503 }
+      );
+    }
 
       const patients = await prisma.patient.findMany({
         where: {

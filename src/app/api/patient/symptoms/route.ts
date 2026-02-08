@@ -11,7 +11,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "30");
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+    } catch (dbError) {
+      console.error("DB connection error (symptoms GET):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível. Tente novamente em alguns minutos." },
+        { status: 503 }
+      );
+    }
 
       const symptoms = await prisma.symptomLog.findMany({
         where: { patient_id: session.patientId },
@@ -74,7 +84,17 @@ export async function POST(request: NextRequest) {
     const { bristolScale, discomfortLevel, symptoms, notes, linkedMealId } =
       await request.json();
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+    } catch (dbError) {
+      console.error("DB connection error (symptoms POST):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível. Tente novamente em alguns minutos." },
+        { status: 503 }
+      );
+    }
 
     // Create symptom log
       const symptomLog = await prisma.symptomLog.create({

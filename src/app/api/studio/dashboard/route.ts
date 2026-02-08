@@ -8,7 +8,18 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { prisma } = await import("@/lib/prisma");
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      console.error("DB connection error (studio dashboard):", dbError);
+      return NextResponse.json(
+        { error: "Banco de dados indisponível. Tente novamente em alguns minutos." },
+        { status: 503 }
+      );
+    }
 
       // Get all patients for this tenant
       const patients = await prisma.patient.findMany({

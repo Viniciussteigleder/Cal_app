@@ -32,7 +32,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { prisma } = await import("@/lib/prisma");
+    // Test DB connectivity first
+    let prisma;
+    try {
+      const mod = await import("@/lib/prisma");
+      prisma = mod.prisma;
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      const msg = dbError instanceof Error ? dbError.message : String(dbError);
+      return NextResponse.json(
+        {
+          error: "Database connection failed",
+          detail: msg,
+          hints: [
+            "Set DATABASE_URL in Vercel → Settings → Environment Variables",
+            "For Supabase: Project Settings → Database → Connection string → URI",
+            "Use the connection pooler URL (port 6543) with ?pgbouncer=true for DATABASE_URL",
+            "Set DIRECT_URL to the direct connection (port 5432)",
+            "Check if Supabase project is paused (free tier auto-pauses after 1 week)",
+          ],
+        },
+        { status: 503 }
+      );
+    }
 
     // Check if already seeded
     const existingOwner = await prisma.user.findUnique({
