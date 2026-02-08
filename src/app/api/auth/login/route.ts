@@ -46,11 +46,16 @@ export async function POST(request: NextRequest) {
       console.error("Database connection error:", dbError);
       const detail = dbError instanceof Error ? dbError.message : "";
       const isPaused = detail.includes("P1001") || detail.includes("Can't reach");
+      const isTenantOrUserNotFound = detail
+        .toLowerCase()
+        .includes("tenant or user not found");
       return NextResponse.json(
         {
           error: isPaused
             ? "Banco de dados não alcançável. O projeto Supabase pode estar pausado — acesse supabase.com/dashboard para reativar."
-            : "Banco de dados indisponível. Verifique DATABASE_URL no Vercel (use URL do pooler Supabase, porta 6543). Acesse /api/health para diagnóstico.",
+            : isTenantOrUserNotFound
+              ? "DATABASE_URL do Supabase está incorreta para este projeto (pooler rejeitou: Tenant/user not found). Re-copie do Supabase: Project Settings → Database → Connection string → Transaction (pooler) (porta 6543). Importante: no pooler o usuário deve ser postgres.<project-ref> e o host deve ser aws-*-<região>.pooler.supabase.com. Veja /api/health para detalhes."
+              : "Banco de dados indisponível. Verifique DATABASE_URL no Vercel (use URL do pooler Supabase, porta 6543). Acesse /api/health para diagnóstico.",
         },
         { status: 503 }
       );
@@ -115,4 +120,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

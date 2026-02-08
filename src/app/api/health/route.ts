@@ -134,11 +134,15 @@ export async function GET() {
     const isTimeout = message.includes("P1001") || message.includes("Can't reach");
     const isAuth = message.includes("P1000") || message.includes("authentication");
     const isSsl = message.includes("SSL") || message.includes("ssl");
+    const isSupabaseTenantMissing =
+      message.toLowerCase().includes("tenant or user not found");
 
     checks.database = {
       status: "error",
       error: message,
-      diagnosis: isTimeout
+      diagnosis: isSupabaseTenantMissing
+        ? "Supabase pooler rejected the connection: Tenant/user not found. This usually means the pooler host/region is wrong for your project, or the pooler username is wrong (pooler user must be postgres.<project-ref>)."
+        : isTimeout
         ? "Cannot reach the database server. Check host/port and that the Supabase project is not paused."
         : isAuth
           ? "Authentication failed. Check username and password in DATABASE_URL."
@@ -146,6 +150,10 @@ export async function GET() {
             ? "SSL error. Ensure ?sslmode=require is in the connection string."
             : "Connection failed. See error message above.",
       quick_fixes: [
+        isSupabaseTenantMissing &&
+          "In Supabase Dashboard → Project Settings → Database → Connection string: copy the 'Transaction (pooler)' URL for DATABASE_URL (it includes aws-*-<region>.pooler.supabase.com:6543) and paste it exactly into Vercel.",
+        isSupabaseTenantMissing &&
+          "Ensure the pooler username includes the project ref: postgres.<your-project-ref> (not just postgres).",
         isTimeout && "Unpause your Supabase project at https://supabase.com/dashboard → your project → Database",
         isTimeout && "Use the transaction pooler URL (port 6543) instead of direct (5432) for Vercel",
         isAuth && "Reset database password in Supabase Dashboard → Settings → Database",
